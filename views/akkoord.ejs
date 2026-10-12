@@ -1,0 +1,68 @@
+<%- include('partials/head', { titel: 'Offerte ter akkoord' }) %>
+<main class="wrap"><div class="narrow" style="display:flex;flex-direction:column;gap:16px">
+  <div>
+    <div class="lead" style="margin:0">Offerte EPV-<%= a.id %></div>
+    <h1><%= a.status === 'offerte_verstuurd' ? 'Uw akkoord voor de busrit' : 'Uw busrit' %></h1>
+  </div>
+
+  <% if (a.status === 'bevestigd' || a.status === 'gereden') { %>
+    <div class="alert ok"><strong>De rit is bevestigd</strong> en staat vast in onze planning.</div>
+  <% } else if (a.status === 'wacht_op_betaling') { %>
+    <div class="alert info"><strong>Akkoord ontvangen.</strong> De bus staat vast zodra de aanbetaling binnen is.</div>
+  <% } else if (a.status === 'geannuleerd') { %>
+    <div class="alert bad">Deze rit is geannuleerd. Bel 030 68 68 300 bij vragen.</div>
+  <% } else if (['gefactureerd','betaald'].includes(a.status)) { %>
+    <div class="alert ok">Deze rit is uitgevoerd. De eindfactuur is naar <%= a.factuur_email %> gestuurd.</div>
+  <% } %>
+
+  <div class="card">
+    <div class="lead" style="margin:0 0 6px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Opdrachtgever</div>
+    <div style="font-weight:600;font-size:17px"><%= k.naam %><% if (k.type === 'particulier') { %> (particulier)<% } %></div>
+    <div class="lead" style="margin:4px 0 0">Aangevraagd door <%= a.aanvrager_naam %><% if (a.aanvrager_rol) { %>, <%= a.aanvrager_rol %><% } %></div>
+  </div>
+
+  <div class="card">
+    <dl class="kv">
+      <dt>Datum</dt><dd><%= datum(a.rit_datum) %><% if (a.vertrek_tijd) { %>, vertrek <%= a.vertrek_tijd %><% } %></dd>
+      <dt>Route</dt><dd><%= a.van %> → <%= a.naar %></dd>
+      <dt>Personen</dt><dd><%= a.personen %></dd>
+      <dt>Soort</dt><dd><%= { brengen_halen: 'Brengen en halen', hele_dag: 'Bus de hele dag beschikbaar', meerdaags: 'Meerdaagse reis' }[a.ritsoort] %></dd>
+      <% if (a.po_nummer) { %><dt>Uw referentie</dt><dd><%= a.po_nummer %></dd><% } %>
+      <dt>Factuur naar</dt><dd><%= a.factuur_email %></dd>
+    </dl>
+    <div class="between" style="border-top:1px solid var(--line);margin-top:14px;padding-top:14px">
+      <strong>Ritprijs incl. 9% btw</strong><span class="price"><%= euro(a.ritprijs_cent) %></span>
+    </div>
+    <p class="lead" style="margin:8px 0 0;font-size:14px">Parkeergeld, tol, pont en verblijfskosten van de chauffeur komen op de eindfactuur.</p>
+  </div>
+
+  <div class="card soft">
+    <h2 style="font-size:17px;margin-bottom:10px">Betaling</h2>
+    <% if (a.status === 'offerte_verstuurd') { %>
+      <% if (!plan.termijnen.length) { %>
+        <p style="margin:0">Geen aanbetaling nodig. U ontvangt na de rit één eindfactuur met 14 dagen betaaltermijn.</p>
+      <% } else { plan.termijnen.forEach(t => { %>
+        <div class="between"><span><%= t.label %><%= t.uiterlijk ? `, uiterlijk ${datum(t.uiterlijk)}` : '' %></span><strong><%= euro(t.bedrag) %></strong></div>
+      <% }) } %>
+    <% } else if (termijnen.length) { termijnen.forEach(t => { %>
+      <div class="between" style="padding:6px 0">
+        <span><%= t.label %><%= t.uiterlijk ? `, uiterlijk ${datum(t.uiterlijk)}` : '' %></span>
+        <% if (t.betaald_op) { %><span class="badge k-A">Betaald</span><% } else { %><a class="btn small" href="/betalen/<%= t.token %>">Betaal <%= euro(t.bedrag_cent) %></a><% } %>
+      </div>
+    <% }) } else { %>
+      <p style="margin:0">Geen aanbetaling nodig. U ontvangt na de rit één eindfactuur.</p>
+    <% } %>
+  </div>
+
+  <% if (a.status === 'offerte_verstuurd') { %>
+  <form method="post" class="card" style="display:flex;flex-direction:column;gap:12px">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
+    <div><label for="naam">Uw naam</label><input type="text" id="naam" name="naam" autocomplete="name" value="<%= k.tekenbevoegde || '' %>" required></div>
+    <label class="check" for="voorwaarden"><input type="checkbox" id="voorwaarden" name="voorwaarden">Ik ga akkoord met de offerte en de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer, en ben bevoegd te tekenen namens <%= k.naam %>.</label>
+    <button class="btn wide" type="submit"><%= plan.termijnen.some(t => !t.uiterlijk) ? `Akkoord en betaal ${euro(plan.termijnen.find(t => !t.uiterlijk).bedrag)}` : 'Akkoord geven' %></button>
+  </form>
+  <% } %>
+  <p class="lead" style="text-align:center">Vraag over de offerte? Bel <a href="tel:0306868300">030 68 68 300</a></p>
+</div></main>
+<%- include('partials/foot') %>

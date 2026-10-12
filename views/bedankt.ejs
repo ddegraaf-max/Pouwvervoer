@@ -1,0 +1,8 @@
+<%- include('partials/head', { titel: 'Aanvraag ontvangen' }) %>
+<main class="wrap"><div class="narrow card">
+  <h1>Aanvraag ontvangen</h1>
+  <p>Bedankt, <%= v.aanvrager_naam %>. We maken een offerte voor <%= datum(v.rit_datum) %> en sturen die ter akkoord naar <strong><%= v.tekenbevoegde %></strong> (<%= v.teken_email %>).</p>
+  <p class="lead">Je krijgt een bevestiging op <%= v.aanvrager_email %>. Vragen? Bel 030 68 68 300.</p>
+  <a class="btn ghost" href="/">Nog een rit aanvragen</a>
+</div></main>
+<%- include('partials/foot') %>

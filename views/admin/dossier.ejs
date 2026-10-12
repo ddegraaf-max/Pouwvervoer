@@ -1,0 +1,182 @@
+<%- include('../partials/head', { titel: `EPV-${a.id}`, admin: true }) %>
+<% const form = (actie) => `<form method="post" action="/admin/aanvraag/${a.id}/${actie}" style="margin:0"><input type="hidden" name="_csrf" value="${csrf}">`; %>
+<main class="wrap" style="display:flex;flex-direction:column;gap:20px">
+  <div>
+    <div class="lead" style="margin:0"><a href="/admin">Aanvragen</a> · EPV-<%= a.id %> · <%= datum(a.rit_datum) %> · <%= a.van %> → <%= a.naar %></div>
+    <h1><%= k.naam %></h1>
+    <span class="badge st"><%= STATUS[a.status] %></span>
+    <% if (a.signaal_planner) { %><span class="badge k-D">Aanbetaling 48 uur na herinnering niet binnen: beslis of de rit doorgaat</span><% } %>
+  </div>
+  <% if (melding) { %><div class="alert info" role="status"><%= melding %></div><% } %>
+  <% if (a.geblokkeerd) { %><div class="alert bad"><strong>Geblokkeerd:</strong> <%= a.blokkade_reden %>. Offerte kan niet worden verstuurd.</div><% } %>
+
+  <div class="cols">
+  <section class="main">
+
+    <div class="card">
+      <div class="score">
+        <div class="ring <%= a.klasse %>"><b><%= a.score ?? '–' %></b><small>van 100</small></div>
+        <div style="flex:1 1 260px;min-width:0">
+          <span class="badge k-<%= a.klasse %>">Klasse <%= a.klasse %><%= k.klasse_override ? ' (handmatig)' : '' %></span>
+          <% if (plan) { %>
+            <h2 style="margin:10px 0 6px"><%= plan.termijnen.length ? plan.termijnen.map(t => `${t.label}: ${euro(t.bedrag)}`).join(' · ') : 'Geen aanbetaling' %></h2>
+            <p class="lead" style="margin:0"><%= plan.omschrijving %></p>
+          <% } else { %>
+            <h2 style="margin:10px 0 6px">Vul de ritprijs in</h2>
+            <p class="lead" style="margin:0">Daarna wordt de score definitief berekend en zie je de aanbetaling.</p>
+          <% } %>
+        </div>
+      </div>
+    </div>
+
+    <div class="card scroll">
+      <h2 style="font-size:18px;margin-bottom:10px">Opbouw van de score</h2>
+      <table>
+        <thead><tr><th>Factor</th><th>Bron</th><th class="num">Punten</th></tr></thead>
+        <tbody>
+          <% (a.score_factoren || []).forEach(f => { %>
+          <tr><td><%= f.label %></td><td class="lead" style="margin:0"><%= f.bron %></td><td class="num <%= f.punten > 0 && f.label !== 'Startwaarde' ? 'pos' : f.punten < 0 ? 'neg' : '' %>"><%= f.punten > 0 && f.label !== 'Startwaarde' ? '+' : '' %><%= f.punten %></td></tr>
+          <% }) %>
+          <tr style="font-weight:700"><td>Totaal</td><td></td><td class="num"><%= a.score %></td></tr>
+        </tbody>
+      </table>
+      <p class="lead" style="margin:10px 0 0;font-size:14px">Betaalhistorie: <%= historie.betaaldOpTijd %> op tijd, <%= historie.betaaldTeLaat1tot30 %> 1–30 dagen te laat, <%= historie.ooitTeLaat30Plus %> ruim te laat, <%= historie.incasso %> incasso, <%= historie.open %> open. KvK: <%= k.kvk ? `${k.kvk} (${k.kvk_bron || '-'})` : 'n.v.t.' %><%= k.kvk_opgericht ? `, sinds ${datum(k.kvk_opgericht)}` : '' %>.</p>
+    </div>
+
+    <% if (['nieuw','offerte_verstuurd'].includes(a.status)) { %>
+    <div class="card">
+      <h2 style="font-size:18px">Offerte</h2>
+      <p class="lead">Bedragen incl. 9% btw. Een prijswijziging zet de offerte terug naar nieuw; verstuur hem daarna opnieuw.</p>
+      <%- form('prijs') %>
+        <div class="inline-form">
+          <div><label for="ritprijs">Ritprijs</label><input type="text" inputmode="decimal" id="ritprijs" name="ritprijs" value="<%= a.ritprijs_cent != null ? (a.ritprijs_cent/100).toFixed(2).replace('.', ',') : '' %>" placeholder="2400,00"></div>
+          <div><label for="nakosten_schatting">Geschatte nakosten <span class="opt">(tol, parkeren)</span></label><input type="text" inputmode="decimal" id="nakosten_schatting" name="nakosten_schatting" value="<%= a.nakosten_schatting_cent ? (a.nakosten_schatting_cent/100).toFixed(2).replace('.', ',') : '' %>" placeholder="0,00"></div>
+          <button class="btn ghost" type="submit">Opslaan</button>
+        </div>
+      </form>
+      <% if (a.ritprijs_cent != null && !a.geblokkeerd) { %>
+      <div class="row" style="margin-top:14px">
+        <%- form('offerte') %><button class="btn" type="submit"><%= a.status === 'offerte_verstuurd' ? 'Offerte opnieuw versturen' : 'Offerte versturen naar opdrachtgever' %></button></form>
+      </div>
+      <% } %>
+      <% if (a.status === 'offerte_verstuurd') { %>
+      <p style="margin:14px 0 0;font-size:14px;overflow-wrap:anywhere">Akkoordlink: <a href="<%= akkoordLink %>"><%= akkoordLink %></a></p>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (termijnen.length) { %>
+    <div class="card scroll">
+      <h2 style="font-size:18px;margin-bottom:10px">Aanbetaling</h2>
+      <table>
+        <thead><tr><th>Termijn</th><th>Uiterlijk</th><th class="num">Bedrag</th><th>Status</th></tr></thead>
+        <tbody><% termijnen.forEach(t => { %>
+          <tr>
+            <td><%= t.label %></td><td><%= t.uiterlijk ? datum(t.uiterlijk) : 'Bij akkoord' %></td><td class="num"><%= euro(t.bedrag_cent) %></td>
+            <td><% if (t.betaald_op) { %><span class="badge k-A">Betaald <%= datumTijd(t.betaald_op) %></span><% } else { %><%- form(`termijn/${t.id}/betaald`) %><button class="btn small ghost" type="submit">Overschrijving ontvangen</button></form><% if (t.herinnering_op) { %><div class="lead" style="font-size:13px;margin:4px 0 0">Herinnerd <%= datumTijd(t.herinnering_op) %></div><% } %><% } %></td>
+          </tr>
+        <% }) %></tbody>
+      </table>
+    </div>
+    <% } %>
+
+    <% if (['bevestigd','gereden'].includes(a.status) || nakosten.length) { %>
+    <div class="card">
+      <h2 style="font-size:18px">Rit en nakosten</h2>
+      <% if (a.status === 'bevestigd') { %>
+        <p class="lead">De rit staat in de planning<%= a.trip_export_op ? ` (geëxporteerd naar trip ${datumTijd(a.trip_export_op)})` : '' %>.</p>
+        <%- form('gereden') %><button class="btn" type="submit">Rit is gereden</button></form>
+      <% } %>
+      <% if (nakosten.length) { %>
+      <div class="scroll" style="margin-top:12px"><table><tbody><% nakosten.forEach(n => { %><tr><td><%= n.omschrijving %></td><td class="num"><%= euro(n.bedrag_cent) %></td></tr><% }) %></tbody></table></div>
+      <% } %>
+      <% if (['bevestigd','gereden'].includes(a.status)) { %>
+      <div style="margin-top:14px"><%- form('nakosten') %>
+        <div class="inline-form">
+          <div><label for="omschrijving">Nakosten</label><select id="omschrijving" name="omschrijving"><option>Tol</option><option>Parkeergeld</option><option>Pont</option><option>Verblijf chauffeur</option><option>Extra kilometers op locatie</option><option>Schoonmaakkosten</option></select></div>
+          <div><label for="bedrag">Bedrag incl. btw</label><input type="text" inputmode="decimal" id="bedrag" name="bedrag" placeholder="0,00"></div>
+          <button class="btn ghost" type="submit">Toevoegen</button>
+        </div>
+      </form></div>
+      <% } %>
+      <% if (a.status === 'gereden') { %>
+        <div style="margin-top:14px"><%- form('factuur') %><button class="btn" type="submit">Eindfactuur maken en versturen</button></form></div>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (factuur) { %>
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:10px">Eindfactuur <%= factuur.nummer %></h2>
+      <dl class="kv">
+        <dt>Totaal</dt><dd><%= euro(factuur.totaal_cent) %></dd>
+        <dt>Al betaald</dt><dd><%= euro(factuur.reeds_betaald_cent) %></dd>
+        <dt><%= factuur.te_betalen_cent < 0 ? 'Terug te betalen' : 'Te betalen' %></dt><dd><strong><%= euro(Math.abs(factuur.te_betalen_cent)) %></strong></dd>
+        <dt>Vervaldatum</dt><dd><%= datum(factuur.vervaldatum) %></dd>
+        <dt>Status</dt><dd><%= factuur.betaald_op ? `Betaald op ${datum(factuur.betaald_op)}` : factuur.incasso ? 'Bij incasso' : `Open · herinneringsniveau ${factuur.herinnering_niveau} van 4` %></dd>
+      </dl>
+      <% if (!factuur.betaald_op) { %>
+      <div class="row" style="margin-top:14px">
+        <%- form('factuur-betaald') %><button class="btn" type="submit">Betaling ontvangen</button></form>
+        <% if (!factuur.incasso) { %><%- form('incasso') %><button class="btn danger" type="submit">Overdragen aan incasso</button></form><% } %>
+      </div>
+      <% } %>
+    </div>
+    <% } %>
+
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:10px">Logboek en e-mails</h2>
+      <div class="log"><% events.forEach(e => { %><div><b><%= datumTijd(e.created_at) %> · <%= e.type %></b>
+<%= e.tekst %></div><% }) %></div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:10px">Rollen</h2>
+      <dl class="kv">
+        <dt>Aanvrager</dt><dd><%= a.aanvrager_naam %><%= a.aanvrager_rol ? `, ${a.aanvrager_rol}` : '' %><br><a href="tel:<%= a.aanvrager_tel %>"><%= a.aanvrager_tel %></a><br><%= a.aanvrager_email %></dd>
+        <dt>Opdrachtgever</dt><dd><%= k.naam %><br><span class="lead" style="font-size:14px"><%= KLANTTYPE[k.type] %><%= k.kvk ? ` · KvK ${k.kvk}` : '' %></span></dd>
+        <dt>Tekenbevoegde</dt><dd><%= k.tekenbevoegde %><br><%= k.teken_email %></dd>
+        <dt>Factuur naar</dt><dd><%= a.factuur_email %><%= a.factuur_adres ? `, ${a.factuur_adres}` : '' %></dd>
+        <dt>PO-nummer</dt><dd><%= a.po_nummer || 'Niet opgegeven' %></dd>
+        <dt>Reisleider</dt><dd><%= a.reisleider_naam ? `${a.reisleider_naam}, ${a.reisleider_tel || ''}` : '—' %></dd>
+      </dl>
+      <% if (a.akkoord_op) { %><p class="lead" style="margin:12px 0 0;font-size:14px">Akkoord door <strong><%= a.akkoord_naam %></strong> op <%= datumTijd(a.akkoord_op) %>.</p><% } %>
+    </div>
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:10px">Rit</h2>
+      <dl class="kv">
+        <dt>Datum</dt><dd><%= datum(a.rit_datum) %> <%= a.vertrek_tijd || '' %></dd>
+        <dt>Route</dt><dd><%= a.van %> → <%= a.naar %></dd>
+        <dt>Personen</dt><dd><%= a.personen %></dd>
+        <dt>Soort</dt><dd><%= { brengen_halen: 'Brengen en halen', hele_dag: 'Hele dag', meerdaags: 'Meerdaags' }[a.ritsoort] %></dd>
+        <% if (a.opmerkingen) { %><dt>Opmerking</dt><dd><%= a.opmerkingen %></dd><% } %>
+      </dl>
+    </div>
+    <div class="card">
+      <h2 style="font-size:18px">Klasse aanpassen</h2>
+      <p class="lead" style="font-size:14px">Geldt voor de opdrachtgever; de reden blijft in het dossier.<%= k.klasse_override ? ` Nu handmatig ${k.klasse_override}: ${k.override_reden}` : '' %></p>
+      <%- form('klasse') %>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div><label for="klasse">Klasse</label><select id="klasse" name="klasse"><option value="auto">Berekend</option><% ['A','B','C','D'].forEach(x => { %><option value="<%= x %>" <%= k.klasse_override === x ? 'selected' : '' %>><%= x %></option><% }) %></select></div>
+          <div><label for="reden">Reden</label><input type="text" id="reden" name="reden" placeholder="Bijv. raamcontract uit aanbesteding"></div>
+          <button class="btn ghost" type="submit">Opslaan</button>
+        </div>
+      </form>
+    </div>
+    <% if (['nieuw','offerte_verstuurd','wacht_op_betaling','bevestigd'].includes(a.status)) { %>
+    <div class="card">
+      <h2 style="font-size:18px">Annuleren</h2>
+      <%- form('annuleren') %>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div><label for="annreden">Reden</label><input type="text" id="annreden" name="reden"></div>
+          <button class="btn danger" type="submit">Aanvraag annuleren</button>
+        </div>
+      </form>
+    </div>
+    <% } %>
+  </aside>
+  </div>
+</main>
+<%- include('../partials/foot') %>

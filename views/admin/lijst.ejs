@@ -1,0 +1,35 @@
+<%- include('../partials/head', { titel: 'Aanvragen', admin: true }) %>
+<main class="wrap" style="display:flex;flex-direction:column;gap:20px">
+  <div class="between" style="flex-wrap:wrap">
+    <h1>Aanvragen</h1>
+    <form method="post" action="/admin/herinneringen" style="margin:0"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn small ghost" type="submit">Herinneringen nu controleren</button></form>
+  </div>
+  <% if (melding) { %><div class="alert info" role="status"><%= melding %></div><% } %>
+  <nav class="row" aria-label="Filter op status">
+    <a class="badge <%= !filter ? 'k-B' : 'st' %>" href="/admin">Alle</a>
+    <% Object.entries(STATUS).forEach(([k, lab]) => { %>
+      <a class="badge <%= filter === k ? 'k-B' : 'st' %>" href="/admin?status=<%= k %>"><%= lab %><%= tellingen[k] ? ` (${tellingen[k]})` : '' %></a>
+    <% }) %>
+  </nav>
+  <div class="card scroll">
+    <% if (!rows.length) { %><p class="lead" style="margin:0">Nog geen aanvragen<%= filter ? ' met deze status' : '' %>.</p><% } else { %>
+    <table>
+      <thead><tr><th>Ref</th><th>Ritdatum</th><th>Opdrachtgever</th><th>Route</th><th>Klasse</th><th>Status</th><th class="num">Ritprijs</th></tr></thead>
+      <tbody>
+      <% rows.forEach(r => { %>
+        <tr>
+          <td><a href="/admin/aanvraag/<%= r.id %>">EPV-<%= r.id %></a></td>
+          <td><%= datum(r.rit_datum) %></td>
+          <td><%= r.klant_naam %><br><span class="lead" style="font-size:13px"><%= KLANTTYPE[r.klanttype] %></span></td>
+          <td><%= r.van %> → <%= r.naar %></td>
+          <td><% if (r.klasse) { %><span class="badge k-<%= r.klasse %>"><%= r.klasse %> · <%= r.score %></span><% } %><% if (r.geblokkeerd) { %> <span class="badge k-D">Geblokkeerd</span><% } %></td>
+          <td><span class="badge st"><%= STATUS[r.status] %></span><% if (r.signaal_planner) { %><br><span class="badge k-D" style="margin-top:4px">Aanbetaling te laat</span><% } %></td>
+          <td class="num"><%= euro(r.ritprijs_cent) %></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/foot') %>

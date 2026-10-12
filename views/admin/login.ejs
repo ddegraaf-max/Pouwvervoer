@@ -1,0 +1,9 @@
+<%- include('../partials/head', { titel: 'Inloggen', admin: false }) %>
+<main class="wrap"><form method="post" class="narrow card" style="display:flex;flex-direction:column;gap:12px;max-width:420px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <h1>Backoffice</h1>
+  <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
+  <div><label for="wachtwoord">Wachtwoord</label><input type="password" id="wachtwoord" name="wachtwoord" autocomplete="current-password" required></div>
+  <button class="btn" type="submit">Inloggen</button>
+</form></main>
+<%- include('../partials/foot') %>

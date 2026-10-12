@@ -1,0 +1,20 @@
+{
+  "name": "easypouwvervoer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Boekings- en betaalplatform voor Pouw Vervoer: rollen, klantscore en aanbetaling",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "cookie-session": "^2.1.0",
+    "ejs": "^3.1.10",
+    "express": "^4.21.2",
+    "pg": "^8.13.1"
+  }
+}

@@ -1,0 +1,102 @@
+<%- include('partials/head', { titel: 'Bus aanvragen' }) %>
+<main class="wrap">
+<form method="post" action="/aanvraag" novalidate>
+<input type="hidden" name="_csrf" value="<%= csrf %>">
+<div class="cols">
+<section class="main">
+  <div>
+    <h1>Bus aanvragen</h1>
+    <p class="lead" style="max-width:640px">Vaak regelt iemand de rit voor een school, club of bedrijf. Vul daarom apart in wie de bus aanvraagt, namens wie, en waar de factuur naartoe gaat. De offerte gaat ter akkoord naar de opdrachtgever.</p>
+  </div>
+
+  <% if (fouten.length) { %>
+  <div class="alert bad" role="alert"><strong>Controleer het formulier:</strong><ul><% fouten.forEach(f => { %><li><%= f %></li><% }) %></ul></div>
+  <% } %>
+
+  <div class="card">
+    <h2>De rit</h2>
+    <p class="lead">Waar en wanneer moet de bus rijden?</p>
+    <div class="grid2">
+      <div><label for="rit_datum">Datum</label><input type="date" id="rit_datum" name="rit_datum" value="<%= v.rit_datum || '' %>" required></div>
+      <div><label for="vertrek_tijd">Vertrektijd <span class="opt">(optioneel)</span></label><input type="time" id="vertrek_tijd" name="vertrek_tijd" value="<%= v.vertrek_tijd || '' %>"></div>
+      <div><label for="van">Vertrekadres</label><input type="text" id="van" name="van" value="<%= v.van || '' %>" required></div>
+      <div><label for="naar">Bestemming</label><input type="text" id="naar" name="naar" value="<%= v.naar || '' %>" required></div>
+      <div><label for="personen">Aantal personen</label><input type="number" min="1" id="personen" name="personen" value="<%= v.personen || '' %>" required></div>
+      <div><label for="ritsoort">Soort rit</label>
+        <select id="ritsoort" name="ritsoort">
+          <option value="brengen_halen" <%= v.ritsoort === 'brengen_halen' ? 'selected' : '' %>>Brengen en halen</option>
+          <option value="hele_dag" <%= v.ritsoort === 'hele_dag' ? 'selected' : '' %>>Bus de hele dag beschikbaar</option>
+          <option value="meerdaags" <%= v.ritsoort === 'meerdaags' ? 'selected' : '' %>>Meerdaagse reis</option>
+        </select></div>
+    </div>
+    <div style="margin-top:14px"><label for="opmerkingen">Opmerkingen <span class="opt">(optioneel)</span></label><textarea id="opmerkingen" name="opmerkingen"><%= v.opmerkingen || '' %></textarea></div>
+  </div>
+
+  <div class="card">
+    <h2>Aanvrager</h2>
+    <p class="lead">Jij regelt de rit. Wij bellen jou bij vragen.</p>
+    <div class="grid2">
+      <div><label for="aanvrager_naam">Naam</label><input type="text" id="aanvrager_naam" name="aanvrager_naam" autocomplete="name" value="<%= v.aanvrager_naam || '' %>" required></div>
+      <div><label for="aanvrager_tel">Mobiel</label><input type="tel" id="aanvrager_tel" name="aanvrager_tel" autocomplete="tel" value="<%= v.aanvrager_tel || '' %>" required></div>
+      <div><label for="aanvrager_email">E-mail</label><input type="email" id="aanvrager_email" name="aanvrager_email" autocomplete="email" value="<%= v.aanvrager_email || '' %>" required></div>
+      <div><label for="aanvrager_rol">Je rol <span class="opt">(bijv. leerkracht, secretaris)</span></label><input type="text" id="aanvrager_rol" name="aanvrager_rol" value="<%= v.aanvrager_rol || '' %>"></div>
+    </div>
+  </div>
+
+  <div class="card key">
+    <h2>Opdrachtgever</h2>
+    <p class="lead">De organisatie of persoon die de overeenkomst aangaat en betaalt. Deze krijgt de offerte ter akkoord.</p>
+    <fieldset>
+      <legend>Soort opdrachtgever</legend>
+      <div class="pills">
+        <% [['onderwijs','Onderwijs of overheid'],['bedrijf','Bedrijf'],['vereniging','Vereniging of stichting'],['particulier','Particulier']].forEach(([val, lab]) => { %>
+        <label><input type="radio" name="klanttype" value="<%= val %>" <%= v.klanttype === val ? 'checked' : '' %>><span><%= lab %></span></label>
+        <% }) %>
+      </div>
+    </fieldset>
+    <div class="grid2">
+      <div><label for="org_naam">Naam organisatie <span class="opt">(leeg bij particulier)</span></label><input type="text" id="org_naam" name="org_naam" value="<%= v.org_naam || '' %>"></div>
+      <div><label for="kvk">KvK-nummer <span class="opt">(niet bij particulier)</span></label><input type="text" inputmode="numeric" id="kvk" name="kvk" maxlength="8" value="<%= v.kvk || '' %>"></div>
+      <div><label for="tekenbevoegde">Naam tekenbevoegde</label><input type="text" id="tekenbevoegde" name="tekenbevoegde" value="<%= v.tekenbevoegde || '' %>" required></div>
+      <div><label for="teken_email">E-mail tekenbevoegde</label><input type="email" id="teken_email" name="teken_email" value="<%= v.teken_email || '' %>" required></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Factuurontvanger</h2>
+    <p class="lead">Waar de factuur heen gaat. Vaak de administratie of het bestuursbureau.</p>
+    <label class="check" for="factuur_zelfde" style="margin-bottom:14px"><input type="checkbox" id="factuur_zelfde" name="factuur_zelfde" <%= v.factuur_zelfde ? 'checked' : '' %>>Factuur naar het e-mailadres van de tekenbevoegde</label>
+    <div class="grid2">
+      <div><label for="factuur_email">Factuur-e-mail</label><input type="email" id="factuur_email" name="factuur_email" value="<%= v.factuur_email || '' %>"></div>
+      <div><label for="po_nummer">PO- of referentienummer <span class="opt">(verplicht voor scholen en overheid)</span></label><input type="text" id="po_nummer" name="po_nummer" value="<%= v.po_nummer || '' %>"></div>
+      <div style="grid-column:1/-1"><label for="factuur_adres">Factuuradres <span class="opt">(optioneel)</span></label><input type="text" id="factuur_adres" name="factuur_adres" value="<%= v.factuur_adres || '' %>"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Reisleider <span class="opt" style="font-family:'Source Sans 3';font-size:15px">(optioneel)</span></h2>
+    <p class="lead">Aanspreekpunt voor de chauffeur op de dag zelf.</p>
+    <div class="grid2">
+      <div><label for="reisleider_naam">Naam</label><input type="text" id="reisleider_naam" name="reisleider_naam" value="<%= v.reisleider_naam || '' %>"></div>
+      <div><label for="reisleider_tel">Mobiel</label><input type="tel" id="reisleider_tel" name="reisleider_tel" value="<%= v.reisleider_tel || '' %>"></div>
+    </div>
+  </div>
+
+  <div><button class="btn" type="submit">Aanvraag versturen</button></div>
+</section>
+
+<aside class="side">
+  <div class="card soft">
+    <h2 style="font-size:18px;margin-bottom:8px">Hoe gaat het verder?</h2>
+    <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px">
+      <li>We maken een offerte en sturen die naar de opdrachtgever.</li>
+      <li>Na het akkoord ziet de opdrachtgever direct of er een aanbetaling nodig is.</li>
+      <li>Pas daarna staat de bus vast in onze planning.</li>
+      <li>Na de rit volgt één eindfactuur, inclusief eventuele tol en parkeerkosten.</li>
+    </ol>
+  </div>
+</aside>
+</div>
+</form>
+</main>
+<%- include('partials/foot') %>

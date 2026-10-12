@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title><%= titel %> · easypouwvervoer</title>
+<meta name="robots" content="<%= locals.admin ? 'noindex,nofollow' : 'index,follow' %>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Source+Sans+3:wght@400;600&display=swap">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<% if (demo.kvk || demo.betaling || demo.mail) { %><div class="demo">Demo-modus: <%= [demo.kvk && 'KvK-check gesimuleerd', demo.betaling && 'betalingen gesimuleerd', demo.mail && 'e-mails niet verstuurd'].filter(Boolean).join(' · ') %></div><% } %>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="<%= locals.admin ? '/admin' : '/' %>">easy<span>pouw</span>vervoer<% if (locals.admin) { %> <small style="font-weight:500;font-size:14px;opacity:.8">backoffice</small><% } %></a>
+    <% if (locals.admin) { %>
+    <nav>
+      <a href="/admin">Aanvragen</a>
+      <a href="/admin/trip.csv">Export voor trip</a>
+      <form method="post" action="/admin/uitloggen" style="margin:0"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn small ghost" type="submit">Uitloggen</button></form>
+    </nav>
+    <% } else { %>
+    <a href="tel:0306868300" style="color:var(--ground)">Vragen? 030 68 68 300</a>
+    <% } %>
+  </div>
+</header>

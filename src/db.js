@@ -1,0 +1,144 @@
+const { Pool } = require('pg');
+
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  console.error('DATABASE_URL ontbreekt. Voeg in Railway een Postgres-database toe aan dit project.');
+  process.exit(1);
+}
+
+const pool = new Pool({
+  connectionString,
+  ssl: /localhost|127\.0\.0\.1|\.railway\.internal/.test(connectionString) ? false : { rejectUnauthorized: false },
+});
+
+const q = (text, params) => pool.query(text, params);
+const one = async (text, params) => (await pool.query(text, params)).rows[0] || null;
+const all = async (text, params) => (await pool.query(text, params)).rows;
+
+async function tx(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const res = await fn(client);
+    await client.query('COMMIT');
+    return res;
+  } catch (e) {
+    await client.query('ROLLBACK');
+    throw e;
+  } finally {
+    client.release();
+  }
+}
+
+const SCHEMA = `
+CREATE TABLE IF NOT EXISTS klanten (
+  id SERIAL PRIMARY KEY,
+  sleutel TEXT UNIQUE NOT NULL,
+  type TEXT NOT NULL,
+  naam TEXT NOT NULL,
+  kvk TEXT,
+  kvk_actief BOOLEAN,
+  kvk_opgericht DATE,
+  kvk_faillissement BOOLEAN DEFAULT FALSE,
+  kvk_bron TEXT,
+  tekenbevoegde TEXT,
+  teken_email TEXT,
+  klasse_override TEXT,
+  override_reden TEXT,
+  override_op TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS aanvragen (
+  id SERIAL PRIMARY KEY,
+  klant_id INT NOT NULL REFERENCES klanten(id),
+  status TEXT NOT NULL DEFAULT 'nieuw',
+  aanvrager_naam TEXT NOT NULL,
+  aanvrager_tel TEXT NOT NULL,
+  aanvrager_email TEXT NOT NULL,
+  aanvrager_rol TEXT,
+  factuur_email TEXT NOT NULL,
+  factuur_adres TEXT,
+  po_nummer TEXT,
+  reisleider_naam TEXT,
+  reisleider_tel TEXT,
+  rit_datum DATE NOT NULL,
+  vertrek_tijd TEXT,
+  van TEXT NOT NULL,
+  naar TEXT NOT NULL,
+  personen INT NOT NULL,
+  ritsoort TEXT NOT NULL,
+  opmerkingen TEXT,
+  ritprijs_cent INT,
+  nakosten_schatting_cent INT DEFAULT 0,
+  score INT,
+  klasse TEXT,
+  score_factoren JSONB,
+  geblokkeerd BOOLEAN DEFAULT FALSE,
+  blokkade_reden TEXT,
+  akkoord_token TEXT UNIQUE NOT NULL,
+  offerte_verstuurd_op TIMESTAMPTZ,
+  akkoord_naam TEXT,
+  akkoord_op TIMESTAMPTZ,
+  akkoord_ip TEXT,
+  signaal_planner BOOLEAN DEFAULT FALSE,
+  trip_export_op TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS termijnen (
+  id SERIAL PRIMARY KEY,
+  aanvraag_id INT NOT NULL REFERENCES aanvragen(id) ON DELETE CASCADE,
+  soort TEXT NOT NULL,
+  label TEXT NOT NULL,
+  bedrag_cent INT NOT NULL,
+  uiterlijk DATE,
+  token TEXT UNIQUE NOT NULL,
+  betaald_op TIMESTAMPTZ,
+  betaalwijze TEXT,
+  herinnering_op TIMESTAMPTZ
+);
+
+CREATE TABLE IF NOT EXISTS nakosten (
+  id SERIAL PRIMARY KEY,
+  aanvraag_id INT NOT NULL REFERENCES aanvragen(id) ON DELETE CASCADE,
+  omschrijving TEXT NOT NULL,
+  bedrag_cent INT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS facturen (
+  id SERIAL PRIMARY KEY,
+  aanvraag_id INT UNIQUE NOT NULL REFERENCES aanvragen(id),
+  klant_id INT NOT NULL REFERENCES klanten(id),
+  nummer TEXT UNIQUE NOT NULL,
+  totaal_cent INT NOT NULL,
+  reeds_betaald_cent INT NOT NULL,
+  te_betalen_cent INT NOT NULL,
+  factuurdatum DATE NOT NULL,
+  vervaldatum DATE NOT NULL,
+  betaald_op DATE,
+  herinnering_niveau INT DEFAULT 0,
+  incasso BOOLEAN DEFAULT FALSE,
+  token TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS events (
+  id SERIAL PRIMARY KEY,
+  aanvraag_id INT REFERENCES aanvragen(id) ON DELETE CASCADE,
+  klant_id INT REFERENCES klanten(id),
+  type TEXT NOT NULL,
+  tekst TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_aanvragen_klant ON aanvragen(klant_id);
+CREATE INDEX IF NOT EXISTS idx_facturen_klant ON facturen(klant_id);
+CREATE INDEX IF NOT EXISTS idx_events_aanvraag ON events(aanvraag_id);
+`;
+
+async function migrate() {
+  await pool.query(SCHEMA);
+}
+
+module.exports = { pool, q, one, all, tx, migrate };

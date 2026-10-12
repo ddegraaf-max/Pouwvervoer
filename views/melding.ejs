@@ -1,0 +1,7 @@
+<%- include('partials/head', { titel }) %>
+<main class="wrap"><div class="narrow card">
+  <h1><%= titel %></h1>
+  <% if (tekst) { %><p><%= tekst %></p><% } %>
+  <a class="btn ghost" href="/">Naar de startpagina</a>
+</div></main>
+<%- include('partials/foot') %>
