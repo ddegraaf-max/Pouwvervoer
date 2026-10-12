@@ -1,8 +1,15 @@
 <%- include('partials/head', { titel: 'Offerte ter akkoord' }) %>
 <main class="wrap"><div class="narrow" style="display:flex;flex-direction:column;gap:16px">
+  <% const fase = a.status === 'offerte_verstuurd' ? 2 : a.status === 'wacht_op_betaling' ? 3 : 5; %>
+  <ol class="voortgang" aria-label="Voortgang">
+    <% ['Offerte', 'Goedkeuren', 'Aanbetaling', 'Rit vast'].forEach((s, i) => { const nr = i + 1; %>
+      <li data-nr="<%= nr %>" class="<%= nr < fase ? 'klaar' : nr === fase ? 'nu' : '' %>"<%= nr === fase ? ' aria-current="step"' : '' %>><%= s %></li>
+    <% }) %>
+  </ol>
   <div>
-    <div class="lead" style="margin:0">Offerte EPV-<%= a.id %></div>
-    <h1><%= a.status === 'offerte_verstuurd' ? 'Uw akkoord voor de busrit' : 'Uw busrit' %></h1>
+    <div class="lead" style="margin:0">Offerte EPV-<%= a.id %> van Pouw Vervoer</div>
+    <h1><%= a.status === 'offerte_verstuurd' ? 'Offerte voor uw busrit' : 'Uw busrit' %></h1>
+    <% if (a.status === 'offerte_verstuurd') { %><p class="lead" style="margin:0">Controleer de gegevens hieronder. Klopt alles? Geef onderaan uw akkoord.</p><% } %>
   </div>
 
   <% if (a.status === 'bevestigd' || a.status === 'gereden') { %>
@@ -59,8 +66,8 @@
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
     <div><label for="naam">Uw naam</label><input type="text" id="naam" name="naam" autocomplete="name" value="<%= k.tekenbevoegde || '' %>" required></div>
-    <label class="check" for="voorwaarden"><input type="checkbox" id="voorwaarden" name="voorwaarden">Ik ga akkoord met de offerte en de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer, en ben bevoegd te tekenen namens <%= k.naam %>.</label>
-    <button class="btn wide" type="submit"><%= plan.termijnen.some(t => !t.uiterlijk) ? `Akkoord en betaal ${euro(plan.termijnen.find(t => !t.uiterlijk).bedrag)}` : 'Akkoord geven' %></button>
+    <label class="check" for="voorwaarden"><input type="checkbox" id="voorwaarden" name="voorwaarden">Ik ga akkoord met deze offerte en de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer. Ik mag tekenen namens <%= k.naam %>.</label>
+    <button class="btn wide" type="submit"><%= plan.termijnen.some(t => !t.uiterlijk) ? `Goedkeuren en ${euro(plan.termijnen.find(t => !t.uiterlijk).bedrag)} betalen met iDEAL` : 'Offerte goedkeuren' %></button>
   </form>
   <% } %>
   <p class="lead" style="text-align:center">Vraag over de offerte? Bel <a href="tel:0306868300">030 68 68 300</a></p>

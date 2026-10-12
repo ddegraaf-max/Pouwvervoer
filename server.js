@@ -30,7 +30,7 @@ app.use((req, res, next) => {
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'same-origin',
     'Content-Security-Policy':
-      "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; font-src https://fonts.gstatic.com; img-src 'self' data:; form-action 'self'; frame-ancestors 'none'",
+      "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; font-src https://fonts.gstatic.com; img-src 'self' data: https:; form-action 'self'; frame-ancestors 'none'",
   });
   if (PROD) res.set('Strict-Transport-Security', 'max-age=31536000');
   next();
@@ -62,6 +62,7 @@ app.use((req, res, next) => {
 });
 
 Object.assign(app.locals, fmt, {
+  logoUrl: process.env.LOGO_URL || '',
   demo: { kvk: kvk.DEMO, mail: mail.DEMO, betaling: !process.env.MOLLIE_API_KEY },
 });
 
@@ -95,30 +96,30 @@ function valideer(b) {
     'naar', 'personen', 'ritsoort', 'klanttype'].forEach((k) => tekst(k));
   tekst('opmerkingen', 2000);
   v.factuur_zelfde = b.factuur_zelfde === 'on';
-  if (!['onderwijs', 'bedrijf', 'vereniging', 'particulier'].includes(v.klanttype)) f.push('Kies het soort opdrachtgever.');
-  if (!v.aanvrager_naam) f.push('Vul je naam in.');
-  if (!v.aanvrager_tel) f.push('Vul je mobiele nummer in.');
-  if (!EMAIL.test(v.aanvrager_email)) f.push('Vul een geldig e-mailadres van de aanvrager in.');
+  if (!['onderwijs', 'bedrijf', 'vereniging', 'particulier'].includes(v.klanttype)) f.push('Kies bij stap 3 voor wie de rit is.');
+  if (!v.aanvrager_naam) f.push('Vul uw naam in (stap 2).');
+  if (!v.aanvrager_tel) f.push('Vul uw mobiele nummer in (stap 2).');
+  if (!EMAIL.test(v.aanvrager_email)) f.push('Vul een geldig e-mailadres in bij uw gegevens (stap 2).');
   if (v.klanttype === 'particulier') {
     if (!v.org_naam) v.org_naam = v.tekenbevoegde;
     v.kvk = '';
   } else {
-    if (!v.org_naam) f.push('Vul de naam van de organisatie in.');
-    if (!kvk.geldigNummer(v.kvk)) f.push('Vul een KvK-nummer van 8 cijfers in.');
+    if (!v.org_naam) f.push('Vul de naam van de organisatie in (stap 3).');
+    if (!kvk.geldigNummer(v.kvk)) f.push('Vul een KvK-nummer van 8 cijfers in (stap 3).');
   }
-  if (!v.tekenbevoegde) f.push('Vul de naam van de tekenbevoegde in.');
-  if (!EMAIL.test(v.teken_email)) f.push('Vul een geldig e-mailadres van de tekenbevoegde in.');
+  if (!v.tekenbevoegde) f.push('Vul de naam in van wie mag tekenen (stap 3).');
+  if (!EMAIL.test(v.teken_email)) f.push('Vul een geldig e-mailadres in voor de offerte (stap 3).');
   if (v.factuur_zelfde) v.factuur_email = v.teken_email;
-  if (!EMAIL.test(v.factuur_email)) f.push('Vul een geldig factuur-e-mailadres in.');
-  if (v.klanttype === 'onderwijs' && !v.po_nummer) f.push('Scholen en overheid: vul een PO- of referentienummer in (vraag het de administratie).');
+  if (!EMAIL.test(v.factuur_email)) f.push('Vul een geldig e-mailadres voor de factuur in (stap 4).');
+  if (v.klanttype === 'onderwijs' && !v.po_nummer) f.push('Scholen en overheid: vul het inkoop- of referentienummer in (stap 4). Vraag het bij uw administratie.');
   const d = new Date(v.rit_datum);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(v.rit_datum) || Number.isNaN(d.getTime())) f.push('Kies een geldige ritdatum.');
-  else if (d < new Date(new Date().toISOString().slice(0, 10))) f.push('De ritdatum ligt in het verleden.');
-  if (!v.van) f.push('Vul het vertrekadres in.');
-  if (!v.naar) f.push('Vul de bestemming in.');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(v.rit_datum) || Number.isNaN(d.getTime())) f.push('Kies de datum van de rit (stap 1).');
+  else if (d < new Date(new Date().toISOString().slice(0, 10))) f.push('De datum van de rit ligt in het verleden (stap 1).');
+  if (!v.van) f.push('Vul het vertrekadres in (stap 1).');
+  if (!v.naar) f.push('Vul de bestemming in (stap 1).');
   const p = Number(v.personen);
-  if (!Number.isInteger(p) || p < 1 || p > 15000) f.push('Vul het aantal personen in.');
-  if (!['brengen_halen', 'hele_dag', 'meerdaags'].includes(v.ritsoort)) f.push('Kies het soort rit.');
+  if (!Number.isInteger(p) || p < 1 || p > 15000) f.push('Vul het aantal personen in (stap 1).');
+  if (!['brengen_halen', 'hele_dag', 'meerdaags'].includes(v.ritsoort)) f.push('Kies wat u nodig heeft (stap 1).');
   return { f, v };
 }
 

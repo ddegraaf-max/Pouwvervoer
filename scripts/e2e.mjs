@@ -1,5 +1,5 @@
 // End-to-end: draai tegen een lopende server (BASE, standaard http://localhost:3000, ADMIN_PASSWORD=test).
-// Gebruik: node test/e2e.mjs   (staat buiten `npm test`, want het heeft een database nodig)
+// Gebruik: node scripts/e2e.mjs   (staat buiten `npm test`, want het heeft een database nodig)
 import assert from 'node:assert';
 
 const BASE = process.env.BASE || 'http://localhost:3000';
@@ -56,7 +56,7 @@ const adm = client();
 let r = await aanvraag(pub, { klanttype: 'onderwijs', org_naam: 'OBS Voorbeeld', kvk: '123' });
 assert.equal(r.status, 422);
 assert.match(r.text, /KvK-nummer van 8 cijfers/);
-assert.match(r.text, /PO- of referentienummer/);
+assert.match(r.text, /inkoop- of referentienummer/);
 
 // 2. Onderwijs → klasse A (geen aanbetaling)
 r = await aanvraag(pub, { klanttype: 'onderwijs', org_naam: 'OBS Voorbeeld', kvk: '12340003', po_nummer: 'PO-2026-1' });
@@ -124,7 +124,7 @@ await adm.req(`/admin/aanvraag/${particulier}/offerte`, { method: 'POST', form: 
 d = await adm.csrf(`/admin/aanvraag/${particulier}`);
 const partLink = d.page.text.match(/\/akkoord\/([A-Za-z0-9_-]+)/)[1];
 p = await pub.csrf(`/akkoord/${partLink}`);
-assert.match(p.page.text, /Akkoord en betaal €\s1\.200,00/);
+assert.match(p.page.text, /Goedkeuren en €\s1\.200,00 betalen met iDEAL/);
 // zonder vinkje → 422
 r = await pub.req(`/akkoord/${partLink}`, { method: 'POST', form: { _csrf: p.token, naam: 'Lisa Bakker' } });
 assert.equal(r.status, 422);

@@ -1,99 +1,112 @@
 <%- include('partials/head', { titel: 'Bus aanvragen' }) %>
 <main class="wrap">
-<form method="post" action="/aanvraag" novalidate>
+<form method="post" action="/aanvraag" novalidate data-aanvraag>
 <input type="hidden" name="_csrf" value="<%= csrf %>">
 <div class="cols">
 <section class="main">
   <div>
-    <h1>Bus aanvragen</h1>
-    <p class="lead" style="max-width:640px">Vaak regelt iemand de rit voor een school, club of bedrijf. Vul daarom apart in wie de bus aanvraagt, namens wie, en waar de factuur naartoe gaat. De offerte gaat ter akkoord naar de opdrachtgever.</p>
+    <h1>Bus aanvragen bij Pouw Vervoer</h1>
+    <p class="lead" style="max-width:640px;font-size:18px">Vul het formulier in, dan maken wij binnen twee werkdagen een offerte. Dat duurt ongeveer vijf minuten.</p>
+  </div>
+
+  <div class="card soft">
+    <h2 style="font-size:18px;margin-bottom:10px">Waarom vragen wij naar drie personen?</h2>
+    <ul class="uitleg">
+      <li><b>U, de aanvrager</b><span>U regelt de rit en bent ons aanspreekpunt.</span></li>
+      <li><b>De opdrachtgever</b><span>Wie de rit bestelt en betaalt, en de offerte goedkeurt.</span></li>
+      <li><b>De factuurontvanger</b><span>Waar de factuur heen moet, bijvoorbeeld de administratie.</span></li>
+    </ul>
+    <p style="margin:12px 0 0;font-size:15px;color:var(--muted)">Voorbeeld: een leerkracht regelt de schoolreis, de directeur keurt de offerte goed en de administratie ontvangt de factuur. Regelt en betaalt u alles zelf? Vul dan bij stap 3 ook uw eigen naam en e-mailadres in.</p>
   </div>
 
   <% if (fouten.length) { %>
-  <div class="alert bad" role="alert"><strong>Controleer het formulier:</strong><ul><% fouten.forEach(f => { %><li><%= f %></li><% }) %></ul></div>
+  <div class="alert bad" role="alert"><strong>Bijna klaar. Controleer nog:</strong><ul><% fouten.forEach(f => { %><li><%= f %></li><% }) %></ul></div>
   <% } %>
 
   <div class="card">
-    <h2>De rit</h2>
-    <p class="lead">Waar en wanneer moet de bus rijden?</p>
+    <div class="stap"><span class="nr">1</span><div><h2>De rit</h2><p>Waar en wanneer moet de bus rijden?</p></div></div>
     <div class="grid2">
       <div><label for="rit_datum">Datum</label><input type="date" id="rit_datum" name="rit_datum" value="<%= v.rit_datum || '' %>" required></div>
-      <div><label for="vertrek_tijd">Vertrektijd <span class="opt">(optioneel)</span></label><input type="time" id="vertrek_tijd" name="vertrek_tijd" value="<%= v.vertrek_tijd || '' %>"></div>
-      <div><label for="van">Vertrekadres</label><input type="text" id="van" name="van" value="<%= v.van || '' %>" required></div>
-      <div><label for="naar">Bestemming</label><input type="text" id="naar" name="naar" value="<%= v.naar || '' %>" required></div>
-      <div><label for="personen">Aantal personen</label><input type="number" min="1" id="personen" name="personen" value="<%= v.personen || '' %>" required></div>
-      <div><label for="ritsoort">Soort rit</label>
+      <div><label for="vertrek_tijd">Vertrektijd <span class="opt">(als u die al weet)</span></label><input type="time" id="vertrek_tijd" name="vertrek_tijd" value="<%= v.vertrek_tijd || '' %>"></div>
+      <div><label for="van">Vertrekadres</label><input type="text" id="van" name="van" placeholder="Straat, plaats" value="<%= v.van || '' %>" required></div>
+      <div><label for="naar">Bestemming</label><input type="text" id="naar" name="naar" placeholder="Adres of naam van de locatie" value="<%= v.naar || '' %>" required></div>
+      <div><label for="personen">Aantal personen</label><input type="number" min="1" inputmode="numeric" id="personen" name="personen" value="<%= v.personen || '' %>" required></div>
+      <div><label for="ritsoort">Wat heeft u nodig?</label>
         <select id="ritsoort" name="ritsoort">
-          <option value="brengen_halen" <%= v.ritsoort === 'brengen_halen' ? 'selected' : '' %>>Brengen en halen</option>
-          <option value="hele_dag" <%= v.ritsoort === 'hele_dag' ? 'selected' : '' %>>Bus de hele dag beschikbaar</option>
+          <option value="brengen_halen" <%= v.ritsoort === 'brengen_halen' ? 'selected' : '' %>>Brengen en weer ophalen</option>
+          <option value="hele_dag" <%= v.ritsoort === 'hele_dag' ? 'selected' : '' %>>Bus de hele dag bij de groep</option>
           <option value="meerdaags" <%= v.ritsoort === 'meerdaags' ? 'selected' : '' %>>Meerdaagse reis</option>
         </select></div>
     </div>
-    <div style="margin-top:14px"><label for="opmerkingen">Opmerkingen <span class="opt">(optioneel)</span></label><textarea id="opmerkingen" name="opmerkingen"><%= v.opmerkingen || '' %></textarea></div>
+    <div style="margin-top:14px"><label for="opmerkingen">Bijzonderheden <span class="opt">(rolstoel, bagage, tussenstops)</span></label><textarea id="opmerkingen" name="opmerkingen"><%= v.opmerkingen || '' %></textarea></div>
   </div>
 
   <div class="card">
-    <h2>Aanvrager</h2>
-    <p class="lead">Jij regelt de rit. Wij bellen jou bij vragen.</p>
+    <div class="stap"><span class="nr">2</span><div><h2>Uw gegevens</h2><p>U regelt de rit. Wij bellen u als we vragen hebben.</p></div></div>
     <div class="grid2">
-      <div><label for="aanvrager_naam">Naam</label><input type="text" id="aanvrager_naam" name="aanvrager_naam" autocomplete="name" value="<%= v.aanvrager_naam || '' %>" required></div>
-      <div><label for="aanvrager_tel">Mobiel</label><input type="tel" id="aanvrager_tel" name="aanvrager_tel" autocomplete="tel" value="<%= v.aanvrager_tel || '' %>" required></div>
-      <div><label for="aanvrager_email">E-mail</label><input type="email" id="aanvrager_email" name="aanvrager_email" autocomplete="email" value="<%= v.aanvrager_email || '' %>" required></div>
-      <div><label for="aanvrager_rol">Je rol <span class="opt">(bijv. leerkracht, secretaris)</span></label><input type="text" id="aanvrager_rol" name="aanvrager_rol" value="<%= v.aanvrager_rol || '' %>"></div>
+      <div><label for="aanvrager_naam">Uw naam</label><input type="text" id="aanvrager_naam" name="aanvrager_naam" autocomplete="name" value="<%= v.aanvrager_naam || '' %>" required></div>
+      <div><label for="aanvrager_tel">Mobiel nummer</label><input type="tel" id="aanvrager_tel" name="aanvrager_tel" autocomplete="tel" value="<%= v.aanvrager_tel || '' %>" required></div>
+      <div><label for="aanvrager_email">E-mailadres</label><input type="email" id="aanvrager_email" name="aanvrager_email" autocomplete="email" value="<%= v.aanvrager_email || '' %>" required></div>
+      <div><label for="aanvrager_rol">Uw functie <span class="opt">(bijv. leerkracht, secretaris)</span></label><input type="text" id="aanvrager_rol" name="aanvrager_rol" value="<%= v.aanvrager_rol || '' %>"></div>
     </div>
   </div>
 
   <div class="card key">
-    <h2>Opdrachtgever</h2>
-    <p class="lead">De organisatie of persoon die de overeenkomst aangaat en betaalt. Deze krijgt de offerte ter akkoord.</p>
+    <div class="stap"><span class="nr">3</span><div><h2>Wie bestelt en betaalt de rit?</h2><p>Deze persoon krijgt de offerte en keurt die goed.</p></div></div>
     <fieldset>
-      <legend>Soort opdrachtgever</legend>
+      <legend>De rit is voor</legend>
       <div class="pills">
-        <% [['onderwijs','Onderwijs of overheid'],['bedrijf','Bedrijf'],['vereniging','Vereniging of stichting'],['particulier','Particulier']].forEach(([val, lab]) => { %>
-        <label><input type="radio" name="klanttype" value="<%= val %>" <%= v.klanttype === val ? 'checked' : '' %>><span><%= lab %></span></label>
+        <% [['onderwijs','Een school of overheid','Gemeente, ROC, basisschool'],['bedrijf','Een bedrijf','Personeelsuitje, evenement'],['vereniging','Een vereniging of stichting','Sportclub, koor, kerk'],['particulier','Mijzelf (particulier)','Bruiloft, familiefeest']].forEach(([val, lab, sub]) => { %>
+        <label><input type="radio" name="klanttype" value="<%= val %>" <%= v.klanttype === val ? 'checked' : '' %>><span><%= lab %><small><%= sub %></small></span></label>
         <% }) %>
       </div>
     </fieldset>
     <div class="grid2">
-      <div><label for="org_naam">Naam organisatie <span class="opt">(leeg bij particulier)</span></label><input type="text" id="org_naam" name="org_naam" value="<%= v.org_naam || '' %>"></div>
-      <div><label for="kvk">KvK-nummer <span class="opt">(niet bij particulier)</span></label><input type="text" inputmode="numeric" id="kvk" name="kvk" maxlength="8" value="<%= v.kvk || '' %>"></div>
-      <div><label for="tekenbevoegde">Naam tekenbevoegde</label><input type="text" id="tekenbevoegde" name="tekenbevoegde" value="<%= v.tekenbevoegde || '' %>" required></div>
-      <div><label for="teken_email">E-mail tekenbevoegde</label><input type="email" id="teken_email" name="teken_email" value="<%= v.teken_email || '' %>" required></div>
+      <div data-zakelijk><label for="org_naam">Naam organisatie</label><input type="text" id="org_naam" name="org_naam" autocomplete="organization" value="<%= v.org_naam || '' %>"></div>
+      <div data-zakelijk><label for="kvk">KvK-nummer</label><input type="text" inputmode="numeric" id="kvk" name="kvk" maxlength="8" value="<%= v.kvk || '' %>"><span class="hint">8 cijfers. Staat op briefpapier en facturen van de organisatie.</span></div>
+      <div><label for="tekenbevoegde" data-teken-label>Naam van wie mag tekenen</label><input type="text" id="tekenbevoegde" name="tekenbevoegde" value="<%= v.tekenbevoegde || '' %>" required><span class="hint" data-zakelijk>Bijvoorbeeld de directeur of penningmeester. Dat mag u ook zelf zijn.</span></div>
+      <div><label for="teken_email" data-teken-mail-label>E-mailadres van wie mag tekenen</label><input type="email" id="teken_email" name="teken_email" value="<%= v.teken_email || '' %>" required><span class="hint">Hier sturen wij de offerte heen.</span></div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Factuurontvanger</h2>
-    <p class="lead">Waar de factuur heen gaat. Vaak de administratie of het bestuursbureau.</p>
-    <label class="check" for="factuur_zelfde" style="margin-bottom:14px"><input type="checkbox" id="factuur_zelfde" name="factuur_zelfde" <%= v.factuur_zelfde ? 'checked' : '' %>>Factuur naar het e-mailadres van de tekenbevoegde</label>
+    <div class="stap"><span class="nr">4</span><div><h2>Waar moet de factuur heen?</h2><p>Na de rit krijgt u één factuur, inclusief eventuele tol en parkeerkosten.</p></div></div>
+    <label class="check" for="factuur_zelfde" style="margin-bottom:14px"><input type="checkbox" id="factuur_zelfde" name="factuur_zelfde" <%= v.factuur_zelfde ? 'checked' : '' %>>Naar hetzelfde e-mailadres als de offerte</label>
     <div class="grid2">
-      <div><label for="factuur_email">Factuur-e-mail</label><input type="email" id="factuur_email" name="factuur_email" value="<%= v.factuur_email || '' %>"></div>
-      <div><label for="po_nummer">PO- of referentienummer <span class="opt">(verplicht voor scholen en overheid)</span></label><input type="text" id="po_nummer" name="po_nummer" value="<%= v.po_nummer || '' %>"></div>
-      <div style="grid-column:1/-1"><label for="factuur_adres">Factuuradres <span class="opt">(optioneel)</span></label><input type="text" id="factuur_adres" name="factuur_adres" value="<%= v.factuur_adres || '' %>"></div>
+      <div data-factuur-mail><label for="factuur_email">E-mailadres voor de factuur</label><input type="email" id="factuur_email" name="factuur_email" value="<%= v.factuur_email || '' %>"><span class="hint">Bijvoorbeeld facturen@ of administratie@.</span></div>
+      <div data-zakelijk><label for="po_nummer">Inkoop- of referentienummer</label><input type="text" id="po_nummer" name="po_nummer" value="<%= v.po_nummer || '' %>"><span class="hint" data-po-hint>Alleen als uw organisatie dit gebruikt.</span></div>
+      <div style="grid-column:1/-1"><label for="factuur_adres">Factuuradres <span class="opt">(als dat anders is)</span></label><input type="text" id="factuur_adres" name="factuur_adres" value="<%= v.factuur_adres || '' %>"></div>
     </div>
   </div>
 
   <div class="card">
-    <h2>Reisleider <span class="opt" style="font-family:'Source Sans 3';font-size:15px">(optioneel)</span></h2>
-    <p class="lead">Aanspreekpunt voor de chauffeur op de dag zelf.</p>
+    <div class="stap"><span class="nr">5</span><div><h2>Reisleider <span class="opt" style="font-family:'Source Sans 3';font-size:16px;font-weight:400">(mag u later doorgeven)</span></h2><p>Wie is op de dag zelf het aanspreekpunt voor de chauffeur?</p></div></div>
     <div class="grid2">
       <div><label for="reisleider_naam">Naam</label><input type="text" id="reisleider_naam" name="reisleider_naam" value="<%= v.reisleider_naam || '' %>"></div>
-      <div><label for="reisleider_tel">Mobiel</label><input type="tel" id="reisleider_tel" name="reisleider_tel" value="<%= v.reisleider_tel || '' %>"></div>
+      <div><label for="reisleider_tel">Mobiel nummer</label><input type="tel" id="reisleider_tel" name="reisleider_tel" value="<%= v.reisleider_tel || '' %>"></div>
     </div>
   </div>
 
-  <div><button class="btn" type="submit">Aanvraag versturen</button></div>
+  <div class="row">
+    <button class="btn" type="submit">Offerte aanvragen</button>
+    <span class="lead" style="margin:0;font-size:15px">Gratis en vrijblijvend. U betaalt pas na goedkeuring.</span>
+  </div>
 </section>
 
 <aside class="side">
-  <div class="card soft">
-    <h2 style="font-size:18px;margin-bottom:8px">Hoe gaat het verder?</h2>
-    <ol style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:15px">
-      <li>We maken een offerte en sturen die naar de opdrachtgever.</li>
-      <li>Na het akkoord ziet de opdrachtgever direct of er een aanbetaling nodig is.</li>
-      <li>Pas daarna staat de bus vast in onze planning.</li>
-      <li>Na de rit volgt één eindfactuur, inclusief eventuele tol en parkeerkosten.</li>
+  <div class="card">
+    <h2 style="font-size:18px;margin-bottom:12px">Zo werkt het</h2>
+    <ol class="voortgang" style="flex-direction:column;gap:12px">
+      <li data-nr="1" class="nu">U vraagt een offerte aan</li>
+      <li data-nr="2">De opdrachtgever krijgt de offerte per e-mail en keurt die goed</li>
+      <li data-nr="3">Is er een aanbetaling nodig? Dan ziet u dat direct, betalen kan met iDEAL</li>
+      <li data-nr="4">De bus staat vast in onze planning</li>
+      <li data-nr="5">Na de rit volgt één eindfactuur</li>
     </ol>
+  </div>
+  <div class="card soft">
+    <h2 style="font-size:18px;margin-bottom:6px">Liever bellen?</h2>
+    <p style="margin:0">Bel <a href="tel:0306868300"><strong>030 68 68 300</strong></a>, maandag tot en met vrijdag van 08:00 tot 17:30.</p>
   </div>
 </aside>
 </div>

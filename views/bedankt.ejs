@@ -1,8 +1,14 @@
 <%- include('partials/head', { titel: 'Aanvraag ontvangen' }) %>
-<main class="wrap"><div class="narrow card">
-  <h1>Aanvraag ontvangen</h1>
-  <p>Bedankt, <%= v.aanvrager_naam %>. We maken een offerte voor <%= datum(v.rit_datum) %> en sturen die ter akkoord naar <strong><%= v.tekenbevoegde %></strong> (<%= v.teken_email %>).</p>
-  <p class="lead">Je krijgt een bevestiging op <%= v.aanvrager_email %>. Vragen? Bel 030 68 68 300.</p>
-  <a class="btn ghost" href="/">Nog een rit aanvragen</a>
+<main class="wrap"><div class="narrow" style="display:flex;flex-direction:column;gap:20px">
+  <div class="card">
+    <ol class="voortgang">
+      <li data-nr="1" class="klaar">Aanvraag</li><li data-nr="2" class="nu">Offerte</li><li data-nr="3">Goedkeuring</li><li data-nr="4">Rit vast</li>
+    </ol>
+    <h1 style="margin-top:12px">Bedankt, uw aanvraag is binnen</h1>
+    <p>We maken binnen twee werkdagen een offerte voor <strong><%= datum(v.rit_datum) %></strong> (<%= v.van %> → <%= v.naar %>).</p>
+    <p>De offerte gaat ter goedkeuring naar <strong><%= v.tekenbevoegde %></strong> (<%= v.teken_email %>). Na de goedkeuring ziet <%= v.tekenbevoegde %> direct of er een aanbetaling nodig is.</p>
+    <p class="lead" style="margin:0">U krijgt een bevestiging op <%= v.aanvrager_email %>.</p>
+  </div>
+  <div class="row"><a class="btn ghost" href="/">Nog een rit aanvragen</a><span class="lead" style="margin:0">Vragen? Bel <a href="tel:0306868300">030 68 68 300</a></span></div>
 </div></main>
 <%- include('partials/foot') %>

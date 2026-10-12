@@ -47,5 +47,5 @@ De tabellen worden bij de start automatisch aangemaakt.
 
 ```
 npm test                  # scoremodel
-node test/e2e.mjs         # volledige flow tegen een draaiende server (ADMIN_PASSWORD=test)
+node scripts/e2e.mjs         # volledige flow tegen een draaiende server (ADMIN_PASSWORD=test)
 ```
