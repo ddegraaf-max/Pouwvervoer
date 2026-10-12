@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#141414">
 <title><%= titel %> · Pouw Vervoer</title>
-<meta name="robots" content="<%= locals.admin || locals.noindex ? 'noindex,nofollow' : 'index,follow' %>">
+<meta name="robots" content="<%= locals.admin || locals.portaal || locals.noindex ? 'noindex,nofollow' : 'index,follow' %>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap">
 <link rel="stylesheet" href="/style.css">
@@ -15,14 +15,20 @@
 <% if (demo.kvk || demo.betaling || demo.mail) { %><div class="demo">Testomgeving: <%= [demo.kvk && 'KvK-check gesimuleerd', demo.betaling && 'betalingen gesimuleerd', demo.mail && 'e-mails niet verstuurd'].filter(Boolean).join(' · ') %></div><% } %>
 <header class="top">
   <div class="wrap">
-    <a class="logo" href="<%= locals.admin ? '/admin' : '/' %>" aria-label="Pouw Vervoer, naar de startpagina">
-      <% if (logoUrl) { %><img src="<%= logoUrl %>" alt="Pouw Vervoer"><% } else { %><span class="mark" aria-hidden="true">P</span><span class="naam">Pouw Vervoer<small><%= locals.admin ? 'Backoffice' : 'Bus boeken' %></small></span><% } %>
+    <a class="logo" href="<%= locals.admin ? '/admin' : locals.portaal ? '/deurwaarder' : '/' %>" aria-label="Pouw Vervoer, naar de startpagina">
+      <% if (logoUrl) { %><img src="<%= logoUrl %>" alt="Pouw Vervoer"><% } else { %><span class="mark" aria-hidden="true">P</span><span class="naam">Pouw Vervoer<small><%= locals.admin ? 'Backoffice' : locals.portaal ? `Portaal ${deurwaarder}` : 'Bus boeken' %></small></span><% } %>
     </a>
     <% if (locals.admin) { %>
     <nav>
       <a href="/admin">Aanvragen</a>
       <a href="/admin/trip.csv">Export voor trip</a>
       <form method="post" action="/admin/uitloggen" style="margin:0"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn small ghost" type="submit">Uitloggen</button></form>
+    </nav>
+    <% } else if (locals.portaal && !locals.portaalLogin) { %>
+    <nav>
+      <a href="/deurwaarder">Open dossiers</a>
+      <a href="/deurwaarder?weergave=gesloten">Gesloten</a>
+      <% if (locals.csrf) { %><form method="post" action="/deurwaarder/uitloggen" style="margin:0"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn small ghost" type="submit">Uitloggen</button></form><% } %>
     </nav>
     <% } else { %>
     <a class="tel" href="tel:0306868300">Vragen? <b>030 68 68 300</b></a>

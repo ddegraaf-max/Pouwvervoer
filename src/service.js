@@ -345,7 +345,7 @@ async function draaiHerinneringen(vandaag = new Date()) {
       aanvraagId: f.aanvraag_id,
       klantId: f.klant_id,
     });
-    await q('UPDATE facturen SET herinnering_niveau=$2 WHERE id=$1', [f.id, nieuwNiveau]);
+    await q('UPDATE facturen SET herinnering_niveau=$2, laatste_herinnering_op=$3 WHERE id=$1', [f.id, nieuwNiveau, vandaag]);
     verslag.push(`${n.naam} factuur ${f.nummer}`);
   }
   return verslag;

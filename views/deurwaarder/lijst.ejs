@@ -1,0 +1,30 @@
+<%- include('../partials/head', { titel: 'Dossiers' }) %>
+<main class="wrap" style="display:flex;flex-direction:column;gap:20px">
+  <div>
+    <h1><%= open ? 'Open dossiers' : 'Gesloten dossiers' %></h1>
+    <p class="lead" style="margin:0">Overgedragen door Pouw Vervoer. Een nieuw dossier wordt in behandeling gezet zodra u het opent.</p>
+  </div>
+  <% if (melding) { %><div class="alert info" role="status"><%= melding %></div><% } %>
+  <div class="card scroll">
+    <% if (!rows.length) { %><p class="lead" style="margin:0"><%= open ? 'Geen open dossiers.' : 'Nog geen gesloten dossiers.' %></p><% } else { %>
+    <table>
+      <thead><tr><th>Dossier</th><th>Overgedragen</th><th>Debiteur</th><th>Factuur</th><th class="num">Hoofdsom</th><th class="num">Incassokosten</th><th class="num">Ontvangen</th><th>Status</th></tr></thead>
+      <tbody>
+      <% rows.forEach(r => { %>
+        <tr>
+          <td><a href="/deurwaarder/dossier/<%= r.id %>"><strong>D-<%= r.id %></strong></a><% if (r.referentie_deurwaarder) { %><br><span class="lead" style="font-size:13px">uw nr. <%= r.referentie_deurwaarder %></span><% } %></td>
+          <td><%= datum(r.overgedragen_op) %></td>
+          <td><%= r.klant_naam %><br><span class="lead" style="font-size:13px"><%= KLANTTYPE[r.klanttype] %></span></td>
+          <td><%= r.nummer %><br><span class="lead" style="font-size:13px">vervallen <%= datum(r.vervaldatum) %></span></td>
+          <td class="num"><%= euro(r.hoofdsom_cent) %></td>
+          <td class="num"><%= euro(r.incassokosten_cent) %></td>
+          <td class="num"><%= euro(r.ontvangen_cent) %></td>
+          <td><span class="badge <%= r.status === 'nieuw' ? 'k-C' : r.status === 'betaald' ? 'k-A' : 'st' %>"><%= DOSSIER_STATUS[r.status] %></span></td>
+        </tr>
+      <% }) %>
+      </tbody>
+    </table>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/foot') %>

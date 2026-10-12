@@ -23,7 +23,7 @@
           <td><%= r.klant_naam %><br><span class="lead" style="font-size:13px"><%= KLANTTYPE[r.klanttype] %></span></td>
           <td><%= r.van %> → <%= r.naar %></td>
           <td><% if (r.klasse) { %><span class="badge k-<%= r.klasse %>"><%= r.klasse %> · <%= r.score %></span><% } %><% if (r.geblokkeerd) { %> <span class="badge k-D">Geblokkeerd</span><% } %></td>
-          <td><span class="badge st"><%= STATUS[r.status] %></span><% if (r.signaal_planner) { %><br><span class="badge k-D" style="margin-top:4px">Aanbetaling te laat</span><% } %></td>
+          <td><span class="badge st"><%= STATUS[r.status] %></span><% if (r.dossier_status) { %><br><span class="badge k-D" style="margin-top:4px"><%= deurwaarder %>: <%= DOSSIER_STATUS[r.dossier_status] %></span><% } %><% if (r.signaal_planner) { %><br><span class="badge k-D" style="margin-top:4px">Aanbetaling te laat</span><% } %></td>
           <td class="num"><%= euro(r.ritprijs_cent) %></td>
         </tr>
       <% }) %>

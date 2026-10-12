@@ -113,13 +113,57 @@
         <dt>Al betaald</dt><dd><%= euro(factuur.reeds_betaald_cent) %></dd>
         <dt><%= factuur.te_betalen_cent < 0 ? 'Terug te betalen' : 'Te betalen' %></dt><dd><strong><%= euro(Math.abs(factuur.te_betalen_cent)) %></strong></dd>
         <dt>Vervaldatum</dt><dd><%= datum(factuur.vervaldatum) %></dd>
-        <dt>Status</dt><dd><%= factuur.betaald_op ? `Betaald op ${datum(factuur.betaald_op)}` : factuur.incasso ? 'Bij incasso' : `Open · herinneringsniveau ${factuur.herinnering_niveau} van 4` %></dd>
+        <dt>Status</dt><dd><%= factuur.betaald_op ? `Betaald op ${datum(factuur.betaald_op)}` : factuur.incasso ? `Bij ${deurwaarder}` : `Open · herinneringsniveau ${factuur.herinnering_niveau} van 4` %></dd>
       </dl>
       <% if (!factuur.betaald_op) { %>
       <div class="row" style="margin-top:14px">
         <%- form('factuur-betaald') %><button class="btn" type="submit">Betaling ontvangen</button></form>
-        <% if (!factuur.incasso) { %><%- form('incasso') %><button class="btn danger" type="submit">Overdragen aan incasso</button></form><% } %>
       </div>
+      <% } %>
+      <% if (overdracht && !factuur.betaald_op && factuur.te_betalen_cent > 0) { %>
+      <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:16px">
+        <h3 style="margin-bottom:6px">Overdragen aan <%= deurwaarder %></h3>
+        <% if (overdracht.mag) { %>
+          <p class="lead" style="font-size:15px;margin-bottom:10px"><%= deurwaarder %> krijgt het hele dossier in hun portaal: aanvraag, akkoord, factuur en alle herinneringen. Wettelijke incassokosten: <%= euro(incassokosten) %>.</p>
+          <%- form('incasso') %>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <div><label for="notitie">Toelichting voor <%= deurwaarder %> <span class="opt">(optioneel)</span></label><textarea id="notitie" name="notitie" placeholder="Bijv. debiteur reageert niet op telefoon"></textarea></div>
+              <div><button class="btn danger" type="submit">Overdragen aan <%= deurwaarder %></button></div>
+            </div>
+          </form>
+        <% } else { %>
+          <p class="lead" style="font-size:15px;margin:0">Nog niet mogelijk: <%= overdracht.reden %></p>
+        <% } %>
+      </div>
+      <% } %>
+    </div>
+    <% } %>
+
+    <% if (incassoDossier) { %>
+    <div class="card">
+      <div class="between" style="flex-wrap:wrap;margin-bottom:10px"><h2 style="font-size:18px">Dossier D-<%= incassoDossier.id %> bij <%= deurwaarder %></h2><span class="badge <%= incassoDossier.status === 'betaald' ? 'k-A' : 'st' %>"><%= DOSSIER_STATUS[incassoDossier.status] %></span></div>
+      <dl class="kv">
+        <dt>Overgedragen</dt><dd><%= datumTijd(incassoDossier.overgedragen_op) %><%= incassoDossier.geopend_op ? ` · geopend ${datumTijd(incassoDossier.geopend_op)}` : ' · nog niet geopend' %></dd>
+        <dt>Hoofdsom</dt><dd><%= euro(incassoDossier.hoofdsom_cent) %> + <%= euro(incassoDossier.incassokosten_cent) %> kosten</dd>
+        <dt>Ontvangen</dt><dd><%= euro(incassoDossier.ontvangen_cent) %></dd>
+        <% if (incassoDossier.referentie_deurwaarder) { %><dt>Nr. <%= deurwaarder %></dt><dd><%= incassoDossier.referentie_deurwaarder %></dd><% } %>
+      </dl>
+      <div class="log" style="margin-top:12px;max-height:280px"><% dossierBerichten.forEach(b => { %><div><b><%= b.van %> · <%= datumTijd(b.created_at) %></b>
+<%= b.tekst %></div><% }) %></div>
+      <% if (!['betaald','oninbaar','teruggetrokken'].includes(incassoDossier.status)) { %>
+      <%- form('dossier-bericht') %>
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+          <label for="dtekst">Bericht aan <%= deurwaarder %></label>
+          <textarea id="dtekst" name="tekst"></textarea>
+          <div><button class="btn ghost" type="submit">Versturen</button></div>
+        </div>
+      </form>
+      <%- form('dossier-terugtrekken') %>
+        <div class="inline-form" style="margin-top:12px">
+          <div><label for="treden">Dossier terugtrekken, reden</label><input type="text" id="treden" name="reden" placeholder="Bijv. alsnog regeling met klant getroffen"></div>
+          <button class="btn ghost" type="submit">Terugtrekken</button>
+        </div>
+      </form>
       <% } %>
     </div>
     <% } %>

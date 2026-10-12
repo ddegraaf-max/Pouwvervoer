@@ -1,0 +1,11 @@
+<%- include('../partials/head', { titel: `Portaal ${deurwaarder}` }) %>
+<main class="wrap"><form method="post" class="narrow card" style="display:flex;flex-direction:column;gap:12px;max-width:440px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <h1>Portaal <%= deurwaarder %></h1>
+  <p class="lead" style="margin:0">Dossiers die Pouw Vervoer aan u heeft overgedragen, met het volledige bewijs: aanvraag, akkoord, factuur en herinneringen.</p>
+  <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
+  <div><label for="wachtwoord">Wachtwoord</label><input type="password" id="wachtwoord" name="wachtwoord" autocomplete="current-password" required></div>
+  <button class="btn" type="submit">Inloggen</button>
+  <p class="lead" style="margin:0;font-size:14px">Geen toegang? Neem contact op met Pouw Vervoer, 030 68 68 300.</p>
+</form></main>
+<%- include('../partials/foot') %>

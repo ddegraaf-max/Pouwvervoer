@@ -13,6 +13,16 @@ Stack: Node 20+, Express, EJS, PostgreSQL. Geen buildstap.
 5. **Na de rit**: nakosten invoeren, één eindfactuur met verrekening van wat al betaald is.
 6. **Herinneringen** (elk uur, of met de knop in de backoffice): termijnen, signaal aan de planner 48 uur na een herinnering, facturen op dag 0, 3, 10 (cc aanvrager) en 17 (aanmaning, bij particulieren als 14-dagenbrief).
 
+## Incasso via Armaere
+
+Blijft een factuur onbetaald, dan draagt de backoffice hem over aan gerechtsdeurwaarder Armaere (naam instelbaar met `DEURWAARDER_NAAM`).
+
+- Overdragen kan pas na de aanmaning. Bij particulieren daarnaast pas 15 dagen na de 14-dagenbrief.
+- Het dossier rekent de wettelijke incassokosten uit volgens de staffel (15/10/5/1/0,5%, minimaal € 40, maximaal € 6.775).
+- Armaere logt in op `/deurwaarder` met `DEURWAARDER_PASSWORD` en ziet alleen overgedragen dossiers, met het volledige bewijs: wie akkoord gaf en wanneer, de factuur met nakosten en verrekening, en alle e-mails aan de debiteur.
+- Armaere zet de status, registreert ontvangsten en stuurt berichten; Pouw ziet dat direct in het dossier en kan terugschrijven of het dossier terugtrekken. Is de hoofdsom ontvangen, dan staat de factuur op betaald.
+- Een incassoverleden telt mee in de klantscore (−30 punten).
+
 ## Klantscore
 
 Start 40 punten. Zie `src/score.js` en de tests in `test/score.test.js`.
@@ -38,7 +48,7 @@ Zonder sleutels draait elk onderdeel apart in demo:
 
 1. Nieuw project → Deploy from GitHub repo → deze repo.
 2. Add → Database → PostgreSQL. Zet bij de app `DATABASE_URL=${{Postgres.DATABASE_URL}}`.
-3. Variabelen: `ADMIN_PASSWORD`, `SESSION_SECRET`, `NODE_ENV=production`, `BASE_URL`.
+3. Variabelen: `ADMIN_PASSWORD`, `DEURWAARDER_PASSWORD`, `SESSION_SECRET`, `NODE_ENV=production`, `BASE_URL`.
 4. Settings → Networking → Custom domain `easypouwvervoer.nl` en zet het CNAME-record dat Railway toont bij de domeinregistrar.
 
 De tabellen worden bij de start automatisch aangemaakt.
@@ -47,5 +57,6 @@ De tabellen worden bij de start automatisch aangemaakt.
 
 ```
 npm test                  # scoremodel
-node scripts/e2e.mjs         # volledige flow tegen een draaiende server (ADMIN_PASSWORD=test)
+node scripts/e2e.mjs           # volledige flow tegen een draaiende server (ADMIN_PASSWORD=test)
+node scripts/e2e-incasso.mjs   # daarna: overdracht en portaal (DEURWAARDER_PASSWORD=dw, DATABASE_URL)
 ```

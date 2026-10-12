@@ -4,6 +4,7 @@ const express = require('express');
 const cookieSession = require('cookie-session');
 const db = require('./src/db');
 const svc = require('./src/service');
+const incasso = require('./src/incasso');
 const kvk = require('./src/kvk');
 const mail = require('./src/mail');
 const fmt = require('./src/format');
@@ -63,6 +64,8 @@ app.use((req, res, next) => {
 
 Object.assign(app.locals, fmt, {
   logoUrl: process.env.LOGO_URL || '',
+  deurwaarder: incasso.NAAM(),
+  DOSSIER_STATUS: incasso.DOSSIER_STATUS,
   demo: { kvk: kvk.DEMO, mail: mail.DEMO, betaling: !process.env.MOLLIE_API_KEY },
 });
 
@@ -229,6 +232,7 @@ app.post('/admin/login', rateLimit(10, 15 * 60e3), (req, res) => {
     crypto.timingSafeEqual(crypto.createHash('sha256').update(gegeven).digest(), crypto.createHash('sha256').update(pw).digest());
   if (!ok) return res.status(401).render('admin/login', { fout: pw ? 'Onjuist wachtwoord.' : 'ADMIN_PASSWORD is niet ingesteld.' });
   req.session.admin = true;
+  req.session.deurwaarder = false;
   res.redirect('/admin');
 });
 app.post('/admin/uitloggen', (req, res) => {
@@ -242,7 +246,7 @@ app.get(
   wrap(async (req, res) => {
     const filter = req.query.status || '';
     const rows = await db.all(
-      `SELECT a.*, k.naam klant_naam, k.type klanttype FROM aanvragen a JOIN klanten k ON k.id=a.klant_id
+      `SELECT a.*, k.naam klant_naam, k.type klanttype, (SELECT d.status FROM dossiers d WHERE d.aanvraag_id=a.id) dossier_status FROM aanvragen a JOIN klanten k ON k.id=a.klant_id
        ${filter ? 'WHERE a.status=$1' : ''} ORDER BY a.signaal_planner DESC, a.created_at DESC LIMIT 300`,
       filter ? [filter] : [],
     );
@@ -265,7 +269,16 @@ async function dossier(id) {
     svc.historie(a.klant_id),
   ]);
   const plan = a.ritprijs_cent != null ? aanbetalingsplan(a.klasse, a.ritprijs_cent, a.rit_datum, a.nakosten_schatting_cent || 0) : null;
-  return { a, k, termijnen, nakosten, factuur, events, historie, plan, akkoordLink: `${svc.BASE_URL()}/akkoord/${a.akkoord_token}` };
+  const incassoDossier = await db.one('SELECT * FROM dossiers WHERE aanvraag_id=$1', [id]);
+  const dossierBerichten = incassoDossier
+    ? await db.all('SELECT * FROM dossier_berichten WHERE dossier_id=$1 ORDER BY created_at, id', [incassoDossier.id])
+    : [];
+  const overdracht = factuur && !incassoDossier ? incasso.magOverdragen(factuur, k.type) : null;
+  return {
+    a, k, termijnen, nakosten, factuur, events, historie, plan, incassoDossier, dossierBerichten, overdracht,
+    incassokosten: factuur ? incasso.wettelijkeIncassokosten(factuur.te_betalen_cent) : 0,
+    akkoordLink: `${svc.BASE_URL()}/akkoord/${a.akkoord_token}`,
+  };
 }
 
 app.get(
@@ -368,7 +381,9 @@ app.post(
   wrap(async (req, res) => {
     const f = await db.one('SELECT id FROM facturen WHERE aanvraag_id=$1', [Number(req.params.id)]);
     if (f) await svc.factuurBetaald(f.id, 'bankoverschrijving (handmatig)');
-    terug(req, res, 'Factuur als betaald gemarkeerd.');
+    const d = f && (await db.one("SELECT id FROM dossiers WHERE factuur_id=$1 AND status <> ALL($2)", [f.id, incasso.GESLOTEN]));
+    if (d) await incasso.bericht(d.id, 'Pouw Vervoer', 'Let op: de debiteur heeft de hoofdsom rechtstreeks aan Pouw Vervoer betaald.');
+    terug(req, res, d ? `Factuur als betaald gemarkeerd. ${incasso.NAAM()} heeft hierover een bericht gekregen.` : 'Factuur als betaald gemarkeerd.');
   }),
 );
 
@@ -376,9 +391,47 @@ app.post(
   '/admin/aanvraag/:id/incasso',
   admin,
   wrap(async (req, res) => {
-    const f = await db.one('UPDATE facturen SET incasso=true WHERE aanvraag_id=$1 AND betaald_op IS NULL RETURNING *', [Number(req.params.id)]);
-    if (f) await svc.log(f.aanvraag_id, f.klant_id, 'incasso', `Factuur ${f.nummer} overgedragen aan incasso.`);
-    terug(req, res, f ? 'Overgedragen aan incasso. Dit telt mee in de klantscore.' : 'Geen openstaande factuur.');
+    const f = await db.one('SELECT id FROM facturen WHERE aanvraag_id=$1', [Number(req.params.id)]);
+    if (!f) return terug(req, res, 'Er is nog geen eindfactuur.');
+    try {
+      const d = await incasso.overdragen(f.id, String(req.body.notitie || '').trim());
+      terug(req, res, `Overgedragen aan ${incasso.NAAM()} als dossier D-${d.id}. Dit telt mee in de klantscore.`);
+    } catch (e) {
+      terug(req, res, e.message);
+    }
+  }),
+);
+
+app.post(
+  '/admin/aanvraag/:id/dossier-bericht',
+  admin,
+  wrap(async (req, res) => {
+    const d = await db.one('SELECT id FROM dossiers WHERE aanvraag_id=$1', [Number(req.params.id)]);
+    try {
+      if (!d) throw new Error('Geen dossier.');
+      await incasso.bericht(d.id, 'Pouw Vervoer', req.body.tekst);
+      terug(req, res, `Bericht naar ${incasso.NAAM()} geplaatst.`);
+    } catch (e) {
+      terug(req, res, e.message);
+    }
+  }),
+);
+
+app.post(
+  '/admin/aanvraag/:id/dossier-terugtrekken',
+  admin,
+  wrap(async (req, res) => {
+    const d = await db.one('SELECT id FROM dossiers WHERE aanvraag_id=$1', [Number(req.params.id)]);
+    try {
+      if (!d) throw new Error('Geen dossier.');
+      const reden = String(req.body.reden || '').trim();
+      if (!reden) throw new Error('Vul de reden in.');
+      await incasso.bericht(d.id, 'Pouw Vervoer', `Dossier teruggetrokken. Reden: ${reden}`);
+      await incasso.zetStatus(d.id, 'teruggetrokken', 'Pouw Vervoer');
+      terug(req, res, 'Dossier teruggetrokken.');
+    } catch (e) {
+      terug(req, res, e.message);
+    }
   }),
 );
 
@@ -447,6 +500,128 @@ app.get(
     res.set('Content-Type', 'text/csv; charset=utf-8');
     res.set('Content-Disposition', `attachment; filename="trip-export-${fmt.iso(new Date())}.csv"`);
     res.send('﻿' + [kop.join(';'), ...lijnen].join('\r\n'));
+  }),
+);
+
+// ================= Portaal deurwaarder =================
+
+function deurwaarder(req, res, next) {
+  if (req.session.deurwaarder) {
+    res.locals.portaal = true;
+    return next();
+  }
+  res.redirect('/deurwaarder/login');
+}
+
+function wachtwoordKlopt(gegeven, verwacht) {
+  if (!verwacht) return false;
+  const h = (x) => crypto.createHash('sha256').update(String(x)).digest();
+  return crypto.timingSafeEqual(h(gegeven), h(verwacht));
+}
+
+app.get('/deurwaarder/login', (req, res) => res.render('deurwaarder/login', { fout: null, portaal: true, portaalLogin: true }));
+app.post('/deurwaarder/login', rateLimit(10, 15 * 60e3), (req, res) => {
+  const pw = process.env.DEURWAARDER_PASSWORD;
+  if (!wachtwoordKlopt(req.body.wachtwoord || '', pw)) {
+    return res.status(401).render('deurwaarder/login', { fout: pw ? 'Onjuist wachtwoord.' : 'Het portaal is nog niet ingericht.', portaal: true, portaalLogin: true });
+  }
+  req.session.deurwaarder = true;
+  req.session.admin = false;
+  res.redirect('/deurwaarder');
+});
+app.post('/deurwaarder/uitloggen', (req, res) => {
+  req.session = null;
+  res.redirect('/deurwaarder/login');
+});
+
+app.get(
+  '/deurwaarder',
+  deurwaarder,
+  wrap(async (req, res) => {
+    const open = req.query.weergave !== 'gesloten';
+    const rows = await db.all(
+      `SELECT d.*, f.nummer, f.vervaldatum, k.naam klant_naam, k.type klanttype,
+         (SELECT max(created_at) FROM dossier_berichten b WHERE b.dossier_id=d.id AND b.van='Pouw Vervoer') laatste_bericht_pouw
+       FROM dossiers d JOIN facturen f ON f.id=d.factuur_id JOIN klanten k ON k.id=d.klant_id
+       WHERE ${open ? 'NOT' : ''} (d.status = ANY($1))
+       ORDER BY (d.status='nieuw') DESC, d.overgedragen_op DESC`,
+      [incasso.GESLOTEN],
+    );
+    const melding = req.session.melding || null;
+    req.session.melding = null;
+    res.render('deurwaarder/lijst', { rows, open, melding });
+  }),
+);
+
+app.get(
+  '/deurwaarder/dossier/:id',
+  deurwaarder,
+  wrap(async (req, res) => {
+    const id = Number(req.params.id);
+    const v = await incasso.dossierVolledig(id);
+    if (!v) return res.status(404).render('melding', { titel: 'Dossier niet gevonden', tekst: '', portaal: true });
+    if (!v.d.geopend_op) {
+      await db.q("UPDATE dossiers SET geopend_op=now(), status=CASE WHEN status='nieuw' THEN 'in_behandeling' ELSE status END WHERE id=$1", [id]);
+      await incasso.bericht(id, incasso.NAAM(), 'Dossier geopend en in behandeling genomen.');
+      return res.redirect(303, `/deurwaarder/dossier/${id}`);
+    }
+    const melding = req.session.melding || null;
+    req.session.melding = null;
+    res.render('deurwaarder/dossier', { ...v, melding, vandaag: fmt.iso(new Date()) });
+  }),
+);
+
+function terugDossier(req, res, tekst) {
+  req.session.melding = tekst;
+  res.redirect(303, `/deurwaarder/dossier/${req.params.id}`);
+}
+
+app.post(
+  '/deurwaarder/dossier/:id/status',
+  deurwaarder,
+  wrap(async (req, res) => {
+    try {
+      await incasso.zetStatus(Number(req.params.id), String(req.body.status), incasso.NAAM());
+      terugDossier(req, res, 'Status bijgewerkt. Pouw ziet dit direct.');
+    } catch (e) {
+      terugDossier(req, res, e.message);
+    }
+  }),
+);
+
+app.post(
+  '/deurwaarder/dossier/:id/referentie',
+  deurwaarder,
+  wrap(async (req, res) => {
+    const ref = String(req.body.referentie || '').trim().slice(0, 60);
+    await db.q('UPDATE dossiers SET referentie_deurwaarder=$2 WHERE id=$1', [Number(req.params.id), ref || null]);
+    terugDossier(req, res, 'Uw dossiernummer is opgeslagen.');
+  }),
+);
+
+app.post(
+  '/deurwaarder/dossier/:id/betaling',
+  deurwaarder,
+  wrap(async (req, res) => {
+    try {
+      await incasso.registreerBetaling(Number(req.params.id), fmt.parseEuro(req.body.bedrag), req.body.datum, req.body.omschrijving);
+      terugDossier(req, res, 'Ontvangst geregistreerd.');
+    } catch (e) {
+      terugDossier(req, res, e.message);
+    }
+  }),
+);
+
+app.post(
+  '/deurwaarder/dossier/:id/bericht',
+  deurwaarder,
+  wrap(async (req, res) => {
+    try {
+      await incasso.bericht(Number(req.params.id), incasso.NAAM(), req.body.tekst);
+      terugDossier(req, res, 'Bericht verstuurd naar Pouw Vervoer.');
+    } catch (e) {
+      terugDossier(req, res, e.message);
+    }
   }),
 );
 

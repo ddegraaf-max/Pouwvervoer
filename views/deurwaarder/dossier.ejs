@@ -1,0 +1,118 @@
+<%- include('../partials/head', { titel: `Dossier D-${d.id}` }) %>
+<% const open = d.hoofdsom_cent + d.incassokosten_cent - d.ontvangen_cent; const gesloten = ['betaald','oninbaar','teruggetrokken'].includes(d.status); %>
+<main class="wrap" style="display:flex;flex-direction:column;gap:20px">
+  <div>
+    <div class="lead" style="margin:0"><a href="/deurwaarder">Dossiers</a> · D-<%= d.id %><%= d.referentie_deurwaarder ? ` · uw nr. ${d.referentie_deurwaarder}` : '' %> · overgedragen <%= datum(d.overgedragen_op) %></div>
+    <h1><%= k.naam %></h1>
+    <span class="badge <%= d.status === 'betaald' ? 'k-A' : 'st' %>"><%= DOSSIER_STATUS[d.status] %></span>
+  </div>
+  <% if (melding) { %><div class="alert info" role="status"><%= melding %></div><% } %>
+
+  <div class="cols">
+  <section class="main">
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:12px">Vordering</h2>
+      <dl class="kv">
+        <dt>Hoofdsom</dt><dd><%= euro(d.hoofdsom_cent) %> <span class="lead">(factuur <%= f.nummer %>, incl. 9% btw)</span></dd>
+        <dt>Incassokosten</dt><dd><%= euro(d.incassokosten_cent) %> <span class="lead">(wettelijke staffel, excl. btw)</span></dd>
+        <dt>Ontvangen</dt><dd><%= euro(d.ontvangen_cent) %></dd>
+        <dt>Nog open</dt><dd><strong><%= euro(Math.max(0, open)) %></strong> <span class="lead">exclusief rente</span></dd>
+      </dl>
+      <% if (k.type === 'particulier') { %><p class="lead" style="margin:12px 0 0;font-size:14px">Debiteur is particulier. De 14-dagenbrief is verstuurd op <%= datum(f.laatste_herinnering_op) %> (zie correspondentie).</p><% } %>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:12px">Debiteur en betrokkenen</h2>
+      <dl class="kv">
+        <dt>Debiteur</dt><dd><%= k.naam %> · <%= KLANTTYPE[k.type] %><%= k.kvk ? ` · KvK ${k.kvk}` : '' %></dd>
+        <dt>Tekenbevoegde</dt><dd><%= k.tekenbevoegde %>, <%= k.teken_email %></dd>
+        <dt>Factuuradres</dt><dd><%= a.factuur_email %><%= a.factuur_adres ? `, ${a.factuur_adres}` : '' %><%= a.po_nummer ? ` · referentie ${a.po_nummer}` : '' %></dd>
+        <dt>Aanvrager</dt><dd><%= a.aanvrager_naam %><%= a.aanvrager_rol ? ` (${a.aanvrager_rol})` : '' %>, <%= a.aanvrager_tel %>, <%= a.aanvrager_email %></dd>
+      </dl>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:12px">Overeenkomst</h2>
+      <dl class="kv">
+        <dt>Offerte</dt><dd>EPV-<%= a.id %>, verstuurd <%= datumTijd(a.offerte_verstuurd_op) %> naar <%= k.teken_email %></dd>
+        <dt>Akkoord</dt><dd><strong><%= a.akkoord_naam %></strong> op <%= datumTijd(a.akkoord_op) %>, via de persoonlijke offertelink<%= a.akkoord_ip ? ` (IP ${a.akkoord_ip})` : '' %>. Met akkoord op de Algemene Vervoer- en Reisvoorwaarden KNV Busvervoer en verklaring van tekenbevoegdheid.</dd>
+        <dt>Rit</dt><dd><%= datum(a.rit_datum) %><%= a.vertrek_tijd ? `, ${a.vertrek_tijd}` : '' %> · <%= a.van %> → <%= a.naar %> · <%= a.personen %> personen</dd>
+        <dt>Ritprijs</dt><dd><%= euro(a.ritprijs_cent) %> incl. 9% btw</dd>
+      </dl>
+    </div>
+
+    <div class="card scroll">
+      <h2 style="font-size:18px;margin-bottom:12px">Factuur <%= f.nummer %></h2>
+      <table>
+        <tbody>
+          <tr><td>Ritprijs</td><td class="num"><%= euro(a.ritprijs_cent) %></td></tr>
+          <% nakosten.forEach(n => { %><tr><td>Nakosten: <%= n.omschrijving %></td><td class="num"><%= euro(n.bedrag_cent) %></td></tr><% }) %>
+          <tr><td><strong>Totaal</strong></td><td class="num"><strong><%= euro(f.totaal_cent) %></strong></td></tr>
+          <% termijnen.filter(t => t.betaald_op).forEach(t => { %><tr><td>Voldaan: <%= t.label %> (<%= datum(t.betaald_op) %>)</td><td class="num">− <%= euro(t.bedrag_cent) %></td></tr><% }) %>
+          <tr><td><strong>Te betalen</strong></td><td class="num"><strong><%= euro(f.te_betalen_cent) %></strong></td></tr>
+        </tbody>
+      </table>
+      <p class="lead" style="margin:10px 0 0;font-size:14px">Factuurdatum <%= datum(f.factuurdatum) %> · vervaldatum <%= datum(f.vervaldatum) %> (14 dagen)</p>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:6px">Correspondentie en verloop</h2>
+      <p class="lead" style="font-size:14px">Alle e-mails aan de debiteur, met de tekst zoals verstuurd.</p>
+      <div class="log" style="max-height:none"><% mails.forEach(e => { %><div><b><%= datumTijd(e.created_at) %> · <%= e.type %></b>
+<%= e.tekst %></div><% }) %></div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:10px">Berichten met Pouw</h2>
+      <div class="log" style="max-height:360px">
+        <% berichten.forEach(b => { %><div><b><%= b.van %> · <%= datumTijd(b.created_at) %></b>
+<%= b.tekst %></div><% }) %>
+      </div>
+      <form method="post" action="/deurwaarder/dossier/<%= d.id %>/bericht" style="margin-top:12px;display:flex;flex-direction:column;gap:8px">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label for="tekst">Bericht aan Pouw Vervoer</label>
+        <textarea id="tekst" name="tekst" placeholder="Bijv. debiteur betwist de nakosten, graag de bonnetjes"></textarea>
+        <button class="btn ghost" type="submit">Versturen</button>
+      </form>
+    </div>
+
+    <% if (!gesloten) { %>
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:10px">Status</h2>
+      <form method="post" action="/deurwaarder/dossier/<%= d.id %>/status" style="display:flex;flex-direction:column;gap:8px">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label for="status">Nieuwe status</label>
+        <select id="status" name="status">
+          <% ['in_behandeling','betalingsregeling','dagvaarding','beslag','betaald','oninbaar'].forEach(s => { %><option value="<%= s %>" <%= d.status === s ? 'selected' : '' %>><%= DOSSIER_STATUS[s] %></option><% }) %>
+        </select>
+        <button class="btn" type="submit">Status opslaan</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:10px">Ontvangst registreren</h2>
+      <form method="post" action="/deurwaarder/dossier/<%= d.id %>/betaling" style="display:flex;flex-direction:column;gap:8px">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div><label for="bedrag">Bedrag</label><input type="text" inputmode="decimal" id="bedrag" name="bedrag" placeholder="0,00"></div>
+        <div><label for="datum">Datum ontvangst</label><input type="date" id="datum" name="datum" value="<%= vandaag %>"></div>
+        <div><label for="omschrijving">Omschrijving <span class="opt">(optioneel)</span></label><input type="text" id="omschrijving" name="omschrijving" placeholder="Bijv. termijn 1 betalingsregeling"></div>
+        <button class="btn ghost" type="submit">Registreren</button>
+      </form>
+      <p class="lead" style="margin:10px 0 0;font-size:14px">Is de hoofdsom voldaan, dan staat de factuur bij Pouw op betaald. Bij hoofdsom plus kosten sluit het dossier.</p>
+    </div>
+    <% } %>
+
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:10px">Uw dossiernummer</h2>
+      <form method="post" action="/deurwaarder/dossier/<%= d.id %>/referentie" class="inline-form">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <div><label for="referentie">Dossiernummer bij <%= deurwaarder %></label><input type="text" id="referentie" name="referentie" value="<%= d.referentie_deurwaarder || '' %>"></div>
+        <button class="btn ghost" type="submit">Opslaan</button>
+      </form>
+    </div>
+  </aside>
+  </div>
+</main>
+<%- include('../partials/foot') %>

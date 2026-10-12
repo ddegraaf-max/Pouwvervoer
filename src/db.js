@@ -132,6 +132,41 @@ CREATE TABLE IF NOT EXISTS events (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 
+ALTER TABLE facturen ADD COLUMN IF NOT EXISTS laatste_herinnering_op TIMESTAMPTZ;
+
+-- Incassodossiers bij de deurwaarder
+CREATE TABLE IF NOT EXISTS dossiers (
+  id SERIAL PRIMARY KEY,
+  factuur_id INT UNIQUE NOT NULL REFERENCES facturen(id),
+  aanvraag_id INT NOT NULL REFERENCES aanvragen(id),
+  klant_id INT NOT NULL REFERENCES klanten(id),
+  status TEXT NOT NULL DEFAULT 'nieuw',
+  hoofdsom_cent INT NOT NULL,
+  incassokosten_cent INT NOT NULL,
+  ontvangen_cent INT NOT NULL DEFAULT 0,
+  overgedragen_op TIMESTAMPTZ DEFAULT now(),
+  geopend_op TIMESTAMPTZ,
+  gesloten_op TIMESTAMPTZ,
+  referentie_deurwaarder TEXT
+);
+
+CREATE TABLE IF NOT EXISTS dossier_berichten (
+  id SERIAL PRIMARY KEY,
+  dossier_id INT NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
+  van TEXT NOT NULL,
+  tekst TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS dossier_betalingen (
+  id SERIAL PRIMARY KEY,
+  dossier_id INT NOT NULL REFERENCES dossiers(id) ON DELETE CASCADE,
+  bedrag_cent INT NOT NULL,
+  datum DATE NOT NULL,
+  omschrijving TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+
 CREATE INDEX IF NOT EXISTS idx_aanvragen_klant ON aanvragen(klant_id);
 CREATE INDEX IF NOT EXISTS idx_facturen_klant ON facturen(klant_id);
 CREATE INDEX IF NOT EXISTS idx_events_aanvraag ON events(aanvraag_id);
