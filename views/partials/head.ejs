@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#141414">
+<meta name="theme-color" content="#FBB900">
 <title><%= titel %> · Pouw Vervoer</title>
 <meta name="robots" content="<%= locals.admin || locals.portaal || locals.noindex ? 'noindex,nofollow' : 'index,follow' %>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,8 +15,9 @@
 <% if (demo.kvk || demo.betaling || demo.mail) { %><div class="demo">Testomgeving: <%= [demo.kvk && 'KvK-check gesimuleerd', demo.betaling && 'betalingen gesimuleerd', demo.mail && 'e-mails niet verstuurd'].filter(Boolean).join(' · ') %></div><% } %>
 <header class="top">
   <div class="wrap">
-    <a class="logo" href="<%= locals.admin ? '/admin' : locals.portaal ? '/deurwaarder' : '/' %>" aria-label="Pouw Vervoer, naar de startpagina">
-      <% if (logoUrl) { %><img src="<%= logoUrl %>" alt="Pouw Vervoer"><% } else { %><span class="mark" aria-hidden="true">P</span><span class="naam">Pouw Vervoer<small><%= locals.admin ? 'Backoffice' : locals.portaal ? `Portaal ${deurwaarder}` : 'Bus boeken' %></small></span><% } %>
+    <a class="logo" href="<%= locals.admin ? '/admin' : locals.portaal ? '/deurwaarder' : '/' %>">
+      <img src="<%= logoUrl || '/logo.png' %>" alt="Pouw Vervoer" width="139" height="50">
+      <% if (locals.admin) { %><span class="sub">Backoffice</span><% } else if (locals.portaal) { %><span class="sub">Portaal <%= deurwaarder %></span><% } %>
     </a>
     <% if (locals.admin) { %>
     <nav>
@@ -31,7 +32,7 @@
       <% if (locals.csrf) { %><form method="post" action="/deurwaarder/uitloggen" style="margin:0"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn small ghost" type="submit">Uitloggen</button></form><% } %>
     </nav>
     <% } else { %>
-    <a class="tel" href="tel:0306868300">Vragen? <b>030 68 68 300</b></a>
+    <a class="tel" href="tel:0306868300">Bus huren? Bel ons direct op <b>030 68 68 300</b></a>
     <% } %>
   </div>
 </header>
