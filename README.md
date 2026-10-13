@@ -56,6 +56,15 @@ Zonder sleutels draait elk onderdeel apart in demo:
 - **Betalen** (`MOLLIE_API_KEY` ontbreekt): de betaalpagina simuleert een geslaagde iDEAL-betaling. Mollie is nog niet aangesloten; dat is de volgende stap.
 - **AI-assistent** (`ANTHROPIC_API_KEY` ontbreekt): staat uit; zie hierboven.
 
+## Versies
+
+Elke update krijgt een versienummer `hoofd.sub.fix`: een fix of tekstwijziging verhoogt het laatste cijfer (0.3.0 → 0.3.1), een nieuwe functie het middelste (0.3.1 → 0.4.0), een grote verandering het eerste. Bij elke versie hoort:
+
+- een regel in `CHANGELOG.md` (nieuwste bovenaan),
+- het nummer in `package.json`,
+- een commit waarvan de boodschap met het nummer begint, met git-tag `v0.3.0`,
+- het nummer onderin elke pagina en op `/health` (`{"ok":true,"versie":"0.3.0"}`), zodat je ziet welke versie op Railway draait.
+
 ## Railway
 
 1. Nieuw project → Deploy from GitHub repo → deze repo.

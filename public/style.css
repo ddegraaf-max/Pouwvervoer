@@ -131,6 +131,7 @@ footer .info strong{color:#fff}
 footer .info a{color:#fff}
 footer .certs{display:flex;flex-wrap:wrap;gap:6px}
 footer .certs span{border:1px solid #4A5690;border-radius:3px;padding:2px 8px;font-size:12px;font-weight:700;color:#fff}
+footer .versie{padding-bottom:14px;font-size:12px;color:#8A93B5}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .btn.zin{text-transform:none;letter-spacing:0}
 /* Titelbalk met busfoto: tekst links op navy, de bus rechts */

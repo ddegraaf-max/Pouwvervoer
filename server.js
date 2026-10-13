@@ -10,6 +10,7 @@ const mail = require('./src/mail');
 const fmt = require('./src/format');
 const reis = require('./src/reis');
 const assistent = require('./src/assistent');
+const { version: VERSIE } = require('./package.json');
 const { aanbetalingsplan } = require('./src/score');
 
 const app = express();
@@ -65,6 +66,7 @@ app.use((req, res, next) => {
 });
 
 Object.assign(app.locals, fmt, {
+  versie: VERSIE,
   logoUrl: process.env.LOGO_URL || '',
   deurwaarder: incasso.NAAM(),
   DOSSIER_STATUS: incasso.DOSSIER_STATUS,
@@ -711,7 +713,7 @@ app.post(
   }),
 );
 
-app.get('/health', (req, res) => res.json({ ok: true }));
+app.get('/health', (req, res) => res.json({ ok: true, versie: VERSIE }));
 
 app.use((req, res) => res.status(404).render('melding', { titel: 'Pagina niet gevonden', tekst: '' }));
 app.use((err, req, res, next) => {

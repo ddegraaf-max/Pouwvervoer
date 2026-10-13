@@ -1,0 +1,23 @@
+# Wijzigingen
+
+Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
+
+## 0.3.0 · 13 oktober 2026
+- AI-assistent op basis van Claude: intake in één zin op `/reis` (typen of inspreken, het formulier vult zich), uitleg bij de klantscore in twee zinnen en concept-mails in de backoffice. Werkt met `ANTHROPIC_API_KEY`; zonder sleutel staat hij uit.
+- Nieuwe kolom `assistent_risico` in `aanvragen` (wordt automatisch aangemaakt).
+- Versienummers: nummer in de voet van elke pagina en op `/health`, dit logboek en git-tags.
+
+## 0.2.1 · 13 oktober 2026
+- Domeinnaam boekpouwvervoer.nl in README, `.env.example` en de pakketnaam. Het voorvoegsel `EPV-` van referenties en factuurnummers blijft.
+
+## 0.2.0 · 13 oktober 2026
+- Reis-stap `/reis` zoals de offertetool van Pouw, in de huisstijl van de app: retour of enkele reis, aantal personen, route met maximaal 5 tussenstops en wachttijd, datum en tijd (vertrek of aankomst) per richting, andere route terug. Wordt in de sessie bewaard en vult stap 1 van de aanvraag.
+- Ritsoort "Enkele reis" toegevoegd aan formulier, backoffice en akkoordpagina.
+
+## 0.1.1 · 13 oktober 2026
+- Opmaak: het echte Pouw-logo, huisstijl van pouwvervoer.nl (navy menubalk, gele en groene knoppen, Open Sans) en de busfoto in de titelbalk.
+
+## 0.1.0 · 12 oktober 2026
+- Eerste versie: aanvraag met aanvrager, opdrachtgever en factuurontvanger, klantscore en aanbetaling, backoffice, akkoord met iDEAL, eindfactuur en herinneringen.
+- Huisstijl Pouw Vervoer en duidelijkere klantpagina's.
+- Incasso via Armaere: overdracht, wettelijke incassokosten en een eigen portaal voor de deurwaarder.
