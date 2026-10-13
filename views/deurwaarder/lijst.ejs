@@ -17,7 +17,7 @@
           <td><%= r.klant_naam %><br><span class="lead" style="font-size:13px"><%= KLANTTYPE[r.klanttype] %></span></td>
           <td><%= r.nummer %><br><span class="lead" style="font-size:13px">vervallen <%= datum(r.vervaldatum) %></span></td>
           <td class="num"><%= euro(r.hoofdsom_cent) %></td>
-          <td class="num"><%= euro(r.incassokosten_cent) %></td>
+          <td class="num"><%= euro(r.incassokosten_cent) %><%= r.rente_cent ? `<br><span class="lead" style="font-size:12px">+ ${euro(r.rente_cent)} rente</span>` : '' %></td>
           <td class="num"><%= euro(r.ontvangen_cent) %></td>
           <td><span class="badge <%= r.status === 'nieuw' ? 'k-C' : r.status === 'betaald' ? 'k-A' : 'st' %>"><%= DOSSIER_STATUS[r.status] %></span></td>
         </tr>

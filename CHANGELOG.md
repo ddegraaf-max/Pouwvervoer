@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.10.0 · 13 oktober 2026
+- Incassokosten en rente volgens de KNV-voorwaarden: zakelijke opdrachtgevers 15% van de hoofdsom met een minimum van € 150 (artikel 4.7b) en 1,5% rente per begonnen maand (artikel 4.6); particulieren de wettelijke staffel en wettelijke rente. De aanmaning en de 14-dagenbrief noemen het bedrag. Het dossier voor Armaere bevat kosten, rente en de grondslag.
+
 ## 0.9.1 · 13 oktober 2026
 - Kopjes Heenreis en Terugreis op de reis-stap: een weggetje met gele markering waarover een busje met rookwolkjes rijdt, naar een bestemmingsspeld (heen) of gespiegeld terug naar een huisje (terug). Bij "verminderde beweging" staat het busje stil.
 

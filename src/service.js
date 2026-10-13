@@ -1,3 +1,4 @@
+const incasso = require('./incasso');
 const beleid = require('./beleid');
 const { datumTijd: datumTijdNL } = require('./format');
 const voorwaarden = require('./voorwaarden');
@@ -576,8 +577,10 @@ async function draaiHerinneringen(vandaag = new Date()) {
         `Geachte heer/mevrouw,\n\nFactuur ${f.nummer}${f.po_nummer ? ` (referentie ${f.po_nummer})` : ''} van ${euro(f.te_betalen_cent)} ` +
         `had betaald moeten zijn op ${datum(f.vervaldatum)}.\n` +
         (veertienDagenBrief
-          ? 'U krijgt 14 dagen na ontvangst van deze brief om te betalen. Daarna brengen wij de wettelijke incassokosten in rekening.\n'
-          : '') +
+          ? `U krijgt 14 dagen na ontvangst van deze brief om te betalen. Betaalt u niet binnen die termijn, dan brengen wij ${euro(incasso.incassokosten(f.te_betalen_cent, 'particulier'))} aan buitengerechtelijke incassokosten in rekening (Besluit vergoeding voor buitengerechtelijke incassokosten), plus de wettelijke rente.\n`
+          : n.dag === 17
+            ? `Blijft betaling uit, dan brengen wij conform artikel 4.6 en 4.7 van de Algemene Vervoer- en Reisvoorwaarden KNV Busvervoer 1,5% rente per begonnen maand en incassokosten van 15% (minimaal € 150) in rekening, nu ${euro(incasso.incassokosten(f.te_betalen_cent, f.klanttype))}, en dragen wij de vordering over aan onze deurwaarder.\n`
+            : '') +
         `Betaal via ${BASE_URL()}/factuur/${f.token}\n\nMet vriendelijke groet,\nPouw Vervoer`,
       aanvraagId: f.aanvraag_id,
       klantId: f.klant_id,

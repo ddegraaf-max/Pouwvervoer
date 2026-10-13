@@ -28,3 +28,27 @@ test('niet dubbel of na betaling', () => {
   assert.equal(magOverdragen({ ...basis, incasso: true }, 'bedrijf').mag, false);
   assert.equal(magOverdragen({ ...basis, betaald_op: new Date() }, 'bedrijf').mag, false);
 });
+
+const { incassokosten, rente, begonnenMaanden } = require('../src/incasso');
+
+test('incassokosten: particulier de staffel, zakelijk 15% met minimum € 150 (artikel 4.7b)', () => {
+  assert.equal(incassokosten(30000, 'particulier'), 4500);
+  assert.equal(incassokosten(30000, 'bedrijf'), 15000);
+  assert.equal(incassokosten(240000, 'onderwijs'), 36000);
+  assert.equal(incassokosten(240000, 'vereniging'), 36000);
+  assert.equal(incassokosten(0, 'bedrijf'), 0);
+});
+
+test('rente: zakelijk 1,5% per begonnen maand (artikel 4.6), particulier wettelijke rente naar rato', () => {
+  assert.equal(begonnenMaanden('2026-10-01', '2026-10-02'), 1);
+  assert.equal(begonnenMaanden('2026-10-01', '2026-11-01'), 1);
+  assert.equal(begonnenMaanden('2026-10-01', '2026-11-02'), 2);
+  assert.equal(begonnenMaanden('2026-10-01', '2026-10-01'), 0);
+  const z = rente(240000, '2026-10-01', 'bedrijf', new Date('2026-11-02T10:00:00Z'));
+  assert.equal(z.maanden, 2);
+  assert.equal(z.bedrag, 7200);
+  const p = rente(240000, '2026-10-01', 'particulier', new Date('2026-10-31T10:00:00Z'));
+  assert.equal(p.dagen, 30);
+  assert.equal(p.bedrag, Math.round((240000 * 0.06 * 30) / 365));
+  assert.equal(rente(240000, '2026-10-01', 'bedrijf', new Date('2026-09-30T10:00:00Z')).bedrag, 0);
+});

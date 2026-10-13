@@ -437,7 +437,9 @@ async function dossier(id) {
   return {
     a, k, termijnen, nakosten, factuur, events, historie, plan, incassoDossier, dossierBerichten, overdracht,
     meldingen: lijstMeldingen, openMeldingen,
-    incassokosten: factuur ? incasso.wettelijkeIncassokosten(factuur.te_betalen_cent) : 0,
+    incassokosten: factuur ? incasso.incassokosten(factuur.te_betalen_cent, k.type) : 0,
+    incassoGrondslag: incasso.grondslag(k.type),
+    rente: factuur ? incasso.rente(factuur.te_betalen_cent, factuur.vervaldatum, k.type) : null,
     annulering: ['wacht_op_betaling', 'bevestigd'].includes(a.status) && a.ritprijs_cent != null ? voorwaarden.annuleringsKostenDossier(a) : null,
     akkoordLink: `${svc.BASE_URL()}/akkoord/${a.akkoord_token}`,
   };

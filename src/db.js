@@ -189,6 +189,9 @@ CREATE TABLE IF NOT EXISTS meldingen (
   opgelost_op TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_meldingen_open ON meldingen(status, deadline);
+-- Incasso: rente tot de overdracht en de grondslag van kosten en rente (particulier of zakelijk)
+ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS rente_cent INT DEFAULT 0;
+ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS grondslag TEXT;
 
 -- Incassodossiers bij de deurwaarder
 CREATE TABLE IF NOT EXISTS dossiers (

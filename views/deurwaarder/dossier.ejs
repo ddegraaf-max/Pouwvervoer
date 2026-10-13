@@ -1,5 +1,5 @@
 <%- include('../partials/head', { titel: `Dossier D-${d.id}` }) %>
-<% const open = d.hoofdsom_cent + d.incassokosten_cent - d.ontvangen_cent; const gesloten = ['betaald','oninbaar','teruggetrokken'].includes(d.status); %>
+<% const open = d.hoofdsom_cent + d.incassokosten_cent + (d.rente_cent || 0) - d.ontvangen_cent; const gesloten = ['betaald','oninbaar','teruggetrokken'].includes(d.status); %>
 <main class="wrap" style="display:flex;flex-direction:column;gap:20px">
   <div>
     <div class="lead" style="margin:0"><a href="/deurwaarder">Dossiers</a> · D-<%= d.id %><%= d.referentie_deurwaarder ? ` · uw nr. ${d.referentie_deurwaarder}` : '' %> · overgedragen <%= datum(d.overgedragen_op) %></div>
@@ -14,9 +14,10 @@
       <h2 style="font-size:18px;margin-bottom:12px">Vordering</h2>
       <dl class="kv">
         <dt>Hoofdsom</dt><dd><%= euro(d.hoofdsom_cent) %> <span class="lead">(factuur <%= f.nummer %>, incl. 9% btw)</span></dd>
-        <dt>Incassokosten</dt><dd><%= euro(d.incassokosten_cent) %> <span class="lead">(wettelijke staffel, excl. btw)</span></dd>
+        <dt>Incassokosten</dt><dd><%= euro(d.incassokosten_cent) %> <span class="lead">(<%= d.grondslag ? d.grondslag.split('; rente: ')[0] : 'wettelijke staffel' %>, excl. btw)</span></dd>
+        <% if (d.rente_cent) { %><dt>Rente</dt><dd><%= euro(d.rente_cent) %> <span class="lead">(tot de overdracht; <%= d.grondslag ? d.grondslag.split('; rente: ')[1] || '' : '' %>)</span></dd><% } %>
         <dt>Ontvangen</dt><dd><%= euro(d.ontvangen_cent) %></dd>
-        <dt>Nog open</dt><dd><strong><%= euro(Math.max(0, open)) %></strong> <span class="lead">exclusief rente</span></dd>
+        <dt>Nog open</dt><dd><strong><%= euro(Math.max(0, open)) %></strong> <span class="lead">inclusief rente tot de overdracht</span></dd>
       </dl>
       <% if (k.type === 'particulier') { %><p class="lead" style="margin:12px 0 0;font-size:14px">Debiteur is particulier. De 14-dagenbrief is verstuurd op <%= datum(f.laatste_herinnering_op) %> (zie correspondentie).</p><% } %>
     </div>

@@ -18,6 +18,44 @@ const DOSSIER_STATUS = {
 };
 const GESLOTEN = ['betaald', 'oninbaar', 'teruggetrokken'];
 
+// Artikel 4.7 van de KNV-voorwaarden: particulieren volgens het Besluit (de staffel hieronder, pas 15 dagen na de
+// 14-dagenbrief); zakelijke opdrachtgevers 15% van de openstaande hoofdsom met een minimum van € 150 (artikel 4.7b).
+function incassokosten(hoofdsomCent, klanttype) {
+  if (hoofdsomCent <= 0) return 0;
+  if (klanttype === 'particulier') return wettelijkeIncassokosten(hoofdsomCent);
+  return Math.max(Math.round(hoofdsomCent * 0.15), 15000);
+}
+function grondslag(klanttype) {
+  return klanttype === 'particulier'
+    ? 'wettelijke staffel (Besluit vergoeding voor buitengerechtelijke incassokosten)'
+    : 'artikel 4.7b KNV-voorwaarden: 15% van de hoofdsom, minimaal € 150';
+}
+
+// Begonnen maanden tussen twee datums; een gedeelte van een maand telt als een hele maand (artikel 4.6).
+function begonnenMaanden(van, tot) {
+  const a = new Date(van);
+  const b = new Date(tot);
+  if (b <= a) return 0;
+  let m = (b.getUTCFullYear() - a.getUTCFullYear()) * 12 + (b.getUTCMonth() - a.getUTCMonth());
+  if (b.getUTCDate() > a.getUTCDate()) m += 1;
+  return Math.max(1, m);
+}
+
+// Rente over het achterstallige bedrag: zakelijk 1,5% per begonnen maand zonder ingebrekestelling (artikel 4.6);
+// particulier de wettelijke rente per jaar naar rato van de dagen (WETTELIJKE_RENTE_PCT, standaard 6; controleer het geldende percentage).
+const WETTELIJKE_RENTE_PCT = Number(process.env.WETTELIJKE_RENTE_PCT || 6);
+function rente(hoofdsomCent, vervaldatum, klanttype, nu = new Date()) {
+  if (!hoofdsomCent || hoofdsomCent <= 0 || !vervaldatum) return { bedrag: 0, maanden: 0, dagen: 0, omschrijving: 'geen' };
+  const dagen = Math.max(0, dagenTussen(vervaldatum, nu));
+  if (dagen === 0) return { bedrag: 0, maanden: 0, dagen: 0, omschrijving: 'nog niet vervallen' };
+  if (klanttype === 'particulier') {
+    const bedrag = Math.round((hoofdsomCent * (WETTELIJKE_RENTE_PCT / 100) * dagen) / 365);
+    return { bedrag, maanden: 0, dagen, omschrijving: `wettelijke rente ${WETTELIJKE_RENTE_PCT}% per jaar over ${dagen} dag(en)` };
+  }
+  const maanden = begonnenMaanden(vervaldatum, nu);
+  return { bedrag: Math.round(hoofdsomCent * 0.015 * maanden), maanden, dagen, omschrijving: `1,5% per begonnen maand (artikel 4.6 KNV), ${maanden} maand(en)` };
+}
+
 /**
  * Wettelijke buitengerechtelijke incassokosten (Besluit vergoeding voor buitengerechtelijke incassokosten).
  * Staffel over de hoofdsom, minimaal € 40, maximaal € 6.775, exclusief btw. In centen.
@@ -67,12 +105,13 @@ async function overdragen(factuurId, notitie) {
     const k = (await c.query('SELECT type FROM klanten WHERE id=$1', [f.klant_id])).rows[0];
     const check = magOverdragen(f, k.type);
     if (!check.mag) throw new Error(check.reden);
-    const kosten = wettelijkeIncassokosten(f.te_betalen_cent);
+    const kosten = incassokosten(f.te_betalen_cent, k.type);
+    const r = rente(f.te_betalen_cent, f.vervaldatum, k.type);
     const d = (
       await c.query(
-        `INSERT INTO dossiers (factuur_id, aanvraag_id, klant_id, hoofdsom_cent, incassokosten_cent)
-         VALUES ($1,$2,$3,$4,$5) RETURNING *`,
-        [f.id, f.aanvraag_id, f.klant_id, f.te_betalen_cent, kosten],
+        `INSERT INTO dossiers (factuur_id, aanvraag_id, klant_id, hoofdsom_cent, incassokosten_cent, rente_cent, grondslag)
+         VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+        [f.id, f.aanvraag_id, f.klant_id, f.te_betalen_cent, kosten, r.bedrag, `${grondslag(k.type)}; rente: ${r.omschrijving}`],
       )
     ).rows[0];
     await c.query('UPDATE facturen SET incasso=true WHERE id=$1', [f.id]);
@@ -81,7 +120,7 @@ async function overdragen(factuurId, notitie) {
       f.aanvraag_id,
       f.klant_id,
       'incasso',
-      `Factuur ${f.nummer} overgedragen aan ${NAAM()} (dossier D-${d.id}). Hoofdsom ${euro(f.te_betalen_cent)}, wettelijke incassokosten ${euro(kosten)}.`,
+      `Factuur ${f.nummer} overgedragen aan ${NAAM()} (dossier D-${d.id}). Hoofdsom ${euro(f.te_betalen_cent)}, incassokosten ${euro(kosten)} (${grondslag(k.type)}), rente tot vandaag ${euro(r.bedrag)} (${r.omschrijving}).`,
     ]);
     return { d, f };
   });
@@ -148,7 +187,7 @@ async function registreerBetaling(dossierId, bedragCent, datumStr, omschrijving)
       await c.query("UPDATE aanvragen SET status='betaald' WHERE id=$1 AND status <> 'geannuleerd'", [d.aanvraag_id]);
       tekst += ' Hoofdsom voldaan: factuur staat op betaald.';
     }
-    if (ontvangen >= d.hoofdsom_cent + d.incassokosten_cent) {
+    if (ontvangen >= d.hoofdsom_cent + d.incassokosten_cent + (d.rente_cent || 0)) {
       await c.query("UPDATE dossiers SET status='betaald', gesloten_op=now() WHERE id=$1", [d.id]);
       tekst += ' Dossier gesloten.';
     }
@@ -175,6 +214,6 @@ async function dossierVolledig(dossierId) {
 }
 
 module.exports = {
-  NAAM, DOSSIER_STATUS, GESLOTEN, wettelijkeIncassokosten, magOverdragen, overdragen, bericht, zetStatus,
+  NAAM, DOSSIER_STATUS, GESLOTEN, wettelijkeIncassokosten, incassokosten, grondslag, begonnenMaanden, rente, magOverdragen, overdragen, bericht, zetStatus,
   registreerBetaling, dossierVolledig,
 };

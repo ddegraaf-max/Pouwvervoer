@@ -79,7 +79,7 @@ Deze aanpak voorkomt eerst (afspraken expliciet, klantscore en aanbetaling bij r
 Blijft een factuur onbetaald, dan draagt de backoffice hem over aan gerechtsdeurwaarder Armaere (naam instelbaar met `DEURWAARDER_NAAM`).
 
 - Overdragen kan pas na de aanmaning. Bij particulieren daarnaast pas 15 dagen na de 14-dagenbrief.
-- Het dossier rekent de wettelijke incassokosten uit volgens de staffel (15/10/5/1/0,5%, minimaal € 40, maximaal € 6.775).
+- Het dossier rekent de incassokosten en rente uit volgens de KNV-voorwaarden: particulieren de wettelijke staffel (15/10/5/1/0,5%, minimaal € 40, maximaal € 6.775) en de wettelijke rente (`WETTELIJKE_RENTE_PCT`); zakelijke opdrachtgevers 15% van de hoofdsom met een minimum van € 150 (artikel 4.7b) en 1,5% rente per begonnen maand zonder ingebrekestelling (artikel 4.6). De aanmaning noemt het bedrag; de 14-dagenbrief aan particulieren noemt het exacte bedrag aan incassokosten, zoals de wet eist.
 - Armaere logt in op `/deurwaarder` met `DEURWAARDER_PASSWORD` en ziet alleen overgedragen dossiers, met het volledige bewijs: wie akkoord gaf en wanneer, welke voorwaarden ter hand zijn gesteld en geaccepteerd, de factuur met nakosten en verrekening, en alle e-mails aan de debiteur.
 - Armaere zet de status, registreert ontvangsten en stuurt berichten; Pouw ziet dat direct in het dossier en kan terugschrijven of het dossier terugtrekken. Is de hoofdsom ontvangen, dan staat de factuur op betaald.
 - Een incassoverleden telt mee in de klantscore (−30 punten).

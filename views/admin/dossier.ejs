@@ -226,7 +226,7 @@
       <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:16px">
         <h3 style="margin-bottom:6px">Overdragen aan <%= deurwaarder %></h3>
         <% if (overdracht.mag) { %>
-          <p class="lead" style="font-size:15px;margin-bottom:10px"><%= deurwaarder %> krijgt het hele dossier in hun portaal: aanvraag, akkoord, factuur en alle herinneringen. Wettelijke incassokosten: <%= euro(incassokosten) %>.</p>
+          <p class="lead" style="font-size:15px;margin-bottom:10px"><%= deurwaarder %> krijgt het hele dossier in hun portaal: aanvraag, akkoord, factuur en alle herinneringen. Incassokosten: <%= euro(incassokosten) %> (<%= incassoGrondslag %>)<%= locals.rente && rente.bedrag ? `, rente tot vandaag ${euro(rente.bedrag)} (${rente.omschrijving})` : '' %>.</p>
           <%- form('incasso') %>
             <div style="display:flex;flex-direction:column;gap:8px">
               <div><label for="notitie">Toelichting voor <%= deurwaarder %> <span class="opt">(optioneel)</span></label><textarea id="notitie" name="notitie" placeholder="Bijv. debiteur reageert niet op telefoon"></textarea></div>
@@ -246,7 +246,7 @@
       <div class="between" style="flex-wrap:wrap;margin-bottom:10px"><h2 style="font-size:18px">Dossier D-<%= incassoDossier.id %> bij <%= deurwaarder %></h2><span class="badge <%= incassoDossier.status === 'betaald' ? 'k-A' : 'st' %>"><%= DOSSIER_STATUS[incassoDossier.status] %></span></div>
       <dl class="kv">
         <dt>Overgedragen</dt><dd><%= datumTijd(incassoDossier.overgedragen_op) %><%= incassoDossier.geopend_op ? ` · geopend ${datumTijd(incassoDossier.geopend_op)}` : ' · nog niet geopend' %></dd>
-        <dt>Hoofdsom</dt><dd><%= euro(incassoDossier.hoofdsom_cent) %> + <%= euro(incassoDossier.incassokosten_cent) %> kosten</dd>
+        <dt>Hoofdsom</dt><dd><%= euro(incassoDossier.hoofdsom_cent) %> + <%= euro(incassoDossier.incassokosten_cent) %> kosten<%= incassoDossier.rente_cent ? ` + ${euro(incassoDossier.rente_cent)} rente` : '' %></dd>
         <dt>Ontvangen</dt><dd><%= euro(incassoDossier.ontvangen_cent) %></dd>
         <% if (incassoDossier.referentie_deurwaarder) { %><dt>Nr. <%= deurwaarder %></dt><dd><%= incassoDossier.referentie_deurwaarder %></dd><% } %>
       </dl>
