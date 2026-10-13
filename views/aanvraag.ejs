@@ -82,6 +82,10 @@
     </div>
   </div>
 
+  <div class="card">
+    <label class="check" for="voorwaarden"><input type="checkbox" id="voorwaarden" name="voorwaarden" <%= v.voorwaarden ? 'checked' : '' %>><span>Ik heb de <a href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer</a> (<%= voorwaarden.versie %>) gelezen en accepteer ze. Ze gelden voor deze aanvraag, de offerte en de rit.</span></label>
+  </div>
+
   <div class="row">
     <button class="btn" type="submit">Offerte aanvragen</button>
     <span class="lead" style="margin:0;font-size:15px">Gratis en vrijblijvend. U betaalt pas na goedkeuring.</span>

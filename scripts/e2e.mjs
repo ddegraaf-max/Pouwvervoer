@@ -58,7 +58,7 @@ async function aanvraag(c, extra) {
     method: 'POST',
     form: {
       _csrf: token, aanvrager_naam: 'Sanne Jansen', aanvrager_tel: '0612345678', aanvrager_email: 'sanne@example.nl',
-      tekenbevoegde: 'M. de Vries', teken_email: 'directie@obsvoorbeeld.nl', factuur_email: 'facturen@bestuur.nl', bus_blijft: 'on', ...extra,
+      tekenbevoegde: 'M. de Vries', teken_email: 'directie@obsvoorbeeld.nl', factuur_email: 'facturen@bestuur.nl', bus_blijft: 'on', voorwaarden: 'on', ...extra,
     },
   });
 }
@@ -72,9 +72,10 @@ assert.equal(r.status, 302);
 assert.equal(r.location, '/reis');
 
 // 1. Validatie
-r = await aanvraag(pub, { klanttype: 'onderwijs', org_naam: 'OBS Voorbeeld', kvk: '123' });
+r = await aanvraag(pub, { klanttype: 'onderwijs', org_naam: 'OBS Voorbeeld', kvk: '123', voorwaarden: '' });
 assert.equal(r.status, 422);
 assert.match(r.text, /KvK-nummer van 8 cijfers/);
+assert.match(r.text, /Vervoer- en Reisvoorwaarden van KNV Busvervoer heeft gelezen/);
 assert.match(r.text, /inkoop- of referentienummer/);
 
 // 2. Onderwijs → klasse A (geen aanbetaling)

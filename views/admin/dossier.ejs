@@ -223,7 +223,8 @@
         <dt>PO-nummer</dt><dd><%= a.po_nummer || 'Niet opgegeven' %></dd>
         <dt>Reisleider</dt><dd><%= a.reisleider_naam ? `${a.reisleider_naam}, ${a.reisleider_tel || ''}` : '—' %></dd>
       </dl>
-      <% if (a.akkoord_op) { %><p class="lead" style="margin:12px 0 0;font-size:14px">Akkoord door <strong><%= a.akkoord_naam %></strong> op <%= datumTijd(a.akkoord_op) %>.</p><% } %>
+      <% if (a.akkoord_op) { %><p class="lead" style="margin:12px 0 0;font-size:14px">Akkoord door <strong><%= a.akkoord_naam %></strong> op <%= datumTijd(a.akkoord_op) %><%= a.akkoord_voorwaarden_versie ? `, met acceptatie van de voorwaarden ${a.akkoord_voorwaarden_versie}` : '' %>.</p><% } %>
+      <% if (a.voorwaarden_akkoord_op) { %><p class="lead" style="margin:8px 0 0;font-size:14px">Voorwaarden <%= a.voorwaarden_versie %> ter hand gesteld en geaccepteerd door de aanvrager op <%= datumTijd(a.voorwaarden_akkoord_op) %><%= a.voorwaarden_ip ? ` (IP ${a.voorwaarden_ip})` : '' %>.</p><% } %>
     </div>
     <div class="card">
       <h2 style="font-size:18px;margin-bottom:10px">Rit</h2>

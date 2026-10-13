@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.5.0 · 13 oktober 2026
+- Voorwaarden: de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer (pdf) staan in de app op `/voorwaarden` en in de voet. De aanvrager accepteert ze verplicht bij de aanvraag (stap 2) en de tekenbevoegde bij het akkoord, telkens met link. Versie, tijdstip en IP worden bewaard en staan in het logboek, het dossier en het portaal van Armaere, zodat Pouw er aanspraak op kan maken. De bevestigings- en offertemail bevatten de link.
+
 ## 0.4.0 · 13 oktober 2026
 - Boekingsvelden compleet: terugdatum en -tijd, vertrek of aankomst per richting, tussenstops met wachttijd, andere route terug en "bus blijft bij de groep" worden apart opgeslagen (nieuwe kolommen in `aanvragen`). Ze staan in de backoffice, op de akkoordpagina, in de mails, bij de assistent en in de export voor trip.
 - Stap 2 (`/`) vraagt de rit niet meer opnieuw, maar toont de samengestelde reis met een link om te wijzigen. Zonder reis stuurt `/` door naar `/reis`; de knop "Prijs aanvragen" wijst direct naar `/reis`.

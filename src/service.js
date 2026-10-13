@@ -1,3 +1,4 @@
+const voorwaarden = require('./voorwaarden');
 const reis = require('./reis');
 const crypto = require('crypto');
 const { q, one, all, tx } = require('./db');
@@ -111,14 +112,15 @@ async function nieuweAanvraag(d) {
         `INSERT INTO aanvragen (klant_id, aanvrager_naam, aanvrager_tel, aanvrager_email, aanvrager_rol, factuur_email,
           factuur_adres, po_nummer, reisleider_naam, reisleider_tel, rit_datum, vertrek_tijd, van, naar, personen, ritsoort,
           opmerkingen, akkoord_token, reistype, tijdtype_heen, via, datum_terug, tijd_terug, tijdtype_terug, andere_route,
-          terug_van, terug_naar, terug_via, bus_blijft)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29) RETURNING id`,
+          terug_van, terug_naar, terug_via, bus_blijft, voorwaarden_versie, voorwaarden_akkoord_op, voorwaarden_ip)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,now(),$31) RETURNING id`,
         [
           klantId, d.aanvrager_naam, d.aanvrager_tel, d.aanvrager_email, d.aanvrager_rol || null, d.factuur_email,
           d.factuur_adres || null, d.po_nummer || null, d.reisleider_naam || null, d.reisleider_tel || null,
           d.rit_datum, d.vertrek_tijd || null, d.van, d.naar, Number(d.personen), d.ritsoort, d.opmerkingen || null, token(),
           d.reistype || null, d.tijdtype_heen || null, JSON.stringify(d.via || []), d.datum_terug || null, d.tijd_terug || null,
           d.tijdtype_terug || null, !!d.andere_route, d.terug_van || null, d.terug_naar || null, JSON.stringify(d.terug_via || []), !!d.bus_blijft,
+          voorwaarden.VERSIE, d.voorwaarden_ip || null,
         ],
       )
     ).rows[0].id;
@@ -128,7 +130,7 @@ async function nieuweAanvraag(d) {
         ? `KvK-check (${check.bron}): ingeschreven${check.faillissement ? ', FAILLISSEMENT/SURSEANCE' : ''}${check.opgericht ? `, sinds ${datum(check.opgericht)}` : ''}.`
         : `KvK-check (${check.bron}): niet gevonden${check.fout ? ` (${check.fout})` : ''}.`;
     }
-    await log(aanvraagId, klantId, 'aanvraag', `Aanvraag ontvangen van ${d.aanvrager_naam}. ${kvkTekst}`, c);
+    await log(aanvraagId, klantId, 'aanvraag', `Aanvraag ontvangen van ${d.aanvrager_naam}. ${kvkTekst} Voorwaarden ${voorwaarden.VERSIE} ter hand gesteld (link in formulier en bevestigingsmail) en geaccepteerd door de aanvrager${d.voorwaarden_ip ? ` (IP ${d.voorwaarden_ip})` : ''}.`, c);
     return { aanvraagId, klantId };
   });
 
@@ -138,7 +140,8 @@ async function nieuweAanvraag(d) {
     onderwerp: 'We hebben je busaanvraag ontvangen',
     tekst:
       `Beste ${d.aanvrager_naam},\n\nBedankt voor je aanvraag voor ${datum(d.rit_datum)} (${d.van} → ${d.naar}).\n${reis.samenvatting(reis.vanAanvraag(d))}\n` +
-      `We maken een offerte en sturen die ter akkoord naar ${d.tekenbevoegde} (${d.teken_email}).\n\nMet vriendelijke groet,\nPouw Vervoer`,
+      `We maken een offerte en sturen die ter akkoord naar ${d.tekenbevoegde} (${d.teken_email}).\n\n` +
+      `Op deze aanvraag en de rit zijn de ${voorwaarden.NAAM} (${voorwaarden.VERSIE}) van toepassing, zoals je bij de aanvraag hebt geaccepteerd: ${voorwaarden.absoluut(BASE_URL())}\n\nMet vriendelijke groet,\nPouw Vervoer`,
     aanvraagId: ids.aanvraagId,
     klantId: ids.klantId,
   });
@@ -162,7 +165,8 @@ async function verstuurOfferte(aanvraagId) {
     tekst:
       `Beste ${k.tekenbevoegde},\n\n${a.aanvrager_naam} heeft namens ${k.naam} busvervoer aangevraagd ` +
       `op ${datum(a.rit_datum)} (${a.van} → ${a.naar}).\n${reis.samenvatting(reis.vanAanvraag(a))}\nRitprijs: ${euro(a.ritprijs_cent)} incl. 9% btw.\n` +
-      `Betaling: ${plan.omschrijving}\n\nBekijk en accordeer de offerte: ${link}\n\nMet vriendelijke groet,\nPouw Vervoer`,
+      `Betaling: ${plan.omschrijving}\n\nBekijk en accordeer de offerte: ${link}\n\n` +
+      `Op deze offerte en de rit zijn de ${voorwaarden.NAAM} (${voorwaarden.VERSIE}) van toepassing: ${voorwaarden.absoluut(BASE_URL())}\nMet uw akkoord accepteert u deze voorwaarden.\n\nMet vriendelijke groet,\nPouw Vervoer`,
     aanvraagId,
     klantId: k.id,
   });
@@ -171,7 +175,7 @@ async function verstuurOfferte(aanvraagId) {
 }
 
 // ---- Akkoord ----
-async function geefAkkoord(akkoordToken, naam, ip) {
+async function geefAkkoord(akkoordToken, naam, ip, voorwaardenVersie = voorwaarden.VERSIE) {
   return tx(async (c) => {
     const a = (await c.query('SELECT * FROM aanvragen WHERE akkoord_token=$1 FOR UPDATE', [akkoordToken])).rows[0];
     if (!a) throw new Error('Onbekende link.');
@@ -187,10 +191,10 @@ async function geefAkkoord(akkoordToken, naam, ip) {
     const directTeBetalen = plan.termijnen.some((t) => t.uiterlijk === null);
     const status = directTeBetalen ? 'wacht_op_betaling' : 'bevestigd';
     await c.query(
-      'UPDATE aanvragen SET status=$2, akkoord_naam=$3, akkoord_op=now(), akkoord_ip=$4 WHERE id=$1',
-      [a.id, status, naam, ip],
+      'UPDATE aanvragen SET status=$2, akkoord_naam=$3, akkoord_op=now(), akkoord_ip=$4, akkoord_voorwaarden_versie=$5 WHERE id=$1',
+      [a.id, status, naam, ip, voorwaardenVersie],
     );
-    await log(a.id, a.klant_id, 'akkoord', `Akkoord gegeven door ${naam}. ${plan.omschrijving}`, c);
+    await log(a.id, a.klant_id, 'akkoord', `Akkoord gegeven door ${naam}${ip ? ` (IP ${ip})` : ''}, met acceptatie van de voorwaarden ${voorwaardenVersie} en verklaring van tekenbevoegdheid. ${plan.omschrijving}`, c);
     if (status === 'bevestigd') await log(a.id, a.klant_id, 'status', 'Rit bevestigd en vrijgegeven voor de planning.', c);
     return { ...a, status };
   });

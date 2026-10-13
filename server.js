@@ -11,6 +11,7 @@ const fmt = require('./src/format');
 const reis = require('./src/reis');
 const assistent = require('./src/assistent');
 const { version: VERSIE } = require('./package.json');
+const voorwaarden = require('./src/voorwaarden');
 const { aanbetalingsplan } = require('./src/score');
 
 const app = express();
@@ -67,6 +68,7 @@ app.use((req, res, next) => {
 
 Object.assign(app.locals, fmt, {
   versie: VERSIE,
+  voorwaarden: { naam: voorwaarden.NAAM, versie: voorwaarden.VERSIE, url: voorwaarden.URL },
   logoUrl: process.env.LOGO_URL || '',
   deurwaarder: incasso.NAAM(),
   DOSSIER_STATUS: incasso.DOSSIER_STATUS,
@@ -156,6 +158,8 @@ function valideer(b) {
   if (!EMAIL.test(v.factuur_email)) f.push('Vul een geldig e-mailadres voor de factuur in (stap 4).');
   if (v.klanttype === 'onderwijs' && !v.po_nummer) f.push('Scholen en overheid: vul het inkoop- of referentienummer in (stap 4). Vraag het bij uw administratie.');
   v.bus_blijft = b.bus_blijft === 'on';
+  v.voorwaarden = b.voorwaarden === 'on';
+  if (!v.voorwaarden) f.push('Vink aan dat u de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer heeft gelezen en accepteert (onderaan).');
   return { f, v };
 }
 
@@ -167,7 +171,7 @@ app.post(
     if (!r) return res.redirect('/reis');
     const { f, v } = valideer(req.body);
     if (f.length) return res.status(422).render('aanvraag', { fouten: f, v, reis: r });
-    Object.assign(v, reis.velden(r), { bus_blijft: r.reistype !== 'enkel' && v.bus_blijft });
+    Object.assign(v, reis.velden(r), { bus_blijft: r.reistype !== 'enkel' && v.bus_blijft, voorwaarden_ip: req.ip });
     await svc.nieuweAanvraag(v);
     delete req.session.reis;
     res.render('bedankt', { v, reis: { ...r, bus_blijft: v.bus_blijft } });
@@ -202,7 +206,7 @@ app.post(
     if (!naam || req.body.voorwaarden !== 'on') {
       return res.status(422).render('akkoord', { ...d, fout: 'Vul uw naam in en vink het akkoord aan.' });
     }
-    await svc.geefAkkoord(req.params.token, naam, req.ip);
+    await svc.geefAkkoord(req.params.token, naam, req.ip, voorwaarden.VERSIE);
     const eerste = await db.one(
       'SELECT token FROM termijnen WHERE aanvraag_id=$1 AND uiterlijk IS NULL AND betaald_op IS NULL ORDER BY id LIMIT 1',
       [d.a.id],
@@ -716,6 +720,7 @@ app.post(
   }),
 );
 
+app.get('/voorwaarden', (req, res) => res.render('voorwaarden'));
 app.get('/health', (req, res) => res.json({ ok: true, versie: VERSIE }));
 
 app.use((req, res) => res.status(404).render('melding', { titel: 'Pagina niet gevonden', tekst: '' }));

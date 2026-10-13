@@ -24,13 +24,22 @@ Met `ANTHROPIC_API_KEY` (Claude, model instelbaar met `ANTHROPIC_MODEL`, standaa
 
 De assistent noemt nooit zelf prijzen of toezeggingen aan klanten en verzint geen feiten die niet in het dossier staan. Weigert het model een vraag, dan probeert de API automatisch een ander model. Persoonsgegevens gaan naar Anthropic: regel een verwerkersovereenkomst voordat dit live gaat.
 
+## Voorwaarden
+
+Op alle aanvragen, offertes en ritten gelden de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer. Om er aanspraak op te kunnen maken, stelt de app ze ter hand en legt de acceptatie vast:
+
+- De pdf staat in `public/documenten/knv-busvervoer-2025.pdf` en op `/voorwaarden`; met `VOORWAARDEN_URL` kan een externe link worden gebruikt. `VOORWAARDEN_VERSIE` (standaard "KNV Busvervoer 2025") is het label dat per aanvraag wordt bewaard; verhoog het als KNV nieuwe voorwaarden publiceert en vervang de pdf.
+- Aanvraag (stap 2): verplicht vinkje met link naar de voorwaarden. Bewaard: versie, tijdstip en IP (`voorwaarden_versie`, `voorwaarden_akkoord_op`, `voorwaarden_ip`), plus een regel in het logboek. De bevestigingsmail bevat de link.
+- Offerte: de mail aan de tekenbevoegde bevat de link; de akkoordpagina toont de link en het vinkje "Ik ga akkoord met deze offerte en accepteer de voorwaarden". Bewaard: `akkoord_voorwaarden_versie` naast naam, tijdstip en IP van het akkoord, plus een regel in het logboek.
+- Het dossier in de backoffice en het portaal van Armaere tonen beide acceptaties als bewijs.
+
 ## Incasso via Armaere
 
 Blijft een factuur onbetaald, dan draagt de backoffice hem over aan gerechtsdeurwaarder Armaere (naam instelbaar met `DEURWAARDER_NAAM`).
 
 - Overdragen kan pas na de aanmaning. Bij particulieren daarnaast pas 15 dagen na de 14-dagenbrief.
 - Het dossier rekent de wettelijke incassokosten uit volgens de staffel (15/10/5/1/0,5%, minimaal € 40, maximaal € 6.775).
-- Armaere logt in op `/deurwaarder` met `DEURWAARDER_PASSWORD` en ziet alleen overgedragen dossiers, met het volledige bewijs: wie akkoord gaf en wanneer, de factuur met nakosten en verrekening, en alle e-mails aan de debiteur.
+- Armaere logt in op `/deurwaarder` met `DEURWAARDER_PASSWORD` en ziet alleen overgedragen dossiers, met het volledige bewijs: wie akkoord gaf en wanneer, welke voorwaarden ter hand zijn gesteld en geaccepteerd, de factuur met nakosten en verrekening, en alle e-mails aan de debiteur.
 - Armaere zet de status, registreert ontvangsten en stuurt berichten; Pouw ziet dat direct in het dossier en kan terugschrijven of het dossier terugtrekken. Is de hoofdsom ontvangen, dan staat de factuur op betaald.
 - Een incassoverleden telt mee in de klantscore (−30 punten).
 

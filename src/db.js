@@ -146,6 +146,11 @@ ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_van TEXT;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_naar TEXT;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_via JSONB;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS bus_blijft BOOLEAN DEFAULT FALSE;
+-- Voorwaarden: welke versie ter hand is gesteld en wanneer die is geaccepteerd (aanvraag en akkoord)
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS voorwaarden_versie TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS voorwaarden_akkoord_op TIMESTAMPTZ;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS voorwaarden_ip TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS akkoord_voorwaarden_versie TEXT;
 
 -- Incassodossiers bij de deurwaarder
 CREATE TABLE IF NOT EXISTS dossiers (
