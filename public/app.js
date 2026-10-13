@@ -27,3 +27,8 @@
   form.addEventListener('change', update);
   update();
 })();
+
+// Printknop op de chauffeursbriefing: de Content-Security-Policy staat geen inline onclick toe.
+document.addEventListener('click', function (e) {
+  if (e.target.closest('[data-print]')) window.print();
+});

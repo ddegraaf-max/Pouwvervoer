@@ -292,7 +292,7 @@
       <% if (a.voorwaarden_akkoord_op) { %><p class="lead" style="margin:8px 0 0;font-size:14px">Voorwaarden <%= a.voorwaarden_versie %> ter hand gesteld en geaccepteerd door de aanvrager op <%= datumTijd(a.voorwaarden_akkoord_op) %><%= a.voorwaarden_ip ? ` (IP ${a.voorwaarden_ip})` : '' %>.</p><% } %>
     </div>
     <div class="card">
-      <h2 style="font-size:18px;margin-bottom:10px">Rit</h2>
+      <div class="between" style="margin-bottom:10px;flex-wrap:wrap;gap:6px"><h2 style="font-size:18px;margin:0">Rit</h2><a class="btn small ghost" href="/admin/aanvraag/<%= a.id %>/briefing">Chauffeursbriefing</a></div>
       <%- include('../partials/reis-samenvatting', { r: vanAanvraag(a) }) %>
       <% if (a.opmerkingen) { %><dl class="kv" style="margin-top:8px"><dt>Bijzonderheden</dt><dd><%= a.opmerkingen %></dd></dl><% } %>
     </div>

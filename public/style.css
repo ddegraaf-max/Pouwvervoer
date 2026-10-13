@@ -319,3 +319,14 @@ input[aria-busy=true]{padding-right:64px}
 @keyframes weg-terug{0%{left:calc(100% - 66px);opacity:0}6%{opacity:1}84%{left:0;opacity:1}92%{opacity:0}100%{left:0;opacity:0}}
 @media (prefers-reduced-motion:reduce){.leg-kop .weg .rijder,.leg-kop .weg .rijder>svg,.leg-kop .weg .rijder .rook{animation:none}.leg-kop .weg .rijder{left:calc(50% - 15px)}.leg-kop .weg .rijder .rook{opacity:.5}}
 @media (max-width:420px){.leg-kop .weg{min-width:70px}}
+
+/* Chauffeursbriefing */
+.briefing ol.stops{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;font-size:16px}
+.briefing ol.stops li{position:relative;padding-left:26px}
+.briefing ol.stops li::before{content:"";position:absolute;left:4px;top:7px;width:10px;height:10px;border-radius:50%;background:var(--navy)}
+.briefing ol.stops li.van::before{background:#fff;border:3px solid var(--navy);width:8px;height:8px;top:5px;left:3px}
+.briefing ol.stops li.naar{font-weight:700}
+.briefing ul.checklist{margin:0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:8px;font-size:14px}
+.briefing ul.checklist li{position:relative;padding-left:30px}
+.briefing ul.checklist li::before{content:"";position:absolute;left:0;top:1px;width:18px;height:18px;border:2px solid var(--navy);border-radius:3px}
+@media print{header.top,nav.menubalk,footer,.no-print,.demo{display:none!important}body{background:#fff}.card{border-color:#999;break-inside:avoid}main.wrap{padding-top:0}.cols{display:block}.cols>.side{margin-top:12px}}

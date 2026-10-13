@@ -456,6 +456,17 @@ app.get(
   }),
 );
 
+// Chauffeursbriefing: alles wat de chauffeur moet weten op één printbare pagina (route, tijden, contact, afspraken).
+app.get(
+  '/admin/aanvraag/:id/briefing',
+  admin,
+  wrap(async (req, res) => {
+    const d = await dossier(Number(req.params.id));
+    if (!d) return res.status(404).render('melding', { titel: 'Niet gevonden', tekst: '' });
+    res.render('admin/briefing', { ...d });
+  }),
+);
+
 function terug(req, res, tekst) {
   req.session.melding = tekst;
   res.redirect(303, `/admin/aanvraag/${req.params.id}`);

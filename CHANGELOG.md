@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.11.0 · 13 oktober 2026
+- Chauffeursbriefing per rit in de backoffice: printbare pagina met tijden, route en tussenstops, kaart, contactpersoon tijdens de rit, afspraken, bijzonderheden en een checklist.
+
 ## 0.10.0 · 13 oktober 2026
 - Incassokosten en rente volgens de KNV-voorwaarden: zakelijke opdrachtgevers 15% van de hoofdsom met een minimum van € 150 (artikel 4.7b) en 1,5% rente per begonnen maand (artikel 4.6); particulieren de wettelijke staffel en wettelijke rente. De aanmaning en de 14-dagenbrief noemen het bedrag. Het dossier voor Armaere bevat kosten, rente en de grondslag.
 
