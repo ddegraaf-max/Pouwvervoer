@@ -133,3 +133,10 @@ footer .certs{display:flex;flex-wrap:wrap;gap:6px}
 footer .certs span{border:1px solid #4A5690;border-radius:3px;padding:2px 8px;font-size:12px;font-weight:700;color:#fff}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .btn.zin{text-transform:none;letter-spacing:0}
+/* Titelbalk met busfoto: tekst links op navy, de bus rechts */
+.band.foto{overflow:hidden;padding-block:56px 72px}
+.band.foto::before{content:'';position:absolute;top:0;bottom:0;right:0;left:38%;background:linear-gradient(90deg,var(--navy-diep) 0%,rgba(27,39,96,.6) 22%,rgba(27,39,96,.05) 55%),url(/bus.jpg) 55% 58%/cover no-repeat}
+.band.foto .wrap{position:relative;z-index:1}
+.band.foto p{max-width:520px}
+.band.foto h1{max-width:560px}
+@media (max-width:820px){.band.foto::before{left:0;background:linear-gradient(rgba(27,39,96,.78),rgba(27,39,96,.86)),url(/bus.jpg) 60% 58%/cover no-repeat}}
