@@ -1,3 +1,4 @@
+const beleid = require('./beleid');
 const { datumTijd: datumTijdNL } = require('./format');
 const voorwaarden = require('./voorwaarden');
 const reis = require('./reis');
@@ -161,14 +162,15 @@ async function verstuurOfferte(aanvraagId) {
   if (s.geblokkeerd) throw new Error(`Geblokkeerd: ${s.blokkadeReden}`);
   const k = await one('SELECT * FROM klanten WHERE id=$1', [a.klant_id]);
   const plan = aanbetalingsplan(s.klasse, a.ritprijs_cent, a.rit_datum, a.nakosten_schatting_cent || 0);
-  await q("UPDATE aanvragen SET status='offerte_verstuurd', offerte_verstuurd_op=now() WHERE id=$1", [aanvraagId]);
+  const geldigTot = beleid.offerteGeldigTot();
+  await q("UPDATE aanvragen SET status='offerte_verstuurd', offerte_verstuurd_op=now(), offerte_geldig_tot=$2 WHERE id=$1", [aanvraagId, geldigTot]);
   const link = `${BASE_URL()}/akkoord/${a.akkoord_token}`;
   await mail.verstuur({
     aan: k.teken_email,
     onderwerp: `Offerte busvervoer ${datum(a.rit_datum)} ter akkoord`,
     tekst:
       `Beste ${k.tekenbevoegde},\n\n${a.aanvrager_naam} heeft namens ${k.naam} busvervoer aangevraagd ` +
-      `op ${datum(a.rit_datum)} (${a.van} → ${a.naar}).\n${reis.samenvatting(reis.vanAanvraag(a))}\nRitprijs: ${euro(a.ritprijs_cent)} incl. 9% btw.\n` +
+      `op ${datum(a.rit_datum)} (${a.van} → ${a.naar}).\n${reis.samenvatting(reis.vanAanvraag(a))}\nRitprijs: ${euro(a.ritprijs_cent)} incl. 9% btw, geldig tot en met ${datum(geldigTot)}.\n` +
       `Betaling: ${plan.omschrijving}\n\nBekijk en accordeer de offerte: ${link}\n\n` +
       `Met uw akkoord plaatst u een bestelling met betalingsverplichting en accepteert u de voorwaarden.\n\n${voorwaarden.mailBlok(BASE_URL())}\n\nVervoerder: ${voorwaarden.bedrijfRegel()}.\n\nMet vriendelijke groet,\nPouw Vervoer`,
     bijlagen: [voorwaarden.bijlage()],
@@ -258,7 +260,7 @@ async function annuleer(aanvraagId, { reden = '', kostenInRekening = false, door
     const a = (await c.query('SELECT * FROM aanvragen WHERE id=$1 FOR UPDATE', [aanvraagId])).rows[0];
     if (!a || !['nieuw', 'offerte_verstuurd', 'wacht_op_betaling', 'bevestigd'].includes(a.status)) return null;
     const gesloten = ['wacht_op_betaling', 'bevestigd'].includes(a.status) && a.ritprijs_cent != null;
-    const kosten = gesloten ? voorwaarden.annuleringskosten(a.ritprijs_cent, a.rit_datum, nu) : null;
+    const kosten = gesloten ? voorwaarden.annuleringsKostenDossier(a, nu) : null;
     const rekenen = !!(kostenInRekening && kosten && kosten.bedrag > 0);
     const betaald = (
       await c.query('SELECT coalesce(sum(bedrag_cent),0)::int s FROM termijnen WHERE aanvraag_id=$1 AND betaald_op IS NOT NULL', [a.id])
@@ -282,7 +284,9 @@ async function annuleer(aanvraagId, { reden = '', kostenInRekening = false, door
       ).rows[0];
     }
     const uitleg = kosten
-      ? `${kosten.dagen} dag(en) voor vertrek: ${kosten.pct}% van ${euro(a.ritprijs_cent)}${kosten.bedrag === kosten.minimum ? ' (minimum)' : ''} = ${euro(kosten.bedrag)} volgens artikel 5.1`
+      ? kosten.bedenktijd
+        ? `binnen de bedenktijd van ${beleid.BEDENKTIJD_UREN} uur na het akkoord: 0% (beleid Pouw Vervoer)`
+        : `${kosten.dagen} dag(en) voor vertrek: ${kosten.pct}% van ${euro(a.ritprijs_cent)}${kosten.bedrag === kosten.minimum ? ' (minimum)' : ''} = ${euro(kosten.bedrag)} volgens artikel 5.1`
       : 'geen gesloten overeenkomst, dus geen annuleringskosten';
     await log(
       a.id,
@@ -310,7 +314,7 @@ async function annuleer(aanvraagId, { reden = '', kostenInRekening = false, door
           ? `Wij betalen ${euro(-f.te_betalen_cent)} terug op de rekening waarvan is betaald.`
           : 'Er is niets meer te betalen.')
     : kosten
-      ? `Wij brengen geen annuleringskosten in rekening.${betaald > 0 ? ` Het al betaalde bedrag van ${euro(betaald)} betalen wij terug.` : ''}`
+      ? `${kosten.bedenktijd ? `U annuleerde binnen de bedenktijd van ${beleid.BEDENKTIJD_UREN} uur; er zijn geen annuleringskosten.` : 'Wij brengen geen annuleringskosten in rekening.'}${betaald > 0 ? ` Het al betaalde bedrag van ${euro(betaald)} betalen wij terug.` : ''}`
       : 'Er was nog geen overeenkomst gesloten; er zijn geen kosten.';
   await mail.verstuur({
     aan: gesloten ? k.teken_email : a.aanvrager_email,
@@ -323,6 +327,47 @@ async function annuleer(aanvraagId, { reden = '', kostenInRekening = false, door
     klantId: k.id,
   });
   return { gesloten, kosten, rekenen, betaald, factuur: f };
+}
+
+// Wijzigingsverzoek van de klant: kosteloos tot N dagen voor vertrek, daarna in overleg. Naar de planning, bevestiging aan de klant.
+async function wijzigingsverzoek(aanvraagId, { categorie, tekst, door }) {
+  const a = await one('SELECT * FROM aanvragen WHERE id=$1', [aanvraagId]);
+  if (!a || !['wacht_op_betaling', 'bevestigd'].includes(a.status)) throw new Error('Wijzigen kan alleen bij een lopende boeking.');
+  const k = await one('SELECT * FROM klanten WHERE id=$1', [a.klant_id]);
+  const cat = beleid.WIJZIGING_CATEGORIEEN[categorie] || 'Anders';
+  const t = String(tekst || '').trim().slice(0, 1500);
+  if (t.length < 5) throw new Error('Beschrijf de gewenste wijziging.');
+  const kosteloos = beleid.wijzigenKosteloos(a.rit_datum);
+  await q('UPDATE aanvragen SET wijziging_open=true WHERE id=$1', [a.id]);
+  await log(a.id, a.klant_id, 'wijziging', `Wijzigingsverzoek van ${door} (${cat}): ${t}${kosteloos ? '' : ` [minder dan ${beleid.WIJZIGEN_TOT_DAGEN} dagen voor vertrek: in overleg, mogelijk meerkosten]`}`);
+  await mail.verstuur({
+    aan: beleid.MAIL_PLANNING,
+    onderwerp: `Wijzigingsverzoek EPV-${a.id} (${cat}): ${k.naam}, ${datum(a.rit_datum)}`,
+    tekst:
+      `${door} vraagt een wijziging voor EPV-${a.id} (${k.naam}, ${datum(a.rit_datum)}, ${a.van} → ${a.naar}).\n\nCategorie: ${cat}\n${t}\n\n` +
+      (kosteloos ? `Kosteloos: meer dan ${beleid.WIJZIGEN_TOT_DAGEN} dagen voor vertrek.` : `Let op: minder dan ${beleid.WIJZIGEN_TOT_DAGEN} dagen voor vertrek; in overleg, mogelijk meerkosten.`) +
+      `\n\nDossier: ${BASE_URL()}/admin/aanvraag/${a.id}`,
+    aanvraagId: a.id,
+    klantId: k.id,
+  });
+  await mail.verstuur({
+    aan: k.teken_email,
+    cc: a.aanvrager_email,
+    onderwerp: `Uw wijzigingsverzoek voor EPV-${a.id} is ontvangen`,
+    tekst:
+      `Beste ${k.tekenbevoegde},\n\nWij hebben uw wijzigingsverzoek ontvangen (${cat}):\n${t}\n\n` +
+      (kosteloos ? `Tot ${beleid.WIJZIGEN_TOT_DAGEN} dagen voor vertrek wijzigt u kosteloos. ` : `Uw rit is binnen ${beleid.WIJZIGEN_TOT_DAGEN} dagen; wij bekijken wat er mogelijk is en of er meerkosten zijn. `) +
+      'Onze planning neemt zo snel mogelijk contact met u op en bevestigt de wijziging per e-mail.\n\nMet vriendelijke groet,\nPouw Vervoer',
+    aanvraagId: a.id,
+    klantId: k.id,
+  });
+  return { kosteloos, cat };
+}
+
+async function wijzigingAfgehandeld(aanvraagId) {
+  const a = await one('UPDATE aanvragen SET wijziging_open=false WHERE id=$1 RETURNING id, klant_id', [aanvraagId]);
+  if (a) await log(a.id, a.klant_id, 'wijziging', 'Wijzigingsverzoek afgehandeld door de backoffice.');
+  return !!a;
 }
 
 async function termijnBetaald(termijnId, betaalwijze) {
@@ -484,4 +529,5 @@ async function draaiHerinneringen(vandaag = new Date()) {
 module.exports = {
   nieuweAanvraag, herberekenScore, verstuurOfferte, geefAkkoord, termijnBetaald, maakEindfactuur,
   factuurBetaald, draaiHerinneringen, historie, log, emailDomeinKlopt, token, BASE_URL, stuurAkkoordBevestiging, annuleer,
+  wijzigingsverzoek, wijzigingAfgehandeld,
 };

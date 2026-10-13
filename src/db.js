@@ -163,6 +163,9 @@ ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS afstand_m INT;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS duur_s INT;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_afstand_m INT;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_duur_s INT;
+-- Beleid Pouw: geldigheid van de prijs en open wijzigingsverzoek
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS offerte_geldig_tot DATE;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS wijziging_open BOOLEAN DEFAULT FALSE;
 
 -- Incassodossiers bij de deurwaarder
 CREATE TABLE IF NOT EXISTS dossiers (

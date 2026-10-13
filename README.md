@@ -35,6 +35,18 @@ Adresvelden geven suggesties terwijl de klant typt, en de route verschijnt op ee
 
 Kiest de klant een suggestie, dan worden de coördinaten meegestuurd en bewaard (`kaart`); de afstand en reistijd van heen- en terugreis komen in de samenvatting, de backoffice en de export voor trip (`km_heen`, `reistijd_heen_min`). Typt de klant een adres zonder te kiezen, dan blijft het gewoon tekst; de kaart gebruikt dan de beste match. Antwoorden worden een tijd in het geheugen bewaard.
 
+## Beleid van Pouw
+
+Bovenop de KNV-voorwaarden hanteert de app het beleid van de huidige offertetool van Pouw (`src/beleid.js`, instelbaar in `.env`):
+
+- **24 uur bedenktijd**: binnen `BEDENKTIJD_UREN` na het akkoord annuleert de klant zelf op de akkoordpagina, kosteloos. Daarna geldt de annuleringsstaffel; annuleren kan dan alleen schriftelijk. De backoffice rekent binnen de bedenktijd automatisch 0%.
+- **Kosteloos wijzigen** tot `WIJZIGEN_TOT_DAGEN` dagen voor vertrek: de klant geeft een wijziging door op de akkoordpagina (categorie en toelichting). Het verzoek gaat naar `MAIL_PLANNING`, de klant krijgt een ontvangstbevestiging, het dossier krijgt de badge "Wijzigingsverzoek open" tot de backoffice het afhandelt. Binnen de termijn: in overleg, mogelijk meerkosten.
+- **Betaling na afloop van de reis**, tenzij de offerte een aanbetaling vermeldt (klasse B, C en D volgens de klantscore).
+- **Bereikbaarheid**: Pouw bepaalt of locaties bereikbaar zijn voor een touringbus en legt zo nodig een alternatief voor.
+- **Prijs geldig t/m**: de offerte is `OFFERTE_GELDIG_DAGEN` dagen geldig; daarna kan niet meer worden geaccordeerd en toont de pagina dat de offerte is verlopen. Opnieuw versturen vanuit de backoffice verlengt de geldigheid.
+
+Deze punten staan op de aanvraagpagina, de akkoordpagina, in de mails en op `/voorwaarden`.
+
 ## Voorwaarden
 
 Op alle aanvragen, offertes en ritten gelden de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer. Om er aanspraak op te kunnen maken, stelt de app ze ter hand en legt de acceptatie vast:

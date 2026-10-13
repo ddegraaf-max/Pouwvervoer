@@ -13,6 +13,7 @@ const assistent = require('./src/assistent');
 const { version: VERSIE } = require('./package.json');
 const voorwaarden = require('./src/voorwaarden');
 const adres = require('./src/adres');
+const beleid = require('./src/beleid');
 const { aanbetalingsplan } = require('./src/score');
 
 const app = express();
@@ -84,6 +85,7 @@ Object.assign(app.locals, fmt, {
   vanAanvraag: reis.vanAanvraag,
   kaartPunten: reis.kaartPunten,
   duurTekst: reis.duurTekst,
+  beleid: { uren: beleid.BEDENKTIJD_UREN, dagen: beleid.WIJZIGEN_TOT_DAGEN, geldigDagen: beleid.OFFERTE_GELDIG_DAGEN, punten: beleid.PUNTEN, categorieen: beleid.WIJZIGING_CATEGORIEEN },
   // Kaarttegels: standaard de BRT Achtergrondkaart van het Kadaster (PDOK, gratis, dekt Nederland). Een wereldwijde
   // tegeldienst met sleutel kan via KAART_TEGELS_URL ({z}/{x}/{y}) en KAART_ATTRIBUTIE.
   kaartTegels: process.env.KAART_TEGELS_URL || 'https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/standaard/EPSG:3857/{z}/{x}/{y}.png',
@@ -233,7 +235,14 @@ async function laadAkkoord(token) {
   const k = await db.one('SELECT * FROM klanten WHERE id=$1', [a.klant_id]);
   const termijnen = await db.all('SELECT * FROM termijnen WHERE aanvraag_id=$1 ORDER BY id', [a.id]);
   const plan = aanbetalingsplan(a.klasse, a.ritprijs_cent, a.rit_datum, a.nakosten_schatting_cent || 0);
-  return { a, k, termijnen, plan };
+  return {
+    a, k, termijnen, plan,
+    bedenktijdTot: beleid.bedenktijdTot(a.akkoord_op),
+    binnenBedenktijd: beleid.binnenBedenktijd(a.akkoord_op),
+    wijzigenTot: beleid.wijzigenTot(a.rit_datum),
+    wijzigenKosteloos: beleid.wijzigenKosteloos(a.rit_datum),
+    verlopen: a.status === 'offerte_verstuurd' && beleid.offerteVerlopen(a.offerte_geldig_tot),
+  };
 }
 
 app.get(
@@ -241,7 +250,9 @@ app.get(
   wrap(async (req, res) => {
     const d = await laadAkkoord(req.params.token);
     if (!d) return res.status(404).render('melding', { titel: 'Link niet gevonden', tekst: 'Deze offerte bestaat niet of is nog niet verstuurd.' });
-    res.render('akkoord', { ...d, fout: null });
+    const melding = req.session.akkoordMelding || null;
+    req.session.akkoordMelding = null;
+    res.render('akkoord', { ...d, fout: null, melding });
   }),
 );
 
@@ -251,6 +262,7 @@ app.post(
   wrap(async (req, res) => {
     const d = await laadAkkoord(req.params.token);
     if (!d) return res.status(404).render('melding', { titel: 'Link niet gevonden', tekst: '' });
+    if (d.verlopen) return res.status(422).render('akkoord', { ...d, fout: 'Deze offerte is verlopen. Bel ons voor een nieuwe prijs.' });
     const naam = String(req.body.naam || '').trim().slice(0, 120);
     if (!naam || req.body.voorwaarden !== 'on') {
       return res.status(422).render('akkoord', { ...d, fout: 'Vul uw naam in en vink het akkoord aan.' });
@@ -263,6 +275,39 @@ app.post(
     );
     if (eerste) return res.redirect(303, `/betalen/${eerste.token}`);
     res.redirect(303, `/akkoord/${req.params.token}`);
+  }),
+);
+
+// Beleid Pouw: binnen de bedenktijd annuleert de klant zelf, kosteloos.
+app.post(
+  '/akkoord/:token/annuleren',
+  rateLimit(10, 3600e3),
+  wrap(async (req, res) => {
+    const d = await laadAkkoord(req.params.token);
+    if (!d) return res.status(404).render('melding', { titel: 'Link niet gevonden', tekst: '' });
+    if (!['wacht_op_betaling', 'bevestigd'].includes(d.a.status)) return res.redirect(303, `/akkoord/${req.params.token}`);
+    if (!d.binnenBedenktijd) return res.status(422).render('akkoord', { ...d, fout: `De bedenktijd van ${beleid.BEDENKTIJD_UREN} uur is verstreken. Annuleren kan schriftelijk per e-mail; dan gelden de annuleringskosten.` });
+    if (req.body.bevestig !== 'on') return res.status(422).render('akkoord', { ...d, fout: 'Vink aan dat u de boeking wilt annuleren.' });
+    await svc.annuleer(d.a.id, { reden: `Annulering door de klant binnen de bedenktijd van ${beleid.BEDENKTIJD_UREN} uur`, kostenInRekening: false, door: `${d.k.tekenbevoegde} (klant, bedenktijd)` });
+    req.session.akkoordMelding = 'Uw boeking is geannuleerd, zonder kosten. U ontvangt een bevestiging per e-mail.';
+    res.redirect(303, `/akkoord/${req.params.token}`);
+  }),
+);
+
+// Beleid Pouw: wijziging doorgeven (kosteloos tot N dagen voor vertrek, daarna in overleg).
+app.post(
+  '/akkoord/:token/wijziging',
+  rateLimit(20, 3600e3),
+  wrap(async (req, res) => {
+    const d = await laadAkkoord(req.params.token);
+    if (!d) return res.status(404).render('melding', { titel: 'Link niet gevonden', tekst: '' });
+    try {
+      await svc.wijzigingsverzoek(d.a.id, { categorie: req.body.categorie, tekst: req.body.tekst, door: `${d.k.tekenbevoegde} (via de akkoordpagina)` });
+      req.session.akkoordMelding = 'Uw wijzigingsverzoek is ontvangen. Onze planning neemt contact met u op en bevestigt de wijziging per e-mail.';
+      res.redirect(303, `/akkoord/${req.params.token}`);
+    } catch (e) {
+      res.status(422).render('akkoord', { ...d, fout: e.message });
+    }
   }),
 );
 
@@ -368,7 +413,7 @@ async function dossier(id) {
   return {
     a, k, termijnen, nakosten, factuur, events, historie, plan, incassoDossier, dossierBerichten, overdracht,
     incassokosten: factuur ? incasso.wettelijkeIncassokosten(factuur.te_betalen_cent) : 0,
-    annulering: ['wacht_op_betaling', 'bevestigd'].includes(a.status) && a.ritprijs_cent != null ? voorwaarden.annuleringskosten(a.ritprijs_cent, a.rit_datum) : null,
+    annulering: ['wacht_op_betaling', 'bevestigd'].includes(a.status) && a.ritprijs_cent != null ? voorwaarden.annuleringsKostenDossier(a) : null,
     akkoordLink: `${svc.BASE_URL()}/akkoord/${a.akkoord_token}`,
   };
 }
@@ -591,6 +636,15 @@ app.post(
           ? `Geannuleerd zonder annuleringskosten${r.betaald ? `; ${fmt.euro(r.betaald)} terug te betalen` : ''}. Bevestiging is gemaild.`
           : 'Aanvraag geannuleerd; er was nog geen overeenkomst. Bevestiging is gemaild.',
     );
+  }),
+);
+
+app.post(
+  '/admin/aanvraag/:id/wijziging-af',
+  admin,
+  wrap(async (req, res) => {
+    await svc.wijzigingAfgehandeld(Number(req.params.id));
+    terug(req, res, 'Wijzigingsverzoek afgehandeld.');
   }),
 );
 

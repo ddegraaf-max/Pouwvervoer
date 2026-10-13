@@ -6,9 +6,11 @@
     <h1><%= k.naam %></h1>
     <span class="badge st"><%= STATUS[a.status] %></span>
     <% if (a.signaal_planner) { %><span class="badge k-D">Aanbetaling 48 uur na herinnering niet binnen: beslis of de rit doorgaat</span><% } %>
+    <% if (a.wijziging_open) { %><span class="badge k-C">Wijzigingsverzoek open</span><% } %>
   </div>
   <% if (melding) { %><div class="alert info" role="status"><%= melding %></div><% } %>
   <% if (a.geblokkeerd) { %><div class="alert bad"><strong>Geblokkeerd:</strong> <%= a.blokkade_reden %>. Offerte kan niet worden verstuurd.</div><% } %>
+  <% if (a.wijziging_open) { %><div class="alert info" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center"><span>Er staat een wijzigingsverzoek open; de tekst staat in het logboek. Bevestig de wijziging per e-mail aan de klant, bijvoorbeeld via de assistent.</span><%- form('wijziging-af') %><button class="btn small ghost" type="submit">Afgehandeld</button></form></div><% } %>
   <% if (a.annulering_op) { %><div class="alert info">Geannuleerd op <%= datumTijd(a.annulering_op) %><%= a.annulering_reden ? `: ${a.annulering_reden}` : '' %>. Annuleringskosten: <%= a.annulering_kosten_cent ? `${euro(a.annulering_kosten_cent)} (${a.annulering_pct}% volgens artikel 5.1)` : 'geen' %>.</div><% } %>
 
   <div class="cols">
@@ -98,7 +100,7 @@
       </div>
       <% } %>
       <% if (a.status === 'offerte_verstuurd') { %>
-      <p style="margin:14px 0 0;font-size:14px;overflow-wrap:anywhere">Akkoordlink: <a href="<%= akkoordLink %>"><%= akkoordLink %></a></p>
+      <p style="margin:14px 0 0;font-size:14px;overflow-wrap:anywhere">Prijs geldig t/m <%= a.offerte_geldig_tot ? datum(a.offerte_geldig_tot) : '-' %> (<%= beleid.geldigDagen %> dagen; opnieuw versturen verlengt). Akkoordlink: <a href="<%= akkoordLink %>"><%= akkoordLink %></a></p>
       <% } %>
     </div>
     <% } %>
@@ -246,11 +248,11 @@
     <% if (['nieuw','offerte_verstuurd','wacht_op_betaling','bevestigd'].includes(a.status)) { %>
     <div class="card">
       <h2 style="font-size:18px">Annuleren</h2>
-      <% if (locals.annulering) { %><p class="lead" style="font-size:14px;margin:0 0 10px">Opzegging vandaag is <%= annulering.dagen %> dag(en) voor vertrek: <%= annulering.pct %>% van de ritprijs<%= annulering.bedrag === annulering.minimum ? ' (het minimum)' : '' %> = <strong><%= euro(annulering.bedrag) %></strong> volgens artikel 5.1.</p><% } else { %><p class="lead" style="font-size:14px;margin:0 0 10px">Nog geen gesloten overeenkomst: annuleren is zonder kosten.</p><% } %>
+      <% if (locals.annulering && annulering.bedenktijd) { %><p class="lead" style="font-size:14px;margin:0 0 10px">Het akkoord is minder dan <%= beleid.uren %> uur oud: annuleren is nu kosteloos (bedenktijd, beleid Pouw).</p><% } else if (locals.annulering) { %><p class="lead" style="font-size:14px;margin:0 0 10px">Opzegging vandaag is <%= annulering.dagen %> dag(en) voor vertrek: <%= annulering.pct %>% van de ritprijs<%= annulering.bedrag === annulering.minimum ? ' (het minimum)' : '' %> = <strong><%= euro(annulering.bedrag) %></strong> volgens artikel 5.1.</p><% } else { %><p class="lead" style="font-size:14px;margin:0 0 10px">Nog geen gesloten overeenkomst: annuleren is zonder kosten.</p><% } %>
       <%- form('annuleren') %>
         <div style="display:flex;flex-direction:column;gap:10px">
           <div><label for="annreden">Reden</label><input type="text" id="annreden" name="reden" placeholder="Bijv. schriftelijke opzegging per e-mail van 12 oktober"></div>
-          <% if (locals.annulering) { %><label class="check" for="annkosten"><input type="checkbox" id="annkosten" name="kosten" checked><span>Annuleringskosten in rekening brengen (<%= euro(annulering.bedrag) %>). Er komt een factuur met verrekening van wat al is betaald; de klant krijgt een schriftelijke bevestiging.</span></label><% } %>
+          <% if (locals.annulering && annulering.bedrag > 0) { %><label class="check" for="annkosten"><input type="checkbox" id="annkosten" name="kosten" checked><span>Annuleringskosten in rekening brengen (<%= euro(annulering.bedrag) %>). Er komt een factuur met verrekening van wat al is betaald; de klant krijgt een schriftelijke bevestiging.</span></label><% } %>
           <button class="btn danger" type="submit">Aanvraag annuleren</button>
         </div>
       </form>

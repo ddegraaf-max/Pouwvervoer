@@ -5,6 +5,7 @@ const prijs = typeof ritprijs === 'number' ? ritprijs : null;
 <table class="annulering">
   <thead><tr><th>Opzegging</th><th class="num">Kosten</th><% if (prijs != null) { %><th class="num">Bij deze ritprijs</th><% } %></tr></thead>
   <tbody>
+    <tr><td>Binnen <%= beleid.uren %> uur na uw akkoord (bedenktijd van Pouw Vervoer)</td><td class="num">0%</td><% if (prijs != null) { %><td class="num"><%= euro(0) %></td><% } %></tr>
   <% voorwaarden.annulering.forEach((r) => { %>
     <tr>
       <td><%= r.tekst %></td>

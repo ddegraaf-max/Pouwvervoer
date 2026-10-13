@@ -12,6 +12,9 @@
     <% if (a.status === 'offerte_verstuurd') { %><p class="lead" style="margin:0">Controleer de gegevens hieronder. Klopt alles? Geef onderaan uw akkoord.</p><% } %>
   </div>
 
+  <% if (locals.melding) { %><div class="alert ok" role="status"><%= melding %></div><% } %>
+  <% if (locals.verlopen) { %><div class="alert bad"><strong>Deze offerte is verlopen</strong> (prijs geldig t/m <%= datum(a.offerte_geldig_tot) %>). Bel 030 68 68 300 voor een nieuwe prijs; de planning kan de offerte ook opnieuw versturen.</div><% } %>
+  <% if (a.wijziging_open) { %><div class="alert info">Uw wijzigingsverzoek is ontvangen; onze planning neemt contact met u op en bevestigt de wijziging per e-mail.</div><% } %>
   <% if (a.status === 'bevestigd' || a.status === 'gereden') { %>
     <div class="alert ok"><strong>De rit is bevestigd</strong> en staat vast in onze planning.</div>
   <% } else if (a.status === 'wacht_op_betaling') { %>
@@ -38,7 +41,12 @@
     <div class="between" style="border-top:1px solid var(--line);margin-top:14px;padding-top:14px">
       <strong>Ritprijs incl. 9% btw</strong><span class="price"><%= euro(a.ritprijs_cent) %></span>
     </div>
-    <p class="lead" style="margin:8px 0 0;font-size:14px">Parkeergeld, tol, pont en verblijfskosten van de chauffeur komen op de eindfactuur. Op deze offerte en de rit zijn de <a href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer</a> (<%= voorwaarden.versie %>) van toepassing.</p>
+    <p class="lead" style="margin:8px 0 0;font-size:14px"><%= a.offerte_geldig_tot && a.status === 'offerte_verstuurd' ? `Prijs geldig t/m ${datum(a.offerte_geldig_tot)}. ` : '' %>Parkeergeld, tol, pont en verblijfskosten van de chauffeur komen op de eindfactuur. Op deze offerte en de rit zijn de <a href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer</a> (<%= voorwaarden.versie %>) van toepassing.</p>
+  </div>
+
+  <div class="card soft">
+    <h2 style="font-size:17px;margin-bottom:8px">Zo werkt het bij Pouw Vervoer</h2>
+    <ul class="kern" style="margin:0"><% beleid.punten.forEach((p) => { %><li><%= p %></li><% }) %></ul>
   </div>
 
   <div class="card">
@@ -70,12 +78,41 @@
     <% } %>
   </div>
 
-  <% if (a.status === 'offerte_verstuurd') { %>
+  <% if (['wacht_op_betaling', 'bevestigd'].includes(a.status)) { %>
+  <div class="card">
+    <h2 style="font-size:17px;margin-bottom:6px">Bedenktijd</h2>
+    <% if (locals.binnenBedenktijd) { %>
+      <p style="margin:0 0 10px">U kunt tot <strong><%= datumTijd(bedenktijdTot) %></strong> kosteloos annuleren (0% annuleringskosten).</p>
+      <% if (fout) { %><div class="alert bad" role="alert" style="margin-bottom:10px"><%= fout %></div><% } %>
+      <form method="post" action="/akkoord/<%= a.akkoord_token %>/annuleren" style="display:flex;flex-direction:column;gap:10px">
+        <input type="hidden" name="_csrf" value="<%= csrf %>">
+        <label class="check" for="annbevestig"><input type="checkbox" id="annbevestig" name="bevestig"><span>Ja, ik wil deze boeking annuleren. Dit kan niet ongedaan worden gemaakt.</span></label>
+        <div><button class="btn danger" type="submit">Boeking annuleren</button></div>
+      </form>
+    <% } else { %>
+      <p class="lead" style="margin:0;font-size:14px">De bedenktijd van <%= beleid.uren %> uur liep af op <%= datumTijd(bedenktijdTot) %>. Annuleren kan nog wel, schriftelijk per e-mail naar <a href="mailto:<%= voorwaarden.bedrijf.email %>"><%= voorwaarden.bedrijf.email %></a>; dan gelden de annuleringskosten hierboven.</p>
+      <% if (fout) { %><div class="alert bad" role="alert" style="margin-top:10px"><%= fout %></div><% } %>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px;margin-bottom:6px">Wijziging doorgeven</h2>
+    <p class="lead" style="margin:0 0 10px;font-size:14px"><%= locals.wijzigenKosteloos ? `Tot en met ${datum(new Date(wijzigenTot.getTime() - 864e5))} wijzigt u kosteloos.` : `Uw rit is binnen ${beleid.dagen} dagen; wijzigen kan in overleg, mogelijk met meerkosten.` %> Wij bevestigen elke wijziging per e-mail.</p>
+    <form method="post" action="/akkoord/<%= a.akkoord_token %>/wijziging" style="display:flex;flex-direction:column;gap:10px">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div><label for="wcat">Wat wilt u wijzigen?</label><select id="wcat" name="categorie"><% Object.entries(beleid.categorieen).forEach(([sleutel, lab]) => { %><option value="<%= sleutel %>"><%= lab %></option><% }) %></select></div>
+      <div><label for="wtekst">Toelichting</label><textarea id="wtekst" name="tekst" placeholder="Bijv. graag een half uur later vertrekken, om 09:00."></textarea></div>
+      <div><button class="btn ghost" type="submit">Wijziging doorgeven</button></div>
+    </form>
+  </div>
+  <% } %>
+
+  <% if (a.status === 'offerte_verstuurd' && !locals.verlopen) { %>
   <form method="post" class="card" style="display:flex;flex-direction:column;gap:12px">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
     <div><label for="naam">Uw naam</label><input type="text" id="naam" name="naam" autocomplete="name" value="<%= k.tekenbevoegde || '' %>" required></div>
-    <label class="check" for="voorwaarden"><input type="checkbox" id="voorwaarden" name="voorwaarden"><span>Ik ga akkoord met deze offerte en accepteer de <a href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer</a> (<%= voorwaarden.versie %>), inclusief de annuleringsregeling hierboven. Ik weet dat er geen wettelijke bedenktijd geldt. Ik mag tekenen namens <%= k.naam %>.</span></label>
+    <label class="check" for="voorwaarden"><input type="checkbox" id="voorwaarden" name="voorwaarden"><span>Ik ga akkoord met deze offerte en accepteer de <a href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer</a> (<%= voorwaarden.versie %>), inclusief de annuleringsregeling hierboven. Ik weet dat ik <%= beleid.uren %> uur bedenktijd heb en dat daarna de annuleringsregeling geldt. Ik mag tekenen namens <%= k.naam %>.</span></label>
     <button class="btn wide zin" type="submit"><%= plan.termijnen.some(t => !t.uiterlijk) ? `Akkoord met betalingsverplichting en ${euro(plan.termijnen.find(t => !t.uiterlijk).bedrag)} betalen met iDEAL` : 'Akkoord: bestelling met betalingsverplichting' %></button>
     <p class="lead" style="margin:8px 0 0;font-size:13px;text-align:center">Met deze knop sluit u een overeenkomst met betalingsverplichting voor <%= euro(a.ritprijs_cent) %> plus eventuele nakosten.</p>
   </form>

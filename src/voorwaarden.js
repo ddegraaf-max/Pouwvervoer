@@ -5,6 +5,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const beleid = require('./beleid');
 
 const NAAM = 'Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer';
 const VERSIE = process.env.VOORWAARDEN_VERSIE || 'KNV Busvervoer 2025';
@@ -76,6 +77,15 @@ function annuleringskosten(ritprijsCent, vertrek, op = new Date()) {
   return { dagen, pct: regel.pct, minimum: regel.minimum, bedrag, tekst: regel.tekst };
 }
 
+// Annuleringskosten voor een gesloten overeenkomst: 0% binnen de bedenktijd van Pouw, daarna de staffel van artikel 5.1.
+function annuleringsKostenDossier(a, nu = new Date()) {
+  const staffel = annuleringskosten(a.ritprijs_cent, a.rit_datum, nu);
+  if (beleid.binnenBedenktijd(a.akkoord_op, nu)) {
+    return { ...staffel, pct: 0, minimum: 0, bedrag: 0, bedenktijd: true, tekst: `Binnen de bedenktijd van ${beleid.BEDENKTIJD_UREN} uur na het akkoord` };
+  }
+  return { ...staffel, bedenktijd: false };
+}
+
 const euro = (cent) => new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR' }).format(cent / 100);
 
 // De staffel als één zin, voor e-mails.
@@ -85,9 +95,11 @@ function annuleringZin() {
 
 // Belangrijkste punten voor de klant vóór de aanvraag en vóór het akkoord.
 const KERNPUNTEN = [
+  `${beleid.PUNTEN[0]} Daarna geldt geen wettelijke bedenktijd of herroepingsrecht voor personenvervoer; dan geldt de annuleringsregeling.`,
   `Annuleren kan alleen schriftelijk. De kosten zijn een percentage van de ritprijs: ${annuleringZin()} (artikel 5.1).`,
-  'Voor personenvervoer geldt geen wettelijke bedenktijd of herroepingsrecht. Na uw akkoord is de bestelling bindend; de annuleringsregeling hierboven geldt dan.',
-  'Pouw Vervoer mag een aanbetaling vragen. Wordt die niet op tijd betaald, dan mag Pouw de overeenkomst ontbinden en is minimaal 30% van de ritprijs verschuldigd (artikel 4.1). De rest betaalt u binnen 14 dagen na de factuurdatum (artikel 4.2).',
+  beleid.PUNTEN[1],
+  `${beleid.PUNTEN[2]} Staat er een aanbetaling in de offerte en wordt die niet op tijd betaald, dan mag Pouw de overeenkomst ontbinden en is minimaal 30% van de ritprijs verschuldigd (artikel 4.1). De eindfactuur betaalt u binnen 14 dagen na de factuurdatum (artikel 4.2).`,
+  beleid.PUNTEN[3],
   'Wie namens een ander boekt, is samen met die ander hoofdelijk aansprakelijk voor alle verplichtingen (artikel 2.2).',
   'Meerkosten door file, extra uren of kilometers op uw verzoek, en kosten als tol, parkeren en pont komen op de eindfactuur (artikel 6.6 en 6.7). Stijgen brandstofkosten of heffingen sterk, dan mag Pouw die doorberekenen; u mag de verhoging afwijzen (artikel 3.2).',
   'Meld vooraf lichamelijke of geestelijke beperkingen die de rit beïnvloeden (artikel 9.10). Op verzoek levert u een passagierslijst (artikel 9.11). Bagage maximaal 20 kg per persoon (artikel 9.4).',
@@ -98,7 +110,7 @@ const KERNPUNTEN = [
 // Tekstblok voor e-mails.
 function mailBlok(base) {
   return (
-    `Belangrijk uit de voorwaarden:\n${KERNPUNTEN.slice(0, 5).map((k) => `- ${k}`).join('\n')}\n` +
+    `Zo werkt het bij Pouw Vervoer en belangrijk uit de voorwaarden:\n${KERNPUNTEN.slice(0, 6).map((k) => `- ${k}`).join('\n')}\n` +
     `De volledige ${NAAM} (${VERSIE}, ${DEPOT}) ${bijlage() ? 'zitten als pdf bij deze e-mail en ' : ''}staan op ${absoluut(base)}. Bewaar ze bij uw administratie.`
   );
 }
@@ -111,5 +123,5 @@ function bedrijfRegel() {
 
 module.exports = {
   NAAM, VERSIE, URL, DEPOT, BIJLAGE_NAAM, BEDRIJF, ANNULERING, KERNPUNTEN,
-  absoluut, hash, bijlage, dagenVoorVertrek, annuleringskosten, annuleringZin, mailBlok, bedrijfRegel,
+  absoluut, hash, bijlage, dagenVoorVertrek, annuleringskosten, annuleringsKostenDossier, annuleringZin, mailBlok, bedrijfRegel,
 };

@@ -31,7 +31,7 @@
     <div class="stap"><span class="nr">1</span><div><h2>Uw reis</h2><p>Zoals u die zojuist heeft samengesteld. Klopt er iets niet? <a href="/reis">Reis wijzigen</a></p></div></div>
     <%- include('partials/reis-samenvatting', { r: reis }) %>
     <% if (reis.reistype !== 'enkel') { %>
-    <label class="check" for="bus_blijft" style="margin-top:16px"><input type="checkbox" id="bus_blijft" name="bus_blijft" <%= v.bus_blijft ? 'checked' : '' %>><span>De bus blijft de hele dag bij de groep <span class="opt">(standaard brengen en halen wij u; de bus ter plaatse houden is een toeslag per bus)</span></span></label>
+    <label class="check" for="bus_blijft" style="margin-top:16px"><input type="checkbox" id="bus_blijft" name="bus_blijft" <%= v.bus_blijft ? 'checked' : '' %>><span>De bus blijft de hele dag bij de groep <span class="opt">(standaard brengen en halen wij u. De toeslag geldt per bus: reist u met twee bussen, dan betaalt u deze twee keer.)</span></span></label>
     <% } %>
     <div style="margin-top:14px"><label for="opmerkingen">Bijzonderheden <span class="opt">(rolstoel, bagage, aanhanger)</span></label><textarea id="opmerkingen" name="opmerkingen"><%= v.opmerkingen || '' %></textarea></div>
   </div>
