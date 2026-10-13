@@ -286,6 +286,9 @@ ul.kern{margin:0 0 14px;padding-left:20px;font-size:14px;display:flex;flex-direc
 .suggesties li.actief,.suggesties li:hover{background:var(--navy-zacht)}
 .suggesties .s-type{flex:none;width:54px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
 .kaart{height:300px;border:1px solid var(--line);border-radius:4px;margin:14px 0 4px;background:#E8EBF5;z-index:0}
-.kaart .pin{background:none;border:0}
-.leaflet-container{font:14px/1.4 var(--font)}
+.kaart-marker.van{width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--navy);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.kaart-marker.via{width:12px;height:12px;border-radius:50%;background:var(--navy);border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.kaart-marker.naar svg{display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.35))}
+.maplibregl-map{font:13px/1.4 var(--font)}
+.maplibregl-ctrl-attrib a{color:var(--navy)}
 @media (max-width:640px){.kaart{height:240px}}

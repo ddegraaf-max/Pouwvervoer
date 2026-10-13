@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.8.1 · 13 oktober 2026
+- Kaart dekt nu heel Europa en de wereld: MapLibre GL met de gratis kaartstijl van OpenFreeMap in plaats van Leaflet met PDOK (alleen Nederland). Instelbaar met `KAART_STIJL_URL`.
+
 ## 0.8.0 · 13 oktober 2026
 - Beleid van Pouw overgenomen van de huidige offertetool: 24 uur bedenktijd met 0% annuleringskosten, tot 7 dagen voor vertrek kosteloos wijzigen, betaling na afloop tenzij aanbetaling, en het voorbehoud dat Pouw de bereikbaarheid van locaties bepaalt. Staat op de aanvraagpagina, de akkoordpagina, in alle mails en op `/voorwaarden`; alles instelbaar in `.env`.
 - Klant annuleert zelf binnen de bedenktijd op de akkoordpagina (kosteloos, met bevestiging per e-mail) en geeft wijzigingen door; de planning krijgt een e-mail en het dossier een badge tot de wijziging is afgehandeld.

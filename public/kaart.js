@@ -108,26 +108,68 @@
   $$('input[data-adres]').forEach(function (i) { i.setAttribute('autocomplete', 'off'); i.setAttribute('role', 'combobox'); i.setAttribute('aria-autocomplete', 'list'); });
 
   // ---------- Kaart ----------
-  if (typeof L === 'undefined') return;
-
-  // Tegelbron uit de pagina (standaard de BRT Achtergrondkaart van het Kadaster via PDOK; instelbaar met KAART_TEGELS_URL).
   function meta(naam) { var m = document.querySelector('meta[name="' + naam + '"]'); return m ? m.getAttribute('content') : ''; }
-  function maakKaart(el) {
-    var kaart = L.map(el, { scrollWheelZoom: false, attributionControl: true });
-    L.tileLayer(meta('kaart-tegels') || 'https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/standaard/EPSG:3857/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      referrerPolicy: 'strict-origin-when-cross-origin',
-      attribution: meta('kaart-attributie') || 'Kaart: &copy; Kadaster (PDOK)',
-    }).addTo(kaart);
-    kaart.setView([52.1, 5.3], 7);
-    return { kaart: kaart, laag: L.layerGroup().addTo(kaart) };
+  // MapLibre GL met de wereldwijde, gratis kaartstijl van OpenFreeMap (instelbaar via de meta kaart-stijl).
+  var STIJL = meta('kaart-stijl') || 'https://tiles.openfreemap.org/styles/liberty';
+  // MapLibre (1 MB) wordt pas geladen als er echt een kaart nodig is; de suggesties werken meteen.
+  var maplibrePromise = null;
+  function laadMaplibre() {
+    if (!maplibrePromise) maplibrePromise = import('/vendor/maplibre/maplibre-gl.mjs').then(function (m) { return m.default || m; });
+    return maplibrePromise;
   }
-  function marker(p, soort, laag) {
-    if (soort === 'naar') {
-      L.marker([p.lat, p.lon], { icon: L.divIcon({ className: 'pin', html: '<svg viewBox="0 0 24 24" width="28" height="34"><path fill="' + NAVY + '" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>', iconSize: [28, 34], iconAnchor: [14, 32] }) }).bindTooltip(p.label || 'Bestemming').addTo(laag);
-    } else {
-      L.circleMarker([p.lat, p.lon], { radius: soort === 'van' ? 8 : 6, color: NAVY, weight: 3, fillColor: soort === 'van' ? '#fff' : NAVY, fillOpacity: 1 }).bindTooltip(p.label || '').addTo(laag);
-    }
+  var PIN = '<svg viewBox="0 0 24 24" width="28" height="34" aria-hidden="true"><path fill="' + NAVY + '" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg>';
+
+  function maakKaart(el) {
+    var k = { kaart: null, gl: null, markers: [], klaar: false, wachtrij: [] };
+    laadMaplibre().then(function (maplibregl) {
+      k.gl = maplibregl;
+      var kaart = new maplibregl.Map({
+        container: el,
+        style: STIJL,
+        center: [5.3, 52.1],
+        zoom: 6,
+        scrollZoom: false,
+        attributionControl: { compact: true },
+      });
+      kaart.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-left');
+      k.kaart = kaart;
+      kaart.on('load', function () {
+        ['heen', 'terug'].forEach(function (naam) {
+          kaart.addSource('route-' + naam, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+          kaart.addLayer({
+            id: 'route-' + naam, type: 'line', source: 'route-' + naam,
+            layout: { 'line-join': 'round', 'line-cap': 'round' },
+            paint: naam === 'heen' ? { 'line-color': NAVY, 'line-width': 5, 'line-opacity': 0.85 } : { 'line-color': GEEL, 'line-width': 4, 'line-opacity': 0.95, 'line-dasharray': [2, 2] },
+          });
+        });
+        k.klaar = true;
+        k.wachtrij.splice(0).forEach(function (fn) { fn(); });
+      });
+    }).catch(function (e) { console.error('Kaart laden mislukt', e); });
+    return k;
+  }
+  function alsKlaar(k, fn) { if (k.klaar) fn(); else k.wachtrij.push(fn); }
+  function markerElement(soort) {
+    var d = document.createElement('div');
+    d.className = 'kaart-marker ' + soort;
+    if (soort === 'naar') d.innerHTML = PIN;
+    return d;
+  }
+  function marker(k, p, soort) {
+    var m = new k.gl.Marker({ element: markerElement(soort), anchor: soort === 'naar' ? 'bottom' : 'center' }).setLngLat([p.lon, p.lat]);
+    if (p.label) m.getElement().title = p.label;
+    m.addTo(k.kaart);
+    k.markers.push(m);
+  }
+  function zetLijn(k, naam, coords) {
+    var bron = k.kaart.getSource('route-' + naam);
+    if (bron) bron.setData({ type: 'FeatureCollection', features: coords.length ? [{ type: 'Feature', geometry: { type: 'LineString', coordinates: coords.map(function (c) { return [c[1], c[0]]; }) } }] : [] });
+  }
+  function pasBounds(k, latlons) {
+    if (!latlons.length) return;
+    var b = new k.gl.LngLatBounds([latlons[0][1], latlons[0][0]], [latlons[0][1], latlons[0][0]]);
+    latlons.forEach(function (c) { b.extend([c[1], c[0]]); });
+    k.kaart.fitBounds(b, { padding: 44, maxZoom: 14, duration: 0 });
   }
   var routeCache = {};
   function haalRoute(punten) {
@@ -138,28 +180,35 @@
       .then(function (j) { if (j && j.lijn) routeCache[key] = j; return j; })
       .catch(function () { return null; });
   }
-  // Tekent één of twee trajecten en geeft de afstanden terug voor het bijschrift.
+  // Tekent één of twee trajecten en zet de afstanden in het bijschrift.
   function teken(k, heen, terug, info) {
-    k.laag.clearLayers();
-    var alle = heen.concat(terug || []);
-    if (!alle.length) return;
-    heen.forEach(function (p, i) { marker(p, i === 0 ? 'van' : i === heen.length - 1 ? 'naar' : 'via', k.laag); });
-    (terug || []).forEach(function (p, i) { if (i > 0 && i < terug.length - 1) marker(p, 'via', k.laag); });
-    var bounds = L.latLngBounds(alle.map(function (p) { return [p.lat, p.lon]; }));
-    k.kaart.fitBounds(bounds.pad(0.2), { maxZoom: 14 });
-    var teksten = [];
-    function lijn(punten, stijl, naam) {
-      if (punten.length < 2) return Promise.resolve();
-      return haalRoute(punten).then(function (r) {
-        var coords = r && r.lijn ? r.lijn : punten.map(function (p) { return [p.lat, p.lon]; });
-        L.polyline(coords, stijl).addTo(k.laag);
-        if (r && r.afstand_m) teksten.push(naam + ' ± ' + km(r.afstand_m) + ', ' + duur(r.duur_s));
-        if (r && r.lijn) k.kaart.fitBounds(L.latLngBounds(coords).pad(0.1), { maxZoom: 14 });
-      });
-    }
-    lijn(heen, { color: NAVY, weight: 5, opacity: 0.85 }, 'Heenreis')
-      .then(function () { return lijn(terug || [], { color: GEEL, weight: 4, opacity: 0.9, dashArray: '8 8' }, 'Terugreis'); })
-      .then(function () { if (info) info.textContent = teksten.join(' · '); });
+    alsKlaar(k, function () {
+      k.markers.splice(0).forEach(function (m) { m.remove(); });
+      var alle = heen.concat(terug || []);
+      zetLijn(k, 'heen', []);
+      zetLijn(k, 'terug', []);
+      if (!alle.length) return;
+      heen.forEach(function (p, i) { marker(k, p, i === 0 ? 'van' : i === heen.length - 1 ? 'naar' : 'via'); });
+      (terug || []).forEach(function (p, i) { if (i > 0 && i < terug.length - 1) marker(k, p, 'via'); });
+      pasBounds(k, alle.map(function (p) { return [p.lat, p.lon]; }));
+      var teksten = [];
+      var lijnen = [];
+      function lijn(punten, naam, titel) {
+        if (punten.length < 2) return Promise.resolve();
+        return haalRoute(punten).then(function (r) {
+          var coords = r && r.lijn ? r.lijn : punten.map(function (p) { return [p.lat, p.lon]; });
+          zetLijn(k, naam, coords);
+          lijnen = lijnen.concat(coords);
+          if (r && r.afstand_m) teksten.push(titel + ' ± ' + km(r.afstand_m) + ', ' + duur(r.duur_s));
+        });
+      }
+      lijn(heen, 'heen', 'Heenreis')
+        .then(function () { return lijn(terug || [], 'terug', 'Terugreis'); })
+        .then(function () {
+          if (lijnen.length) pasBounds(k, lijnen);
+          if (info) info.textContent = teksten.join(' · ');
+        });
+    });
   }
 
   // Vaste kaarten (samenvatting, akkoord, backoffice)
@@ -196,8 +245,7 @@
       var terug = andere && andere.checked && !terugRoute.hidden ? punten(terugRoute) : [];
       if (!heen.length && !terug.length) { live.hidden = true; if (info) info.textContent = ''; return; }
       live.hidden = false;
-      if (!k) k = maakKaart(live);
-      k.kaart.invalidateSize();
+      if (!k) k = maakKaart(live); else if (k.kaart) k.kaart.resize();
       teken(k, heen, terug, info);
     }, 200);
     form.addEventListener('adres:coord', bijwerken);

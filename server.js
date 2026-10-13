@@ -17,6 +17,9 @@ const beleid = require('./src/beleid');
 const { aanbetalingsplan } = require('./src/score');
 
 const app = express();
+// Kaartstijl (MapLibre): standaard OpenFreeMap, wereldwijd en gratis; een andere dienst via KAART_STIJL_URL.
+const KAART_STIJL = process.env.KAART_STIJL_URL || 'https://tiles.openfreemap.org/styles/liberty';
+const kaartHost = (process.env.KAART_HOSTS || new URL(KAART_STIJL).origin).trim();
 const PORT = process.env.PORT || 3000;
 const PROD = process.env.NODE_ENV === 'production';
 
@@ -37,7 +40,8 @@ app.use((req, res, next) => {
     'X-Frame-Options': 'DENY',
     'Referrer-Policy': 'same-origin',
     'Content-Security-Policy':
-      "default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; font-src https://fonts.gstatic.com; img-src 'self' data: https:; form-action 'self'; frame-ancestors 'none'",
+      // connect-src en worker-src: de kaart (MapLibre) haalt stijl, tegels, lettertypen en symbolen van de kaartdienst en draait een webworker.
+      `default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; font-src https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' ${kaartHost}; worker-src 'self' blob:; form-action 'self'; frame-ancestors 'none'`,
   });
   if (PROD) res.set('Strict-Transport-Security', 'max-age=31536000');
   next();
@@ -86,10 +90,7 @@ Object.assign(app.locals, fmt, {
   kaartPunten: reis.kaartPunten,
   duurTekst: reis.duurTekst,
   beleid: { uren: beleid.BEDENKTIJD_UREN, dagen: beleid.WIJZIGEN_TOT_DAGEN, geldigDagen: beleid.OFFERTE_GELDIG_DAGEN, punten: beleid.PUNTEN, categorieen: beleid.WIJZIGING_CATEGORIEEN },
-  // Kaarttegels: standaard de BRT Achtergrondkaart van het Kadaster (PDOK, gratis, dekt Nederland). Een wereldwijde
-  // tegeldienst met sleutel kan via KAART_TEGELS_URL ({z}/{x}/{y}) en KAART_ATTRIBUTIE.
-  kaartTegels: process.env.KAART_TEGELS_URL || 'https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/standaard/EPSG:3857/{z}/{x}/{y}.png',
-  kaartAttributie: process.env.KAART_ATTRIBUTIE || 'Kaart: &copy; <a href="https://www.pdok.nl">Kadaster</a> (BRT Achtergrondkaart, CC BY 4.0)',
+  kaartStijl: KAART_STIJL,
 });
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
