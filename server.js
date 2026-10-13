@@ -9,6 +9,7 @@ const kvk = require('./src/kvk');
 const mail = require('./src/mail');
 const fmt = require('./src/format');
 const reis = require('./src/reis');
+const assistent = require('./src/assistent');
 const { aanbetalingsplan } = require('./src/score');
 
 const app = express();
@@ -67,7 +68,7 @@ Object.assign(app.locals, fmt, {
   logoUrl: process.env.LOGO_URL || '',
   deurwaarder: incasso.NAAM(),
   DOSSIER_STATUS: incasso.DOSSIER_STATUS,
-  demo: { kvk: kvk.DEMO, mail: mail.DEMO, betaling: !process.env.MOLLIE_API_KEY },
+  demo: { kvk: kvk.DEMO, mail: mail.DEMO, betaling: !process.env.MOLLIE_API_KEY, assistent: assistent.DEMO },
   MAX_STOPS: reis.MAX_STOPS,
   WACHTTIJDEN: reis.WACHTTIJDEN,
   wachtLabel: reis.wachtLabel,
@@ -106,6 +107,18 @@ app.post('/reis/opnieuw', (req, res) => {
   delete req.session.reis;
   res.redirect('/reis');
 });
+// Assistent: één zin van de klant wordt omgezet in de velden van de reis-stap (JSON voor reis.js).
+app.post(
+  '/reis/assistent',
+  rateLimit(30, 3600e3),
+  wrap(async (req, res) => {
+    try {
+      res.json(await assistent.reisUitTekst(req.body.tekst));
+    } catch (e) {
+      res.status(e instanceof assistent.AssistentFout ? 422 : 502).json({ fout: assistent.foutTekst(e) });
+    }
+  }),
+);
 
 app.get('/', (req, res) => {
   const r = req.session.reis;
@@ -320,6 +333,55 @@ function terug(req, res, tekst) {
   req.session.melding = tekst;
   res.redirect(303, `/admin/aanvraag/${req.params.id}`);
 }
+
+// ---- Assistent in de backoffice: uitleg bij de score, concept-mail, versturen ----
+app.post(
+  '/admin/aanvraag/:id/assistent/risico',
+  admin,
+  wrap(async (req, res) => {
+    const id = Number(req.params.id);
+    const d = await dossier(id);
+    if (!d) return res.status(404).render('melding', { titel: 'Niet gevonden', tekst: '' });
+    try {
+      const uitleg = await assistent.risicoUitleg(d);
+      await db.q('UPDATE aanvragen SET assistent_risico=$2 WHERE id=$1', [id, uitleg]);
+      terug(req, res, 'De assistent heeft de score uitgelegd.');
+    } catch (e) {
+      terug(req, res, `Assistent: ${assistent.foutTekst(e)}`);
+    }
+  }),
+);
+
+app.post(
+  '/admin/aanvraag/:id/assistent/mail',
+  admin,
+  wrap(async (req, res) => {
+    const d = await dossier(Number(req.params.id));
+    if (!d) return res.status(404).render('melding', { titel: 'Niet gevonden', tekst: '' });
+    try {
+      const concept = await assistent.conceptMail(d, { aan: req.body.aan, vraag: req.body.vraag });
+      res.render('admin/dossier', { ...d, melding: null, concept });
+    } catch (e) {
+      terug(req, res, `Assistent: ${assistent.foutTekst(e)}`);
+    }
+  }),
+);
+
+app.post(
+  '/admin/aanvraag/:id/mail',
+  admin,
+  wrap(async (req, res) => {
+    const id = Number(req.params.id);
+    const d = await dossier(id);
+    if (!d) return res.status(404).render('melding', { titel: 'Niet gevonden', tekst: '' });
+    const o = assistent.ontvanger(d, req.body.aan);
+    const onderwerp = String(req.body.onderwerp || '').trim().slice(0, 200);
+    const tekst = String(req.body.tekst || '').trim().slice(0, 5000);
+    if (!o || !onderwerp || !tekst) return terug(req, res, 'Vul onderwerp en tekst in.');
+    const status = await mail.verstuur({ aan: o.email, onderwerp, tekst, aanvraagId: id, klantId: d.a.klant_id });
+    terug(req, res, `Mail aan ${o.email}: ${status}.`);
+  }),
+);
 
 app.post(
   '/admin/aanvraag/:id/prijs',

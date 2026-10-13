@@ -29,6 +29,43 @@
       </div>
     </div>
 
+    <div class="card assistent">
+      <h2 style="font-size:18px;margin-bottom:10px">Assistent</h2>
+      <% if (demo.assistent) { %>
+      <p class="lead" style="margin:0">Niet ingericht. Zet <code>ANTHROPIC_API_KEY</code> om de score te laten uitleggen en mails te laten opstellen.</p>
+      <% } else { %>
+      <h3>Uitleg bij de score</h3>
+      <% if (a.assistent_risico) { %><p class="uitleg-score"><%= a.assistent_risico %></p><% } else { %><p class="lead" style="font-size:14px">Nog geen uitleg. De assistent zet de factoren en de aanbetaling in twee zinnen.</p><% } %>
+      <%- form('assistent/risico') %><button class="btn ghost small" type="submit"><%= a.assistent_risico ? 'Opnieuw uitleggen' : 'Leg de score uit' %></button></form>
+
+      <h3 style="margin-top:18px">Mail opstellen</h3>
+      <%- form('assistent/mail') %>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div><label for="aan">Aan</label><select id="aan" name="aan">
+            <option value="aanvrager"<%= locals.concept && concept.aan === 'aanvrager' ? ' selected' : '' %>>Aanvrager, <%= a.aanvrager_email %></option>
+            <option value="opdrachtgever"<%= locals.concept && concept.aan === 'opdrachtgever' ? ' selected' : '' %>>Tekenbevoegde, <%= k.teken_email %></option>
+            <option value="factuur"<%= locals.concept && concept.aan === 'factuur' ? ' selected' : '' %>>Factuurontvanger, <%= a.factuur_email %></option>
+          </select></div>
+          <div><label for="vraag">Wat wilt u laten weten of beantwoorden?</label><textarea id="vraag" name="vraag" placeholder="Bijv. de klant vraagt of de bus een kwartier later kan vertrekken; dat kan, zonder meerkosten."></textarea></div>
+          <div><button class="btn ghost" type="submit">Concept maken</button></div>
+        </div>
+      </form>
+      <% if (locals.concept) { %>
+      <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:16px">
+        <h3>Concept voor <%= concept.email %></h3>
+        <%- form('mail') %>
+          <input type="hidden" name="aan" value="<%= concept.aan %>">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div><label for="onderwerp">Onderwerp</label><input type="text" id="onderwerp" name="onderwerp" value="<%= concept.onderwerp %>"></div>
+            <div><label for="tekst">Tekst</label><textarea id="tekst" name="tekst" style="min-height:240px"><%= concept.tekst %></textarea></div>
+            <div class="row"><button class="btn" type="submit">Versturen</button><span class="lead" style="margin:0;font-size:14px">Pas de tekst gerust aan voordat u verstuurt. De mail komt in het logboek.</span></div>
+          </div>
+        </form>
+      </div>
+      <% } %>
+      <% } %>
+    </div>
+
     <div class="card scroll">
       <h2 style="font-size:18px;margin-bottom:10px">Opbouw van de score</h2>
       <table>

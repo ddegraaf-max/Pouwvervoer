@@ -143,4 +143,4 @@ function naarAanvraag(v) {
   };
 }
 
-module.exports = { MAX_STOPS, WACHTTIJDEN, wachtLabel, vandaag, leeg, valideer, samenvatting, naarAanvraag };
+module.exports = { MAX_STOPS, WACHTTIJDEN, wachtLabel, vandaag, dichtstbij, leeg, valideer, samenvatting, naarAanvraag };

@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS events (
 );
 
 ALTER TABLE facturen ADD COLUMN IF NOT EXISTS laatste_herinnering_op TIMESTAMPTZ;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS assistent_risico TEXT;
 
 -- Incassodossiers bij de deurwaarder
 CREATE TABLE IF NOT EXISTS dossiers (

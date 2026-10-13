@@ -14,6 +14,16 @@ Stack: Node 20+, Express, EJS, PostgreSQL. Geen buildstap.
 5. **Na de rit**: nakosten invoeren, één eindfactuur met verrekening van wat al betaald is.
 6. **Herinneringen** (elk uur, of met de knop in de backoffice): termijnen, signaal aan de planner 48 uur na een herinnering, facturen op dag 0, 3, 10 (cc aanvrager) en 17 (aanmaning, bij particulieren als 14-dagenbrief).
 
+## AI-assistent
+
+Met `ANTHROPIC_API_KEY` (Claude, model instelbaar met `ANTHROPIC_MODEL`, standaard `claude-opus-5-5`) helpt een assistent op drie plekken. Zonder sleutel staat hij uit: de intake-kaart verdwijnt en de backoffice toont een melding.
+
+- **Intake in één zin** (`/reis`): de klant typt of spreekt in wat hij wil ("schoolreis naar de Efteling op 12 mei met 48 kinderen en 6 begeleiders, om 17:00 terug"). De assistent vult ritsoort, personen, route, tussenstops, datums en tijden in; de bestaande validatie in `src/reis.js` controleert. Wat ontbreekt, staat erbij. Inspreken werkt in browsers met spraakherkenning (Chrome, Edge, Safari).
+- **Uitleg bij de score** (backoffice): twee zinnen over de belangrijkste factoren en wat dat betekent voor de aanbetaling. Wordt bij het dossier bewaard.
+- **Mail opstellen** (backoffice): de planner schrijft in één regel wat hij wil laten weten; de assistent maakt een concept op basis van het dossier. De planner past aan en verstuurt; de mail komt in het logboek.
+
+De assistent noemt nooit zelf prijzen of toezeggingen aan klanten en verzint geen feiten die niet in het dossier staan. Weigert het model een vraag, dan probeert de API automatisch een ander model. Persoonsgegevens gaan naar Anthropic: regel een verwerkersovereenkomst voordat dit live gaat.
+
 ## Incasso via Armaere
 
 Blijft een factuur onbetaald, dan draagt de backoffice hem over aan gerechtsdeurwaarder Armaere (naam instelbaar met `DEURWAARDER_NAAM`).
@@ -44,6 +54,7 @@ Zonder sleutels draait elk onderdeel apart in demo:
 - **KvK** (`KVK_API_KEY` ontbreekt): elk 8-cijferig nummer telt als ingeschreven, oprichtingsdatum onbekend. Testnummers: eindigend op `0001` = 8 maanden oud, `0002` = faillissement, `0003` = opgericht 2009, `9999` = niet gevonden.
 - **E-mail** (`RESEND_API_KEY`/`MAIL_FROM` ontbreken): mails worden niet verstuurd maar staan in het logboek van het dossier. De akkoordlink staat in het dossier.
 - **Betalen** (`MOLLIE_API_KEY` ontbreekt): de betaalpagina simuleert een geslaagde iDEAL-betaling. Mollie is nog niet aangesloten; dat is de volgende stap.
+- **AI-assistent** (`ANTHROPIC_API_KEY` ontbreekt): staat uit; zie hierboven.
 
 ## Railway
 
@@ -57,7 +68,7 @@ De tabellen worden bij de start automatisch aangemaakt.
 ## Testen
 
 ```
-npm test                  # scoremodel, incasso en reis-stap
+npm test                  # scoremodel, incasso, reis-stap en assistent (zonder API-aanroepen)
 node scripts/e2e.mjs           # volledige flow tegen een draaiende server (ADMIN_PASSWORD=test)
 node scripts/e2e-incasso.mjs   # daarna: overdracht en portaal (DEURWAARDER_PASSWORD=dw, DATABASE_URL)
 ```

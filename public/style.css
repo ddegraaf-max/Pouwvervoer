@@ -251,3 +251,24 @@ input[aria-invalid=true],select[aria-invalid=true]{border-color:var(--bad);box-s
   .btn-stop{width:100%;justify-content:center;min-height:48px;border:2px solid var(--navy);border-radius:4px;text-decoration:none}
   .btn-stop svg{margin:0}
 }
+
+/* ===== AI-assistent: intake in één zin op /reis, uitleg en concept-mails in de backoffice ===== */
+.card.intake{border-color:#F2DC92;background:#FFFCF2;margin-bottom:18px;padding:22px 24px}
+.intake-kop{display:flex;gap:14px;align-items:flex-start;margin-bottom:14px}
+.intake-kop h2{font-size:19px;margin-bottom:2px}
+.intake-kop .lead{margin:0;font-size:15px}
+.intake-icoon{flex:none;width:40px;height:40px;border-radius:50%;background:var(--geel-logo);color:var(--ink);display:flex;align-items:center;justify-content:center}
+.intake-icoon svg{width:22px;height:22px}
+.intake-rij{display:flex;gap:10px;align-items:stretch}
+.intake-rij textarea{flex:1;min-height:64px;resize:vertical;font-size:16px}
+.mic{flex:none;width:52px;border:1px solid #B7BDCC;border-radius:4px;background:#fff;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center}
+.mic svg{width:24px;height:24px}
+.mic:hover{border-color:var(--navy)}
+.mic.aan{background:var(--bad);border-color:var(--bad);color:#fff;animation:puls 1.2s ease-in-out infinite}
+@keyframes puls{50%{box-shadow:0 0 0 8px rgba(161,42,30,.18)}}
+.intake-acties{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.intake-acties .hint{margin:0;font-size:14px}
+.intake [data-intake-resultaat]{margin:12px 0 0}
+.card.assistent h3{font-size:15px;margin:0 0 6px}
+.card.assistent .uitleg-score{background:var(--navy-zacht);border-radius:4px;padding:12px 14px;margin:0 0 10px;font-size:15px}
+@media (max-width:640px){.card.intake{padding:16px}.intake-kop{gap:10px}}

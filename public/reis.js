@@ -176,4 +176,126 @@
     fouten[0][0].focus();
     fouten[0][0].scrollIntoView({ block: 'center', behavior: 'smooth' });
   });
+
+  // ---- Assistent: intake in één zin (typen of inspreken), vult het formulier ----
+  var intake = document.querySelector('[data-intake]');
+  if (intake) {
+    var invoer = intake.querySelector('#intake-tekst');
+    var intakeKnop = intake.querySelector('[data-intake-knop]');
+    var intakeStatus = intake.querySelector('[data-intake-status]');
+    var intakeResultaat = intake.querySelector('[data-intake-resultaat]');
+    var mic = intake.querySelector('[data-mic]');
+    var csrf = (form.querySelector('input[name=_csrf]') || {}).value || '';
+    var bezig = false;
+
+    function ontsnap(s) {
+      return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+    }
+    function zetWaarde(id, waarde) {
+      if (waarde == null || waarde === '') return;
+      var el = $('#' + id);
+      if (el) el.value = waarde;
+    }
+    function kiesRadio(naam, waarde) {
+      if (!waarde) return;
+      var el = $('input[name=' + naam + '][value=' + waarde + ']');
+      if (el) { el.checked = true; el.dispatchEvent(new Event('change', { bubbles: true })); }
+    }
+    function vulRoute(route, v, p) {
+      if (v[p + 'via'] && v[p + 'via'].length) {
+        stops(route).forEach(function (rij) { rij.remove(); });
+        v[p + 'via'].forEach(function (adres, i) { voegToe(route, adres, v[p + 'wacht'] ? v[p + 'wacht'][i] : 15); });
+      }
+      zetWaarde(p + 'van', v[p + 'van']);
+      zetWaarde(p + 'naar', v[p + 'naar']);
+    }
+    function pasToe(v) {
+      kiesRadio('reistype', v.reistype);
+      zetWaarde('personen', v.personen);
+      vulRoute(heenRoute, v, '');
+      kiesRadio('tijdtype_heen', v.tijdtype_heen);
+      zetWaarde('datum_heen', v.datum_heen);
+      zetWaarde('tijd_heen', v.tijd_heen);
+      if (v.datum_heen) {
+        datumTerug.min = v.datum_heen;
+        if (!eigenTerugdatum && !v.datum_terug) datumTerug.value = v.datum_heen;
+      }
+      kiesRadio('tijdtype_terug', v.tijdtype_terug);
+      if (v.datum_terug) { datumTerug.value = v.datum_terug; eigenTerugdatum = v.datum_terug !== datumHeen.value; }
+      zetWaarde('tijd_terug', v.tijd_terug);
+      if (v.andere_route) {
+        schakel.checked = true;
+        terugRoute.hidden = false;
+        vulRoute(terugRoute, v, 'terug_');
+      }
+    }
+    function isLeeg(id) { var el = $('#' + id); return !el || !el.value; }
+    function toonResultaat(data) {
+      var nog = (data.ontbreekt || []).filter(function (o) { return !o.veld || isLeeg(o.veld); });
+      var html = '<strong>' + ontsnap(data.toelichting || 'Het formulier is ingevuld.') + '</strong>';
+      html += nog.length ? ' Vul nog aan: ' + nog.map(function (o) { return ontsnap(o.tekst); }).join(', ') + '.' : ' Controleer de gegevens en klik op Verder.';
+      intakeResultaat.innerHTML = html;
+      intakeResultaat.hidden = false;
+      var eerste = nog.length && nog[0].veld ? $('#' + nog[0].veld) : null;
+      (eerste || form).scrollIntoView({ block: eerste ? 'center' : 'start', behavior: 'smooth' });
+      if (eerste) eerste.focus({ preventScroll: true });
+    }
+    function vulIn() {
+      var t = invoer.value.trim();
+      if (bezig) return;
+      if (t.length < 5) {
+        intakeStatus.textContent = 'Vertel iets meer over uw reis: waarheen, wanneer en met hoeveel personen.';
+        invoer.focus();
+        return;
+      }
+      bezig = true;
+      intakeKnop.disabled = true;
+      intakeResultaat.hidden = true;
+      intakeStatus.textContent = 'Even geduld, de assistent leest uw reis…';
+      fetch('/reis/assistent', { method: 'POST', body: new URLSearchParams({ _csrf: csrf, tekst: t }), headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          if (data.fout) { intakeStatus.textContent = data.fout; return; }
+          intakeStatus.textContent = '';
+          pasToe(data.v || {});
+          toonResultaat(data);
+        })
+        .catch(function () { intakeStatus.textContent = 'De assistent is even niet bereikbaar. Vul het formulier zelf in.'; })
+        .then(function () { bezig = false; intakeKnop.disabled = false; });
+    }
+    intakeKnop.addEventListener('click', vulIn);
+    invoer.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); vulIn(); }
+    });
+
+    var Spraak = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (Spraak && mic) {
+      mic.hidden = false;
+      var herkenning = null;
+      mic.addEventListener('click', function () {
+        if (herkenning) { herkenning.stop(); return; }
+        var mislukt = false;
+        herkenning = new Spraak();
+        herkenning.lang = 'nl-NL';
+        herkenning.interimResults = true;
+        herkenning.onresult = function (e) {
+          var s = '';
+          for (var i = 0; i < e.results.length; i++) s += e.results[i][0].transcript;
+          invoer.value = s;
+        };
+        herkenning.onerror = function () { mislukt = true; intakeStatus.textContent = 'Inspreken lukte niet. Typ uw reis hierboven.'; };
+        herkenning.onend = function () {
+          herkenning = null;
+          mic.classList.remove('aan');
+          mic.setAttribute('aria-pressed', 'false');
+          if (mislukt) return;
+          if (invoer.value.trim().length >= 5) vulIn(); else intakeStatus.textContent = '';
+        };
+        intakeStatus.textContent = 'Luisteren… spreek uw reis in.';
+        mic.classList.add('aan');
+        mic.setAttribute('aria-pressed', 'true');
+        herkenning.start();
+      });
+    }
+  }
 })();

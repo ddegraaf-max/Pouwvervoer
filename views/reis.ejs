@@ -10,6 +10,28 @@
     <li><span class="nr">3</span><span class="tekst">Offerte en akkoord</span></li>
   </ol>
 
+  <% if (!demo.assistent) { %>
+  <section class="card intake" data-intake aria-labelledby="intake-kop">
+    <div class="intake-kop">
+      <span class="intake-icoon" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2l1.8 5.7 5.7 1.8-5.7 1.8L12 17l-1.8-5.7L4.5 9.5l5.7-1.8zM19 14l.9 2.6 2.6.9-2.6.9L19 21l-.9-2.6-2.6-.9 2.6-.9zM5 15l.7 2 2 .7-2 .7L5 20.5l-.7-2.1-2-.7 2-.7z"/></svg></span>
+      <div>
+        <h2 id="intake-kop">Vertel in één zin wat u wilt</h2>
+        <p class="lead">Onze assistent vult het formulier hieronder voor u in. U controleert het en klikt op Verder.</p>
+      </div>
+    </div>
+    <div class="intake-rij">
+      <label class="sr-only" for="intake-tekst">Uw reis in één zin</label>
+      <textarea id="intake-tekst" rows="2" maxlength="1500" placeholder="Bijv. schoolreis naar de Efteling op 12 mei met 48 kinderen en 6 begeleiders, vanaf de Mariaschool in Vianen, om 17:00 terug"></textarea>
+      <button type="button" class="mic" data-mic hidden aria-pressed="false" aria-label="Inspreken"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 15a4 4 0 0 0 4-4V6a4 4 0 0 0-8 0v5a4 4 0 0 0 4 4zm6-4a6 6 0 0 1-12 0H4a8 8 0 0 0 7 7.93V22h2v-3.07A8 8 0 0 0 20 11h-2z"/></svg></button>
+    </div>
+    <div class="intake-acties">
+      <button type="button" class="btn geel zin" data-intake-knop>Vul het formulier in</button>
+      <span class="hint" data-intake-status role="status" aria-live="polite"></span>
+    </div>
+    <p class="alert info" data-intake-resultaat hidden></p>
+  </section>
+  <% } %>
+
   <form method="post" action="/reis" novalidate data-reis class="card reis" data-vandaag="<%= vandaag %>">
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <div class="kop">

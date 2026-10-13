@@ -13,7 +13,7 @@
 <% if (locals.script) { %><script src="<%= script %>" defer></script><% } %>
 </head>
 <body>
-<% if (demo.kvk || demo.betaling || demo.mail) { %><div class="demo">Testomgeving: <%= [demo.kvk && 'KvK-check gesimuleerd', demo.betaling && 'betalingen gesimuleerd', demo.mail && 'e-mails niet verstuurd'].filter(Boolean).join(' · ') %></div><% } %>
+<% if (demo.kvk || demo.betaling || demo.mail || demo.assistent) { %><div class="demo">Testomgeving: <%= [demo.kvk && 'KvK-check gesimuleerd', demo.betaling && 'betalingen gesimuleerd', demo.mail && 'e-mails niet verstuurd', demo.assistent && 'AI-assistent uit'].filter(Boolean).join(' · ') %></div><% } %>
 <header class="top">
   <div class="wrap">
     <a class="logo" href="<%= locals.admin || locals.adminLogin ? '/admin' : locals.portaal ? '/deurwaarder' : 'https://www.pouwvervoer.nl/' %>">
