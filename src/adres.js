@@ -84,18 +84,25 @@ async function zoekAdres(tekst) {
   const sleutel = `a:${q.toLowerCase()}`;
   const bekend = uitCache(sleutel);
   if (bekend) return bekend;
-  const [pdok, photon] = await Promise.allSettled([zoekPdok(q), zoekPhoton(q)]);
+  // Beide diensten tegelijk; PDOK (Nederlandse adressen) is snel en bepalend. Heeft PDOK al genoeg, dan wachten we
+  // hooguit een halve seconde op Photon (bestemmingen en buitenland), anders tot Photon klaar is.
+  const pdokP = zoekPdok(q).then((r) => ({ ok: true, r })).catch(() => ({ ok: false, r: [] }));
+  const photonP = zoekPhoton(q).then((r) => ({ ok: true, r })).catch(() => ({ ok: false, r: [] }));
+  const pdok = await pdokP;
+  const grace = pdok.r.length >= 3 ? 500 : 7000;
+  const photon = await Promise.race([photonP, new Promise((res) => setTimeout(() => res(null), grace))]);
   const lijst = [];
   const gezien = new Set();
-  for (const r of [...(pdok.status === 'fulfilled' ? pdok.value : []), ...(photon.status === 'fulfilled' ? photon.value : [])]) {
+  for (const r of [...pdok.r, ...(photon ? photon.r : [])]) {
     const k = r.label.toLowerCase();
     if (gezien.has(k)) continue;
     gezien.add(k);
     lijst.push(r);
     if (lijst.length >= 7) break;
   }
-  if (pdok.status === 'rejected' && photon.status === 'rejected') throw new Error('Adresdiensten niet bereikbaar.');
-  return inCache(sleutel, lijst, 6 * 3600e3);
+  if (!pdok.ok && (!photon || !photon.ok)) throw new Error('Adresdiensten niet bereikbaar.');
+  // Zonder Photon-antwoord korter bewaren, zodat een volgende zoekopdracht het volledige resultaat krijgt.
+  return inCache(sleutel, lijst, photon ? 6 * 3600e3 : 60e3);
 }
 
 // Route over de weg langs de punten [[lat, lon], ...]: afstand in meters, duur in seconden en de lijn voor de kaart.

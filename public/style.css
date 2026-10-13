@@ -292,3 +292,14 @@ ul.kern{margin:0 0 14px;padding-left:20px;font-size:14px;display:flex;flex-direc
 .maplibregl-map{font:13px/1.4 var(--font)}
 .maplibregl-ctrl-attrib a{color:var(--navy)}
 @media (max-width:640px){.kaart{height:240px}}
+
+/* Zoekindicator in adresvelden: een busje met rookwolkjes */
+.bus-zoekt{position:absolute;right:12px;top:0;height:48px;width:48px;pointer-events:none;color:var(--navy)}
+.bus-zoekt.naast-knop{right:54px}
+.bus-zoekt svg{position:absolute;right:0;top:12px;width:28px;height:24px;animation:bus-hobbel .5s ease-in-out infinite}
+.bus-zoekt .rook{position:absolute;left:4px;top:30px;width:7px;height:7px;border-radius:50%;background:#9AA3BF;opacity:0;animation:bus-rook 1.2s ease-out infinite}
+.bus-zoekt .rook:nth-child(2){animation-delay:.4s}.bus-zoekt .rook:nth-child(3){animation-delay:.8s}
+@keyframes bus-rook{0%{transform:translate(8px,0) scale(.5);opacity:.9}100%{transform:translate(-10px,-14px) scale(1.7);opacity:0}}
+@keyframes bus-hobbel{0%,100%{transform:translateY(0)}50%{transform:translateY(-1.5px)}}
+input[aria-busy=true]{padding-right:64px}
+@media (prefers-reduced-motion:reduce){.bus-zoekt svg,.bus-zoekt .rook{animation:none}.bus-zoekt .rook{opacity:.6}}

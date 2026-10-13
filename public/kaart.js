@@ -61,16 +61,34 @@
   }
   function input_aria(input, id) { input.setAttribute('aria-activedescendant', id); }
 
+  // Busje met rook in het veld zolang er gezocht wordt, zodat de bezoeker weet dat er iets gebeurt.
+  var BUS = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4 5.5A2.5 2.5 0 0 1 6.5 3h10A5.5 5.5 0 0 1 22 8.5V16a2 2 0 0 1-2 2h-.3a2.75 2.75 0 0 1-5.4 0H9.7a2.75 2.75 0 0 1-5.4 0H4a2 2 0 0 1-2-2V5.5zm2 .5v4.5h5V6H6zm7 0v4.5h6.9A3.5 3.5 0 0 0 16.5 6H13z"/><circle cx="7" cy="18.3" r="2.1" fill="currentColor"/><circle cx="17" cy="18.3" r="2.1" fill="currentColor"/></svg>';
+  function zoektAan(input, aan) {
+    var w = wrapper(input);
+    var el = w.querySelector('.bus-zoekt');
+    if (aan && !el) {
+      el = document.createElement('span');
+      el.className = 'bus-zoekt' + (w.classList.contains('inp') ? ' naast-knop' : '');
+      el.innerHTML = '<span class="rook"></span><span class="rook"></span><span class="rook"></span>' + BUS + '<span class="sr-only">Zoeken…</span>';
+      w.appendChild(el);
+      input.setAttribute('aria-busy', 'true');
+    } else if (!aan && el) {
+      el.remove();
+      input.removeAttribute('aria-busy');
+    }
+  }
+
   var zoekTimers = new WeakMap();
   function zoek(input) {
     var q = input.value.trim();
-    if (q.length < 3) { sluit(); return; }
+    if (q.length < 3) { sluit(); zoektAan(input, false); return; }
     var mijn = (zoekTimers.get(input) || 0) + 1;
     zoekTimers.set(input, mijn);
+    zoektAan(input, true);
     fetch('/api/adres?q=' + encodeURIComponent(q), { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : []; })
-      .then(function (items) { if (zoekTimers.get(input) === mijn && document.activeElement === input) toon(input, items); })
-      .catch(function () {});
+      .then(function (items) { if (zoekTimers.get(input) === mijn) { zoektAan(input, false); if (document.activeElement === input) toon(input, items); } })
+      .catch(function () { if (zoekTimers.get(input) === mijn) zoektAan(input, false); });
   }
   var zoekLater = debounce(zoek, 250);
 
@@ -90,6 +108,7 @@
     if (!(input instanceof HTMLInputElement) || !input.hasAttribute('data-adres')) return;
     if (input.getAttribute('data-gekozen')) input.removeAttribute('data-gekozen');
     zetCoord(input, null, null);
+    if (input.value.trim().length >= 3) zoektAan(input, true); else zoektAan(input, false);
     zoekLater(input);
   });
   document.addEventListener('keydown', function (e) {
@@ -103,6 +122,7 @@
     var input = e.target;
     if (!(input instanceof HTMLInputElement) || !input.hasAttribute('data-adres')) return;
     setTimeout(function () { if (open && open.input === input) sluit(); }, 120);
+    zoektAan(input, false);
     stilGeocoderen(input);
   });
   $$('input[data-adres]').forEach(function (i) { i.setAttribute('autocomplete', 'off'); i.setAttribute('role', 'combobox'); i.setAttribute('aria-autocomplete', 'list'); });

@@ -2,6 +2,10 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.8.2 · 13 oktober 2026
+- Adressuggesties sneller: Nederlandse adressen van PDOK komen direct, op Photon (bestemmingen en buitenland) wordt hooguit een halve seconde gewacht als PDOK al genoeg heeft.
+- Zoekindicator: zolang er gezocht wordt, rijdt er een busje met rookwolkjes in het adresveld.
+
 ## 0.8.1 · 13 oktober 2026
 - Kaart dekt nu heel Europa en de wereld: MapLibre GL met de gratis kaartstijl van OpenFreeMap in plaats van Leaflet met PDOK (alleen Nederland). Instelbaar met `KAART_STIJL_URL`.
 
