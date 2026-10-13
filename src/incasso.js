@@ -144,7 +144,7 @@ async function registreerBetaling(dossierId, bedragCent, datumStr, omschrijving)
     let tekst = `Betaling ontvangen door ${NAAM()}: ${euro(bedragCent)} op ${datum(datumStr)}. Totaal ontvangen ${euro(ontvangen)}.`;
     if (ontvangen >= d.hoofdsom_cent) {
       await c.query('UPDATE facturen SET betaald_op=$2 WHERE id=$1 AND betaald_op IS NULL', [d.factuur_id, datumStr]);
-      await c.query("UPDATE aanvragen SET status='betaald' WHERE id=$1", [d.aanvraag_id]);
+      await c.query("UPDATE aanvragen SET status='betaald' WHERE id=$1 AND status <> 'geannuleerd'", [d.aanvraag_id]);
       tekst += ' Hoofdsom voldaan: factuur staat op betaald.';
     }
     if (ontvangen >= d.hoofdsom_cent + d.incassokosten_cent) {

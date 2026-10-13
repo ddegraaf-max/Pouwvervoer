@@ -1,0 +1,17 @@
+<%
+// Annuleringsregeling (artikel 5.1) als tabel. Parameter: optioneel `ritprijs` (centen) om de bedragen te tonen.
+const prijs = typeof ritprijs === 'number' ? ritprijs : null;
+%>
+<table class="annulering">
+  <thead><tr><th>Opzegging</th><th class="num">Kosten</th><% if (prijs != null) { %><th class="num">Bij deze ritprijs</th><% } %></tr></thead>
+  <tbody>
+  <% voorwaarden.annulering.forEach((r) => { %>
+    <tr>
+      <td><%= r.tekst %></td>
+      <td class="num"><%= r.pct %>% van de ritprijs<%= r.minimum ? `, minimaal ${euro(r.minimum)}` : '' %></td>
+      <% if (prijs != null) { %><td class="num"><%= euro(Math.max(Math.round(prijs * r.pct / 100), r.minimum)) %></td><% } %>
+    </tr>
+  <% }) %>
+  </tbody>
+</table>
+<p class="lead" style="margin:8px 0 0;font-size:14px">Dagen zijn kalenderdagen vóór de vertrekdag. Annuleren kan alleen schriftelijk, bijvoorbeeld per e-mail naar <a href="mailto:<%= voorwaarden.bedrijf.email %>"><%= voorwaarden.bedrijf.email %></a>. Kosten die Pouw in uw opdracht al maakte, komen erbij (artikel 5.1). Voor personenvervoer geldt geen wettelijke bedenktijd of herroepingsrecht.</p>

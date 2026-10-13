@@ -2,6 +2,14 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.6.0 · 13 oktober 2026
+- Voorwaarden echt ter hand gesteld: de pdf gaat als bijlage mee met de bevestigingsmail van de aanvraag, de offertemail en de nieuwe bevestiging na het akkoord; de SHA-256 van de pdf wordt per aanvraag bewaard.
+- Bevestiging van de bestelling na het akkoord, per e-mail aan de tekenbevoegde met de aanvrager in cc: reis, prijs, betaling, annuleringsregeling, vervoerder, klachtenregeling en de voorwaarden als pdf.
+- Akkoordpagina als bestelmoment voor consumenten: annuleringsstaffel met bedragen, geen wettelijke bedenktijd, meerkosten, gegevens van de vervoerder (`BEDRIJF_KVK`, `BEDRIJF_BTW`), klachtenregeling, en een knop "Akkoord: bestelling met betalingsverplichting".
+- Aanvraagpagina en `/voorwaarden` tonen de kernpunten uit de voorwaarden (annuleren, aanbetaling, hoofdelijke aansprakelijkheid, meerkosten, weer en overmacht, klachten).
+- Annuleren in de backoffice volgens artikel 5.1: kosten per kalenderdag vóór vertrek (30% min. € 125, 40%, 50%, 75%, 100%), annuleringsfactuur met verrekening van aanbetalingen, schriftelijke bevestiging per e-mail, vastgelegd in dossier en portaal. Een betaling op een annuleringsfactuur zet de aanvraag niet meer op "betaald".
+- E-mails ondersteunen bijlagen en cc.
+
 ## 0.5.0 · 13 oktober 2026
 - Voorwaarden: de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer (pdf) staan in de app op `/voorwaarden` en in de voet. De aanvrager accepteert ze verplicht bij de aanvraag (stap 2) en de tekenbevoegde bij het akkoord, telkens met link. Versie, tijdstip en IP worden bewaard en staan in het logboek, het dossier en het portaal van Armaere, zodat Pouw er aanspraak op kan maken. De bevestigings- en offertemail bevatten de link.
 

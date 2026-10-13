@@ -9,6 +9,7 @@
   </div>
   <% if (melding) { %><div class="alert info" role="status"><%= melding %></div><% } %>
   <% if (a.geblokkeerd) { %><div class="alert bad"><strong>Geblokkeerd:</strong> <%= a.blokkade_reden %>. Offerte kan niet worden verstuurd.</div><% } %>
+  <% if (a.annulering_op) { %><div class="alert info">Geannuleerd op <%= datumTijd(a.annulering_op) %><%= a.annulering_reden ? `: ${a.annulering_reden}` : '' %>. Annuleringskosten: <%= a.annulering_kosten_cent ? `${euro(a.annulering_kosten_cent)} (${a.annulering_pct}% volgens artikel 5.1)` : 'geen' %>.</div><% } %>
 
   <div class="cols">
   <section class="main">
@@ -144,7 +145,7 @@
 
     <% if (factuur) { %>
     <div class="card">
-      <h2 style="font-size:18px;margin-bottom:10px">Eindfactuur <%= factuur.nummer %></h2>
+      <h2 style="font-size:18px;margin-bottom:10px"><%= a.annulering_op ? 'Annuleringsfactuur' : 'Eindfactuur' %> <%= factuur.nummer %></h2>
       <dl class="kv">
         <dt>Totaal</dt><dd><%= euro(factuur.totaal_cent) %></dd>
         <dt>Al betaald</dt><dd><%= euro(factuur.reeds_betaald_cent) %></dd>
@@ -245,9 +246,11 @@
     <% if (['nieuw','offerte_verstuurd','wacht_op_betaling','bevestigd'].includes(a.status)) { %>
     <div class="card">
       <h2 style="font-size:18px">Annuleren</h2>
+      <% if (locals.annulering) { %><p class="lead" style="font-size:14px;margin:0 0 10px">Opzegging vandaag is <%= annulering.dagen %> dag(en) voor vertrek: <%= annulering.pct %>% van de ritprijs<%= annulering.bedrag === annulering.minimum ? ' (het minimum)' : '' %> = <strong><%= euro(annulering.bedrag) %></strong> volgens artikel 5.1.</p><% } else { %><p class="lead" style="font-size:14px;margin:0 0 10px">Nog geen gesloten overeenkomst: annuleren is zonder kosten.</p><% } %>
       <%- form('annuleren') %>
         <div style="display:flex;flex-direction:column;gap:10px">
-          <div><label for="annreden">Reden</label><input type="text" id="annreden" name="reden"></div>
+          <div><label for="annreden">Reden</label><input type="text" id="annreden" name="reden" placeholder="Bijv. schriftelijke opzegging per e-mail van 12 oktober"></div>
+          <% if (locals.annulering) { %><label class="check" for="annkosten"><input type="checkbox" id="annkosten" name="kosten" checked><span>Annuleringskosten in rekening brengen (<%= euro(annulering.bedrag) %>). Er komt een factuur met verrekening van wat al is betaald; de klant krijgt een schriftelijke bevestiging.</span></label><% } %>
           <button class="btn danger" type="submit">Aanvraag annuleren</button>
         </div>
       </form>

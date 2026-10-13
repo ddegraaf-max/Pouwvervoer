@@ -151,6 +151,12 @@ ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS voorwaarden_versie TEXT;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS voorwaarden_akkoord_op TIMESTAMPTZ;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS voorwaarden_ip TEXT;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS akkoord_voorwaarden_versie TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS voorwaarden_hash TEXT;
+-- Annulering (artikel 5.1): moment, reden, percentage en kosten
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS annulering_op TIMESTAMPTZ;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS annulering_reden TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS annulering_pct INT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS annulering_kosten_cent INT;
 
 -- Incassodossiers bij de deurwaarder
 CREATE TABLE IF NOT EXISTS dossiers (

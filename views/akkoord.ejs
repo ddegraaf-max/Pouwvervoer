@@ -41,6 +41,17 @@
     <p class="lead" style="margin:8px 0 0;font-size:14px">Parkeergeld, tol, pont en verblijfskosten van de chauffeur komen op de eindfactuur. Op deze offerte en de rit zijn de <a href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer</a> (<%= voorwaarden.versie %>) van toepassing.</p>
   </div>
 
+  <div class="card">
+    <h2 style="font-size:17px;margin-bottom:10px">Annuleren en bedenktijd</h2>
+    <%- include('partials/voorwaarden-annulering', { ritprijs: a.ritprijs_cent }) %>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:17px;margin-bottom:6px">Uw vervoerder</h2>
+    <p style="margin:0"><%= voorwaarden.bedrijfRegel %>.</p>
+    <p class="lead" style="margin:8px 0 0;font-size:14px">Klachten dient u direct en uiterlijk binnen een maand schriftelijk in; daarna kunt u naar de geschillencommissie van Busvervoer Nederland (artikel 11). Na uw akkoord ontvangt u een bevestiging per e-mail met de volledige voorwaarden als pdf.</p>
+  </div>
+
   <div class="card soft">
     <h2 style="font-size:17px;margin-bottom:10px">Betaling</h2>
     <% if (a.status === 'offerte_verstuurd') { %>
@@ -64,8 +75,9 @@
     <input type="hidden" name="_csrf" value="<%= csrf %>">
     <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
     <div><label for="naam">Uw naam</label><input type="text" id="naam" name="naam" autocomplete="name" value="<%= k.tekenbevoegde || '' %>" required></div>
-    <label class="check" for="voorwaarden"><input type="checkbox" id="voorwaarden" name="voorwaarden"><span>Ik ga akkoord met deze offerte en accepteer de <a href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer</a> (<%= voorwaarden.versie %>). Ik mag tekenen namens <%= k.naam %>.</span></label>
-    <button class="btn wide zin" type="submit"><%= plan.termijnen.some(t => !t.uiterlijk) ? `Goedkeuren en ${euro(plan.termijnen.find(t => !t.uiterlijk).bedrag)} betalen met iDEAL` : 'Offerte goedkeuren' %></button>
+    <label class="check" for="voorwaarden"><input type="checkbox" id="voorwaarden" name="voorwaarden"><span>Ik ga akkoord met deze offerte en accepteer de <a href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer</a> (<%= voorwaarden.versie %>), inclusief de annuleringsregeling hierboven. Ik weet dat er geen wettelijke bedenktijd geldt. Ik mag tekenen namens <%= k.naam %>.</span></label>
+    <button class="btn wide zin" type="submit"><%= plan.termijnen.some(t => !t.uiterlijk) ? `Akkoord met betalingsverplichting en ${euro(plan.termijnen.find(t => !t.uiterlijk).bedrag)} betalen met iDEAL` : 'Akkoord: bestelling met betalingsverplichting' %></button>
+    <p class="lead" style="margin:8px 0 0;font-size:13px;text-align:center">Met deze knop sluit u een overeenkomst met betalingsverplichting voor <%= euro(a.ritprijs_cent) %> plus eventuele nakosten.</p>
   </form>
   <% } %>
   <p class="lead" style="text-align:center">Vraag over de offerte? Bel <a href="tel:0306868300">030 68 68 300</a></p>

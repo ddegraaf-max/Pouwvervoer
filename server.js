@@ -68,7 +68,10 @@ app.use((req, res, next) => {
 
 Object.assign(app.locals, fmt, {
   versie: VERSIE,
-  voorwaarden: { naam: voorwaarden.NAAM, versie: voorwaarden.VERSIE, url: voorwaarden.URL },
+  voorwaarden: {
+    naam: voorwaarden.NAAM, versie: voorwaarden.VERSIE, url: voorwaarden.URL, depot: voorwaarden.DEPOT,
+    annulering: voorwaarden.ANNULERING, kernpunten: voorwaarden.KERNPUNTEN, bedrijf: voorwaarden.BEDRIJF, bedrijfRegel: voorwaarden.bedrijfRegel(),
+  },
   logoUrl: process.env.LOGO_URL || '',
   deurwaarder: incasso.NAAM(),
   DOSSIER_STATUS: incasso.DOSSIER_STATUS,
@@ -207,6 +210,7 @@ app.post(
       return res.status(422).render('akkoord', { ...d, fout: 'Vul uw naam in en vink het akkoord aan.' });
     }
     await svc.geefAkkoord(req.params.token, naam, req.ip, voorwaarden.VERSIE);
+    if (d.a.status === 'offerte_verstuurd') await svc.stuurAkkoordBevestiging(d.a.id);
     const eerste = await db.one(
       'SELECT token FROM termijnen WHERE aanvraag_id=$1 AND uiterlijk IS NULL AND betaald_op IS NULL ORDER BY id LIMIT 1',
       [d.a.id],
@@ -318,6 +322,7 @@ async function dossier(id) {
   return {
     a, k, termijnen, nakosten, factuur, events, historie, plan, incassoDossier, dossierBerichten, overdracht,
     incassokosten: factuur ? incasso.wettelijkeIncassokosten(factuur.te_betalen_cent) : 0,
+    annulering: ['wacht_op_betaling', 'bevestigd'].includes(a.status) && a.ritprijs_cent != null ? voorwaarden.annuleringskosten(a.ritprijs_cent, a.rit_datum) : null,
     akkoordLink: `${svc.BASE_URL()}/akkoord/${a.akkoord_token}`,
   };
 }
@@ -529,12 +534,17 @@ app.post(
   '/admin/aanvraag/:id/annuleren',
   admin,
   wrap(async (req, res) => {
-    const r = await db.one(
-      "UPDATE aanvragen SET status='geannuleerd' WHERE id=$1 AND status IN ('nieuw','offerte_verstuurd','wacht_op_betaling','bevestigd') RETURNING id, klant_id",
-      [Number(req.params.id)],
+    const r = await svc.annuleer(Number(req.params.id), { reden: req.body.reden, kostenInRekening: req.body.kosten === 'on' });
+    if (!r) return terug(req, res, 'Kan in deze status niet geannuleerd worden.');
+    terug(
+      req,
+      res,
+      r.rekenen
+        ? `Geannuleerd. Annuleringskosten ${fmt.euro(r.kosten.bedrag)} (${r.kosten.pct}%) gefactureerd als ${r.factuur.nummer}; ${r.factuur.te_betalen_cent < 0 ? `terug te betalen ${fmt.euro(-r.factuur.te_betalen_cent)}` : `te betalen ${fmt.euro(r.factuur.te_betalen_cent)}`}. Bevestiging is gemaild.`
+        : r.kosten
+          ? `Geannuleerd zonder annuleringskosten${r.betaald ? `; ${fmt.euro(r.betaald)} terug te betalen` : ''}. Bevestiging is gemaild.`
+          : 'Aanvraag geannuleerd; er was nog geen overeenkomst. Bevestiging is gemaild.',
     );
-    if (r) await svc.log(r.id, r.klant_id, 'status', `Geannuleerd door backoffice. Reden: ${String(req.body.reden || '-').slice(0, 300)}`);
-    terug(req, res, r ? 'Aanvraag geannuleerd. Annuleringskosten volgens KNV-voorwaarden handmatig afhandelen.' : 'Kan in deze status niet geannuleerd worden.');
   }),
 );
 

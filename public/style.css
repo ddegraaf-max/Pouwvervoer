@@ -273,3 +273,8 @@ input[aria-invalid=true],select[aria-invalid=true]{border-color:var(--bad);box-s
 .card.assistent h3{font-size:15px;margin:0 0 6px}
 .card.assistent .uitleg-score{background:var(--navy-zacht);border-radius:4px;padding:12px 14px;margin:0 0 10px;font-size:15px}
 @media (max-width:640px){.card.intake{padding:16px}.intake-kop{gap:10px}}
+
+/* Voorwaarden: annuleringsstaffel en kernpunten */
+table.annulering{font-size:14px}
+table.annulering th,table.annulering td{padding:8px 8px 8px 0}
+ul.kern{margin:0 0 14px;padding-left:20px;font-size:14px;display:flex;flex-direction:column;gap:6px}

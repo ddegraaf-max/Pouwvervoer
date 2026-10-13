@@ -1,8 +1,29 @@
 <%- include('partials/head', { titel: 'Voorwaarden' }) %>
-<main class="wrap"><div class="narrow card">
-  <h1>Algemene Vervoer- en Reisvoorwaarden</h1>
-  <p>Op alle aanvragen, offertes en ritten van Pouw Vervoer zijn de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer van toepassing (<%= voorwaarden.versie %>). U accepteert ze bij het aanvragen van een offerte, en wie tekent accepteert ze nogmaals bij het akkoord op de offerte.</p>
-  <p><a class="btn" href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Voorwaarden openen (pdf)</a></p>
-  <p class="lead" style="margin:0">Bewaar of print de voorwaarden voor uw administratie. Vragen? Bel <a href="tel:0306868300">030 68 68 300</a>.</p>
+<main class="wrap"><div class="narrow" style="display:flex;flex-direction:column;gap:20px">
+  <div class="card">
+    <h1>Algemene Vervoer- en Reisvoorwaarden</h1>
+    <p>Op alle aanvragen, offertes en ritten van Pouw Vervoer zijn de <%= voorwaarden.naam %> van toepassing (<%= voorwaarden.versie %>, <%= voorwaarden.depot %>). U accepteert ze bij het aanvragen van een offerte, en wie tekent accepteert ze nogmaals bij het akkoord op de offerte. U krijgt ze als pdf bij de bevestigingsmail en de offerte.</p>
+    <p><a class="btn" href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Voorwaarden openen (pdf)</a></p>
+    <p class="lead" style="margin:0">Bewaar of print de voorwaarden voor uw administratie.</p>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:19px;margin-bottom:10px">Annuleren</h2>
+    <%- include('partials/voorwaarden-annulering', {}) %>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:19px;margin-bottom:10px">De belangrijkste punten</h2>
+    <ul style="margin:0;padding-left:20px;display:flex;flex-direction:column;gap:8px">
+      <% voorwaarden.kernpunten.forEach((k) => { %><li><%= k %></li><% }) %>
+    </ul>
+    <p class="lead" style="margin:12px 0 0;font-size:14px">Dit is een samenvatting; de volledige tekst in de pdf is leidend.</p>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:19px;margin-bottom:10px">Uw vervoerder</h2>
+    <p style="margin:0"><%= voorwaarden.bedrijfRegel %>.</p>
+    <p class="lead" style="margin:8px 0 0;font-size:14px">Vragen of een klacht? Bel <a href="tel:0306868300"><%= voorwaarden.bedrijf.telefoon %></a> of mail <a href="mailto:<%= voorwaarden.bedrijf.email %>"><%= voorwaarden.bedrijf.email %></a>.</p>
+  </div>
 </div></main>
 <%- include('partials/foot') %>

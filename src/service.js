@@ -1,3 +1,4 @@
+const { datumTijd: datumTijdNL } = require('./format');
 const voorwaarden = require('./voorwaarden');
 const reis = require('./reis');
 const crypto = require('crypto');
@@ -112,15 +113,15 @@ async function nieuweAanvraag(d) {
         `INSERT INTO aanvragen (klant_id, aanvrager_naam, aanvrager_tel, aanvrager_email, aanvrager_rol, factuur_email,
           factuur_adres, po_nummer, reisleider_naam, reisleider_tel, rit_datum, vertrek_tijd, van, naar, personen, ritsoort,
           opmerkingen, akkoord_token, reistype, tijdtype_heen, via, datum_terug, tijd_terug, tijdtype_terug, andere_route,
-          terug_van, terug_naar, terug_via, bus_blijft, voorwaarden_versie, voorwaarden_akkoord_op, voorwaarden_ip)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,now(),$31) RETURNING id`,
+          terug_van, terug_naar, terug_via, bus_blijft, voorwaarden_versie, voorwaarden_akkoord_op, voorwaarden_ip, voorwaarden_hash)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,now(),$31,$32) RETURNING id`,
         [
           klantId, d.aanvrager_naam, d.aanvrager_tel, d.aanvrager_email, d.aanvrager_rol || null, d.factuur_email,
           d.factuur_adres || null, d.po_nummer || null, d.reisleider_naam || null, d.reisleider_tel || null,
           d.rit_datum, d.vertrek_tijd || null, d.van, d.naar, Number(d.personen), d.ritsoort, d.opmerkingen || null, token(),
           d.reistype || null, d.tijdtype_heen || null, JSON.stringify(d.via || []), d.datum_terug || null, d.tijd_terug || null,
           d.tijdtype_terug || null, !!d.andere_route, d.terug_van || null, d.terug_naar || null, JSON.stringify(d.terug_via || []), !!d.bus_blijft,
-          voorwaarden.VERSIE, d.voorwaarden_ip || null,
+          voorwaarden.VERSIE, d.voorwaarden_ip || null, voorwaarden.hash() || null,
         ],
       )
     ).rows[0].id;
@@ -141,7 +142,8 @@ async function nieuweAanvraag(d) {
     tekst:
       `Beste ${d.aanvrager_naam},\n\nBedankt voor je aanvraag voor ${datum(d.rit_datum)} (${d.van} → ${d.naar}).\n${reis.samenvatting(reis.vanAanvraag(d))}\n` +
       `We maken een offerte en sturen die ter akkoord naar ${d.tekenbevoegde} (${d.teken_email}).\n\n` +
-      `Op deze aanvraag en de rit zijn de ${voorwaarden.NAAM} (${voorwaarden.VERSIE}) van toepassing, zoals je bij de aanvraag hebt geaccepteerd: ${voorwaarden.absoluut(BASE_URL())}\n\nMet vriendelijke groet,\nPouw Vervoer`,
+      `Je hebt bij de aanvraag de voorwaarden geaccepteerd.\n\n${voorwaarden.mailBlok(BASE_URL())}\n\nMet vriendelijke groet,\nPouw Vervoer`,
+    bijlagen: [voorwaarden.bijlage()],
     aanvraagId: ids.aanvraagId,
     klantId: ids.klantId,
   });
@@ -166,7 +168,8 @@ async function verstuurOfferte(aanvraagId) {
       `Beste ${k.tekenbevoegde},\n\n${a.aanvrager_naam} heeft namens ${k.naam} busvervoer aangevraagd ` +
       `op ${datum(a.rit_datum)} (${a.van} → ${a.naar}).\n${reis.samenvatting(reis.vanAanvraag(a))}\nRitprijs: ${euro(a.ritprijs_cent)} incl. 9% btw.\n` +
       `Betaling: ${plan.omschrijving}\n\nBekijk en accordeer de offerte: ${link}\n\n` +
-      `Op deze offerte en de rit zijn de ${voorwaarden.NAAM} (${voorwaarden.VERSIE}) van toepassing: ${voorwaarden.absoluut(BASE_URL())}\nMet uw akkoord accepteert u deze voorwaarden.\n\nMet vriendelijke groet,\nPouw Vervoer`,
+      `Met uw akkoord plaatst u een bestelling met betalingsverplichting en accepteert u de voorwaarden.\n\n${voorwaarden.mailBlok(BASE_URL())}\n\nVervoerder: ${voorwaarden.bedrijfRegel()}.\n\nMet vriendelijke groet,\nPouw Vervoer`,
+    bijlagen: [voorwaarden.bijlage()],
     aanvraagId,
     klantId: k.id,
   });
@@ -201,6 +204,125 @@ async function geefAkkoord(akkoordToken, naam, ip, voorwaardenVersie = voorwaard
 }
 
 // ---- Termijn betaald (demo-iDEAL of handmatig door backoffice) ----
+async function volgendFactuurnummer(c) {
+  const jaar = new Date().getFullYear();
+  const volg = (await c.query("SELECT count(*)::int n FROM facturen WHERE nummer LIKE $1", [`EPV-${jaar}-%`])).rows[0].n + 1;
+  return `EPV-${jaar}-${String(volg).padStart(4, '0')}`;
+}
+
+// Bevestiging van de bestelling op een duurzame drager (e-mail met de voorwaarden als pdf), direct na het akkoord.
+async function stuurAkkoordBevestiging(aanvraagId) {
+  const a = await one('SELECT * FROM aanvragen WHERE id=$1', [aanvraagId]);
+  if (!a || !a.akkoord_op) return null;
+  const k = await one('SELECT * FROM klanten WHERE id=$1', [a.klant_id]);
+  const termijnen = await all('SELECT * FROM termijnen WHERE aanvraag_id=$1 ORDER BY id', [a.id]);
+  const plan = aanbetalingsplan(a.klasse, a.ritprijs_cent, a.rit_datum, a.nakosten_schatting_cent || 0);
+  const betaling = termijnen.length
+    ? termijnen
+        .map((t) => `- ${t.label}: ${euro(t.bedrag_cent)}${t.uiterlijk ? `, uiterlijk ${datum(t.uiterlijk)}` : ', bij akkoord'}${t.betaald_op ? ' (betaald)' : `. Betalen: ${BASE_URL()}/betalen/${t.token}`}`)
+        .join('\n')
+    : '- Geen aanbetaling. Na de rit ontvangt u één eindfactuur met 14 dagen betaaltermijn.';
+  const tekst =
+    `Beste ${a.akkoord_naam || k.tekenbevoegde},\n\n` +
+    `Bedankt voor uw akkoord op ${datumTijdNL(a.akkoord_op)}. Hierbij de bevestiging van uw bestelling EPV-${a.id} bij Pouw Vervoer.` +
+    `${a.status === 'wacht_op_betaling' ? ' De rit staat definitief vast zodra de aanbetaling binnen is.' : ' De rit staat vast in onze planning.'}\n\n` +
+    `Opdrachtgever: ${k.naam}${a.po_nummer ? ` (uw referentie ${a.po_nummer})` : ''}\nAangevraagd door: ${a.aanvrager_naam}\n\n` +
+    `${reis.samenvatting(reis.vanAanvraag(a))}\nPersonen: ${a.personen}${a.bus_blijft ? '\nDe bus blijft bij de groep.' : ''}${a.opmerkingen ? `\nBijzonderheden: ${a.opmerkingen}` : ''}\n\n` +
+    `Ritprijs: ${euro(a.ritprijs_cent)} incl. 9% btw. Tol, parkeergeld, pont, verblijfskosten van de chauffeur en meerkosten door file of extra uren komen op de eindfactuur (artikel 6.6 en 6.7).\n` +
+    `Betaling: ${plan.omschrijving}\n${betaling}\n\n` +
+    `Annuleren kan alleen schriftelijk; de kosten zijn ${voorwaarden.annuleringZin()} (artikel 5.1). Voor personenvervoer geldt geen wettelijke bedenktijd.\n\n` +
+    `${voorwaarden.mailBlok(BASE_URL())}\n\nVervoerder: ${voorwaarden.bedrijfRegel()}.\n` +
+    'Klachten: direct en uiterlijk binnen een maand schriftelijk bij Pouw Vervoer; daarna kunt u naar de geschillencommissie van Busvervoer Nederland (artikel 11).\n\n' +
+    'Bewaar deze bevestiging en de bijlage; dit is uw exemplaar van de overeenkomst.\n\nMet vriendelijke groet,\nPouw Vervoer';
+  await mail.verstuur({
+    aan: k.teken_email,
+    cc: a.aanvrager_email,
+    onderwerp: `Bevestiging van uw bestelling EPV-${a.id}: busvervoer ${datum(a.rit_datum)}`,
+    tekst,
+    bijlagen: [voorwaarden.bijlage()],
+    aanvraagId: a.id,
+    klantId: k.id,
+  });
+  await log(a.id, k.id, 'bevestiging', `Bevestiging van de bestelling gestuurd aan ${k.teken_email} (cc ${a.aanvrager_email}), met de voorwaarden ${voorwaarden.VERSIE} als bijlage.`);
+  return true;
+}
+
+// Opzegging (artikel 5): kosten volgens de staffel van 5.1 over de ritprijs, gerekend vanaf de dag van opzegging.
+// Zonder gesloten overeenkomst (nog geen akkoord) zijn er geen kosten. Met kosten komt er een factuur die
+// eerdere aanbetalingen verrekent; is er meer betaald dan verschuldigd, dan is het verschil terug te betalen.
+async function annuleer(aanvraagId, { reden = '', kostenInRekening = false, door = 'backoffice', nu = new Date() } = {}) {
+  const redenTekst = String(reden || '').trim().slice(0, 300);
+  const uit = await tx(async (c) => {
+    const a = (await c.query('SELECT * FROM aanvragen WHERE id=$1 FOR UPDATE', [aanvraagId])).rows[0];
+    if (!a || !['nieuw', 'offerte_verstuurd', 'wacht_op_betaling', 'bevestigd'].includes(a.status)) return null;
+    const gesloten = ['wacht_op_betaling', 'bevestigd'].includes(a.status) && a.ritprijs_cent != null;
+    const kosten = gesloten ? voorwaarden.annuleringskosten(a.ritprijs_cent, a.rit_datum, nu) : null;
+    const rekenen = !!(kostenInRekening && kosten && kosten.bedrag > 0);
+    const betaald = (
+      await c.query('SELECT coalesce(sum(bedrag_cent),0)::int s FROM termijnen WHERE aanvraag_id=$1 AND betaald_op IS NOT NULL', [a.id])
+    ).rows[0].s;
+    await c.query('DELETE FROM termijnen WHERE aanvraag_id=$1 AND betaald_op IS NULL', [a.id]);
+    await c.query(
+      "UPDATE aanvragen SET status='geannuleerd', annulering_op=now(), annulering_reden=$2, annulering_pct=$3, annulering_kosten_cent=$4 WHERE id=$1",
+      [a.id, redenTekst || null, kosten ? kosten.pct : null, rekenen ? kosten.bedrag : 0],
+    );
+    let f = null;
+    if (rekenen) {
+      const nummer = await volgendFactuurnummer(c);
+      const teBetalen = kosten.bedrag - betaald;
+      const verval = new Date(nu.getTime() + 14 * 864e5);
+      f = (
+        await c.query(
+          `INSERT INTO facturen (aanvraag_id, klant_id, nummer, totaal_cent, reeds_betaald_cent, te_betalen_cent, factuurdatum, vervaldatum, betaald_op, token)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+          [a.id, a.klant_id, nummer, kosten.bedrag, betaald, teBetalen, nu, verval, teBetalen <= 0 ? nu : null, token()],
+        )
+      ).rows[0];
+    }
+    const uitleg = kosten
+      ? `${kosten.dagen} dag(en) voor vertrek: ${kosten.pct}% van ${euro(a.ritprijs_cent)}${kosten.bedrag === kosten.minimum ? ' (minimum)' : ''} = ${euro(kosten.bedrag)} volgens artikel 5.1`
+      : 'geen gesloten overeenkomst, dus geen annuleringskosten';
+    await log(
+      a.id,
+      a.klant_id,
+      'status',
+      `Geannuleerd door ${door}${redenTekst ? `. Reden: ${redenTekst}` : ''}. Annuleringskosten: ${rekenen ? uitleg : kosten ? `niet in rekening gebracht (${uitleg})` : uitleg}.` +
+        (f
+          ? ` Factuur ${f.nummer}: al betaald ${euro(betaald)}, ${f.te_betalen_cent < 0 ? `terug te betalen ${euro(-f.te_betalen_cent)}` : `te betalen ${euro(f.te_betalen_cent)}`}.`
+          : betaald > 0
+            ? ` Al betaald ${euro(betaald)}, terug te betalen.`
+            : ''),
+      c,
+    );
+    return { a, gesloten, kosten, rekenen, betaald, f };
+  });
+  if (!uit) return null;
+  const { a, gesloten, kosten, rekenen, betaald, f } = uit;
+  const k = await one('SELECT * FROM klanten WHERE id=$1', [a.klant_id]);
+  // Schriftelijke bevestiging van de opzegging (artikel 5.5): aan de tekenbevoegde als er een overeenkomst was, anders aan de aanvrager.
+  const afrekening = rekenen
+    ? `Annuleringskosten volgens artikel 5.1 van de voorwaarden (${kosten.dagen} dag(en) voor vertrek, ${kosten.pct}% van de ritprijs${kosten.bedrag === kosten.minimum ? ', het minimum' : ''}): ${euro(kosten.bedrag)}.\nAl betaald: ${euro(betaald)}.\n` +
+      (f.te_betalen_cent > 0
+        ? `Te betalen: ${euro(f.te_betalen_cent)} vóór ${datum(f.vervaldatum)}, factuur ${f.nummer}. Online betalen: ${BASE_URL()}/factuur/${f.token}`
+        : f.te_betalen_cent < 0
+          ? `Wij betalen ${euro(-f.te_betalen_cent)} terug op de rekening waarvan is betaald.`
+          : 'Er is niets meer te betalen.')
+    : kosten
+      ? `Wij brengen geen annuleringskosten in rekening.${betaald > 0 ? ` Het al betaalde bedrag van ${euro(betaald)} betalen wij terug.` : ''}`
+      : 'Er was nog geen overeenkomst gesloten; er zijn geen kosten.';
+  await mail.verstuur({
+    aan: gesloten ? k.teken_email : a.aanvrager_email,
+    cc: gesloten ? a.aanvrager_email : [],
+    onderwerp: `Annulering van uw busvervoer EPV-${a.id} (${datum(a.rit_datum)})`,
+    tekst:
+      `Beste ${gesloten ? k.tekenbevoegde : a.aanvrager_naam},\n\nWij bevestigen de annulering van de busrit van ${datum(a.rit_datum)} (${a.van} → ${a.naar}).` +
+      `${redenTekst ? `\nReden: ${redenTekst}` : ''}\n\n${afrekening}\n\nMet vriendelijke groet,\nPouw Vervoer`,
+    aanvraagId: a.id,
+    klantId: k.id,
+  });
+  return { gesloten, kosten, rekenen, betaald, factuur: f };
+}
+
 async function termijnBetaald(termijnId, betaalwijze) {
   return tx(async (c) => {
     const t = (await c.query('SELECT * FROM termijnen WHERE id=$1 FOR UPDATE', [termijnId])).rows[0];
@@ -234,9 +356,7 @@ async function maakEindfactuur(aanvraagId) {
     await c.query('DELETE FROM termijnen WHERE aanvraag_id=$1 AND betaald_op IS NULL', [a.id]);
     const totaal = a.ritprijs_cent + nak;
     const teBetalen = totaal - betaald;
-    const jaar = new Date().getFullYear();
-    const volg = (await c.query("SELECT count(*)::int n FROM facturen WHERE nummer LIKE $1", [`EPV-${jaar}-%`])).rows[0].n + 1;
-    const nummer = `EPV-${jaar}-${String(volg).padStart(4, '0')}`;
+    const nummer = await volgendFactuurnummer(c);
     const vandaag = new Date();
     const verval = new Date(vandaag.getTime() + 14 * 864e5);
     const f = (
@@ -277,7 +397,7 @@ async function factuurBetaald(factuurId, betaalwijze) {
   const f = await one('SELECT * FROM facturen WHERE id=$1', [factuurId]);
   if (!f || f.betaald_op) return f;
   await q('UPDATE facturen SET betaald_op=CURRENT_DATE WHERE id=$1', [f.id]);
-  await q("UPDATE aanvragen SET status='betaald' WHERE id=$1", [f.aanvraag_id]);
+  await q("UPDATE aanvragen SET status='betaald' WHERE id=$1 AND status <> 'geannuleerd'", [f.aanvraag_id]);
   await log(f.aanvraag_id, f.klant_id, 'betaling', `Factuur ${f.nummer} betaald (${betaalwijze}).`);
   return f;
 }
@@ -361,5 +481,5 @@ async function draaiHerinneringen(vandaag = new Date()) {
 
 module.exports = {
   nieuweAanvraag, herberekenScore, verstuurOfferte, geefAkkoord, termijnBetaald, maakEindfactuur,
-  factuurBetaald, draaiHerinneringen, historie, log, emailDomeinKlopt, token, BASE_URL,
+  factuurBetaald, draaiHerinneringen, historie, log, emailDomeinKlopt, token, BASE_URL, stuurAkkoordBevestiging, annuleer,
 };

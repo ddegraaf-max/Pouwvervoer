@@ -83,7 +83,10 @@
   </div>
 
   <div class="card">
-    <label class="check" for="voorwaarden"><input type="checkbox" id="voorwaarden" name="voorwaarden" <%= v.voorwaarden ? 'checked' : '' %>><span>Ik heb de <a href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer</a> (<%= voorwaarden.versie %>) gelezen en accepteer ze. Ze gelden voor deze aanvraag, de offerte en de rit.</span></label>
+    <h2 style="font-size:18px;margin-bottom:6px">Voorwaarden</h2>
+    <p class="lead" style="margin:0 0 10px;font-size:15px">Op uw aanvraag, de offerte en de rit gelden de <a href="<%= voorwaarden.url %>" target="_blank" rel="noopener">Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer</a> (<%= voorwaarden.versie %>). De belangrijkste punten:</p>
+    <ul class="kern"><% voorwaarden.kernpunten.slice(0, 5).forEach((k) => { %><li><%= k %></li><% }) %></ul>
+    <label class="check" for="voorwaarden"><input type="checkbox" id="voorwaarden" name="voorwaarden" <%= v.voorwaarden ? 'checked' : '' %>><span>Ik heb de voorwaarden gelezen en accepteer ze. Ik ontvang ze als pdf bij de bevestiging per e-mail.</span></label>
   </div>
 
   <div class="row">
