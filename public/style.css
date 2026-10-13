@@ -306,19 +306,25 @@ input[aria-busy=true]{padding-right:64px}
 @media (prefers-reduced-motion:reduce){.bus-zoekt svg,.bus-zoekt .rook{animation:none}.bus-zoekt .rook{opacity:.6}}
 
 /* Kopjes Heenreis en Terugreis: een weggetje met een rijdend busje, rook, en een speld (bestemming) of huisje (thuis) */
-.leg-kop .weg{flex:1 1 90px;position:relative;height:34px;margin-left:10px;min-width:90px}
+.leg-kop .weg{--voortgang:0;flex:1 1 90px;position:relative;height:34px;margin-left:10px;min-width:90px}
 .leg-kop .weg .rijbaan{position:absolute;left:0;right:30px;top:21px;height:7px;border-radius:4px;background:var(--navy)}
 .leg-kop .weg .rijbaan::after{content:"";position:absolute;left:8px;right:8px;top:2.5px;height:2px;background:repeating-linear-gradient(90deg,var(--geel-logo) 0 9px,transparent 9px 18px)}
 .leg-kop .weg .eind{position:absolute;right:0;top:4px;width:26px;height:26px;color:var(--navy)}
 .leg-kop .weg .eind svg{width:26px;height:26px;display:block}
-.leg-kop .weg .rijder{position:absolute;top:0;left:0;width:30px;height:28px;color:var(--navy);animation:weg-heen 11s ease-in-out infinite}
+/* Voortgangsmeter: --voortgang (0 tot 1) komt uit reis.js en is het aandeel goed ingevulde velden van dat reisdeel. */
+.leg-kop .weg .rijder{position:absolute;top:0;left:calc((100% - 66px) * var(--voortgang));width:30px;height:28px;color:var(--navy);transition:left 1s cubic-bezier(.45,0,.2,1)}
 .leg-kop .weg .rijder>svg{position:absolute;left:0;top:0;width:30px;height:26px;animation:bus-hobbel .45s ease-in-out infinite}
-.leg-kop .weg .rijder .rook{position:absolute;left:-2px;top:16px;width:6px;height:6px;border-radius:50%;background:#9AA3BF;opacity:0;animation:bus-rook 1.2s ease-out infinite}
+.leg-kop .weg .rijder .rook{position:absolute;left:-2px;top:16px;width:6px;height:6px;border-radius:50%;background:#9AA3BF;opacity:0}
+.leg-kop .weg.rijdt .rijder .rook{animation:bus-rook 1.2s ease-out infinite}
 .leg-kop .weg .rijder .rook:nth-child(2){animation-delay:.4s}.leg-kop .weg .rijder .rook:nth-child(3){animation-delay:.8s}
-.leg-kop .weg.terug .rijder{transform:scaleX(-1);animation-name:weg-terug}
-@keyframes weg-heen{0%{left:0;opacity:0}6%{opacity:1}84%{left:calc(100% - 66px);opacity:1}92%{opacity:0}100%{left:calc(100% - 66px);opacity:0}}
-@keyframes weg-terug{0%{left:calc(100% - 66px);opacity:0}6%{opacity:1}84%{left:0;opacity:1}92%{opacity:0}100%{left:0;opacity:0}}
-@media (prefers-reduced-motion:reduce){.leg-kop .weg .rijder,.leg-kop .weg .rijder>svg,.leg-kop .weg .rijder .rook{animation:none}.leg-kop .weg .rijder{left:calc(50% - 15px)}.leg-kop .weg .rijder .rook{opacity:.5}}
+/* Terugreis: het huisje staat links, het busje vertrekt rechts en komt bij 100% thuis aan. */
+.leg-kop .weg.terug .rijbaan{left:30px;right:0}
+.leg-kop .weg.terug .eind{left:0;right:auto}
+.leg-kop .weg.terug .rijder{transform:scaleX(-1);left:calc(36px + (100% - 66px) * (1 - var(--voortgang)))}
+.leg-kop .weg.klaar .rijder>svg{animation:none}
+.leg-kop .weg.klaar .eind{color:var(--groen);animation:eind-pop .6s ease-out}
+@keyframes eind-pop{50%{transform:scale(1.3)}}
+@media (prefers-reduced-motion:reduce){.leg-kop .weg .rijder>svg,.leg-kop .weg .rijder .rook,.leg-kop .weg .eind{animation:none!important}}
 @media (max-width:420px){.leg-kop .weg{min-width:70px}}
 
 /* Chauffeursbriefing */

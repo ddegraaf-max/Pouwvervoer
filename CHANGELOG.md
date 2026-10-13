@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.14.0 · 13 oktober 2026
+- Het busje op de kopjes Heenreis en Terugreis is nu een voortgangsmeter: het rijdt precies zover als de velden van dat reisdeel goed zijn ingevuld (adressen, tussenstops, datum en tijd) en staat bij 100% bij de bestemming, die dan groen kleurt. Bij de terugreis staat het huisje links en komt de bus thuis aan; zonder "andere route terug" tellen de adressen van de heenreis mee. Rookwolkjes alleen terwijl de bus rijdt; de muisaanwijzer boven het weggetje toont "3 van 5 velden ingevuld (60%)".
+
 ## 0.13.1 · 13 oktober 2026
 - Hotfix: de agenda en de tijdkiezer openen weer, met één klik ergens in het veld (het kiezericoontje van de browser is weer zichtbaar). Een datum in het verleden, of een terugreis vóór de heenreis, geeft direct een melding in plaats van pas bij het versturen; de agenda biedt alleen vandaag en later aan.
 

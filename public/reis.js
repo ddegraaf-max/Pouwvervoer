@@ -81,7 +81,7 @@
       return;
     }
     var weg = e.target.closest('.weg');
-    if (weg) {
+    if (weg && weg.closest('[data-stop]')) {
       var route = weg.closest('[data-route]');
       weg.closest('[data-stop]').remove();
       hernummer(route);
@@ -160,6 +160,47 @@
   }
   datumHeen.addEventListener('change', controleerDatums);
   datumTerug.addEventListener('change', controleerDatums);
+
+  // ---- Busje als voortgangsmeter: per reisdeel rijdt het zover als de velden goed zijn ingevuld ----
+  var wegHeen = $('.leg-kop .weg.heen');
+  var wegTerug = $('.leg-kop .weg.terug');
+  function routeVinkjes(route) {
+    var velden = [$('input[name$="van"]', route)].concat(stops(route).map(function (rij) { return rij.querySelector('input'); }), [$('input[name$="naar"]', route)]);
+    return velden.map(function (el) { return !!(el && el.value.trim()); });
+  }
+  function datumGoed(el, min) { return !!el.value && (!min || el.value >= min); }
+  function vinkjesHeen() {
+    return routeVinkjes(heenRoute).concat([datumGoed(datumHeen, vandaag), !!$('#tijd_heen').value]);
+  }
+  function vinkjesTerug() {
+    var tijdHeen = $('#tijd_heen').value;
+    var tijdTerug = $('#tijd_terug').value;
+    var dOk = datumGoed(datumTerug, datumHeen.value > vandaag ? datumHeen.value : vandaag);
+    var tOk = !!tijdTerug && !(dOk && datumHeen.value && tijdHeen && datumTerug.value === datumHeen.value && tijdTerug <= tijdHeen);
+    // Zonder andere route rijdt de bus dezelfde route terug: dan tellen de adressen van de heenreis mee.
+    return routeVinkjes(schakel.checked ? terugRoute : heenRoute).concat([dOk, tOk]);
+  }
+  function toonVoortgang(weg, vinkjes, naam) {
+    if (!weg) return;
+    var klaar = vinkjes.filter(Boolean).length;
+    var v = vinkjes.length ? klaar / vinkjes.length : 0;
+    var nieuw = v.toFixed(3);
+    if (weg.style.getPropertyValue('--voortgang') !== nieuw) {
+      weg.style.setProperty('--voortgang', nieuw);
+      weg.classList.add('rijdt');
+      clearTimeout(weg.stilTimer);
+      weg.stilTimer = setTimeout(function () { weg.classList.remove('rijdt'); }, 1400);
+    }
+    weg.classList.toggle('klaar', klaar === vinkjes.length);
+    weg.title = naam + ': ' + klaar + ' van ' + vinkjes.length + ' velden ingevuld (' + Math.round(v * 100) + '%)';
+  }
+  function werkVoortgangBij() {
+    toonVoortgang(wegHeen, vinkjesHeen(), 'Heenreis');
+    toonVoortgang(wegTerug, vinkjesTerug(), 'Terugreis');
+  }
+  ['input', 'change', 'reis:ingevuld', 'adres:coord'].forEach(function (t) { form.addEventListener(t, werkVoortgangBij); });
+  new MutationObserver(werkVoortgangBij).observe(form, { childList: true, subtree: true });
+  werkVoortgangBij();
 
   // ---- Controle vóór het versturen ----
   function wisFouten() {
