@@ -9,6 +9,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&display=swap">
 <link rel="stylesheet" href="/style.css">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" href="/icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="/icons/icon-180.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pouw boeken">
 <script src="/app.js" defer></script>
 <% if (locals.script) { %><script src="<%= script %>" defer></script><% } %>
 <% if (locals.kaart) { %><meta name="kaart-stijl" content="<%= kaartStijl %>"><link rel="stylesheet" href="/vendor/maplibre/maplibre-gl.css"><script src="/kaart.js" defer></script><% } %>

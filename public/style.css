@@ -330,3 +330,8 @@ input[aria-busy=true]{padding-right:64px}
 .briefing ul.checklist li{position:relative;padding-left:30px}
 .briefing ul.checklist li::before{content:"";position:absolute;left:0;top:1px;width:18px;height:18px;border:2px solid var(--navy);border-radius:3px}
 @media print{header.top,nav.menubalk,footer,.no-print,.demo{display:none!important}body{background:#fff}.card{border-color:#999;break-inside:avoid}main.wrap{padding-top:0}.cols{display:block}.cols>.side{margin-top:12px}}
+
+/* Installeerknop in de voet */
+footer .versie{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+footer .installeer{border-color:#4A5690;color:#fff;background:transparent}
+footer .installeer:hover{border-color:#fff;color:#fff}

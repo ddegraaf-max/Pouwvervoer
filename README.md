@@ -116,6 +116,12 @@ Elke update krijgt een versienummer `hoofd.sub.fix`: een fix of tekstwijziging v
 - een commit waarvan de boodschap met het nummer begint, met git-tag `v0.3.0`,
 - het nummer onderin elke pagina en op `/health` (`{"ok":true,"versie":"0.3.0"}`), zodat je ziet welke versie op Railway draait.
 
+## App op de telefoon
+
+De site is een installeerbare app (PWA): `public/manifest.webmanifest`, iconen in `public/icons`, en een service worker (`public/sw.js`, geserveerd met de versie in de cachenaam zodat elke release ververst) die de vaste bestanden bewaart en zonder verbinding `offline.html` toont. Formulieren, de API en de backoffice worden nooit gecachet. Op Android en in Chrome/Edge verschijnt onderin de knop "App installeren op uw telefoon" zodra de browser dat toestaat; op de iPhone gaat het via Delen → Zet op beginscherm. De app start op `/reis`.
+
+Wil Pouw ook in de App Store en Google Play staan, dan kan dezelfde webapp verpakt worden (Google Play via een Trusted Web Activity met PWABuilder, Apple via een Capacitor-schil). Daarvoor zijn een Google Play-account (eenmalig) en een Apple Developer-account (jaarlijks) nodig en keuren beide winkels de app. Apple weigert apps die alleen een website tonen; een schil met pushberichten over de status van de boeking en de rit maakt die kans aanzienlijk groter. De PWA is de basis voor beide.
+
 ## Domein boekpouwvervoer.nl activeren
 
 1. **Registreren**: zolang het domein niet bestaat in DNS (NXDOMAIN), is het nog niet geregistreerd of heeft het geen nameservers. Registreer het bij een .nl-registrar (bijvoorbeeld TransIP, Mijndomein of Hostnet) met DNS-beheer.

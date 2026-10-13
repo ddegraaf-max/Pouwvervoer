@@ -32,3 +32,21 @@
 document.addEventListener('click', function (e) {
   if (e.target.closest('[data-print]')) window.print();
 });
+
+// Installeerbare app: service worker voor de vaste bestanden en een offline-pagina; knop zodra de browser installeren toestaat.
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(function () {});
+}
+var installPrompt = null;
+window.addEventListener('beforeinstallprompt', function (e) {
+  e.preventDefault();
+  installPrompt = e;
+  document.querySelectorAll('[data-installeer]').forEach(function (b) { b.hidden = false; });
+});
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-installeer]');
+  if (!b || !installPrompt) return;
+  installPrompt.prompt();
+  installPrompt = null;
+  b.hidden = true;
+});

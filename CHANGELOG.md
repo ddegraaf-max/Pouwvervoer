@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.12.0 · 13 oktober 2026
+- Installeerbare app: manifest, app-iconen, service worker met offline-pagina en de knop "App installeren op uw telefoon". De app start op de reis-stap. Basis voor een latere Google Play- en App Store-versie.
+
 ## 0.11.1 · 13 oktober 2026
 - Klaar voor het eigen domein: staat `BASE_URL`, dan gaat verkeer op elk ander adres (railway.app, www) met een 301 naar dat adres; `/health` toont het ingestelde adres. Stappenplan voor het activeren van boekpouwvervoer.nl in de README.
 

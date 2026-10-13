@@ -61,6 +61,12 @@ app.use((req, res, next) => {
   if (req.hostname.toLowerCase() === CANONIEK.hostname.toLowerCase()) return next();
   return res.redirect(301, `${CANONIEK.origin}${req.originalUrl}`);
 });
+// Service worker met de versie in de cachenaam: elke nieuwe versie ververst de vaste bestanden op de telefoon.
+const SW = require('fs').readFileSync(path.join(__dirname, 'public', 'sw.js'), 'utf8').replace("'pouw-v1'", `'pouw-${VERSIE}'`);
+app.get('/sw.js', (req, res) => {
+  res.set({ 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'no-cache', 'Service-Worker-Allowed': '/' });
+  res.send(SW);
+});
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use(express.urlencoded({ extended: false, limit: '50kb' }));
 app.use(
