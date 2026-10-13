@@ -1,0 +1,52 @@
+<%- include('partials/head', { titel: 'App op uw telefoon' }) %>
+<main class="wrap app-pagina">
+  <div class="card app-hero">
+    <img src="/icons/icon-192.png" alt="" width="96" height="96" class="app-icoon">
+    <div>
+      <h1>Pouw boeken op uw telefoon</h1>
+      <p class="lead" style="margin:0 0 14px">Zet de app op uw beginscherm: een bus aanvragen, uw offerte bekijken en akkoord geven, altijd binnen handbereik. Geen app store, geen download van tientallen megabytes, en altijd de nieuwste versie.</p>
+      <div class="row">
+        <button type="button" class="btn geel zin" data-installeer>Installeer de app</button>
+        <span class="lead" style="margin:0;font-size:14px" data-installeer-status>Werkt het niet vanzelf? Hieronder staat hoe het op uw toestel gaat.</span>
+      </div>
+      <p class="alert ok" data-al-geinstalleerd hidden style="margin:14px 0 0">De app staat al op dit toestel. Open hem vanaf uw beginscherm.</p>
+    </div>
+  </div>
+
+  <div class="instructies" id="instructies">
+    <div class="card" data-toestel="ios">
+      <h2 style="font-size:18px;margin-bottom:8px">iPhone en iPad</h2>
+      <ol>
+        <li>Open deze pagina in <strong>Safari</strong>.</li>
+        <li>Tik onderaan op <strong>Delen</strong> (het vierkantje met de pijl omhoog).</li>
+        <li>Kies <strong>Zet op beginscherm</strong> en tik op <strong>Voeg toe</strong>.</li>
+      </ol>
+    </div>
+    <div class="card" data-toestel="android">
+      <h2 style="font-size:18px;margin-bottom:8px">Android</h2>
+      <ol>
+        <li>Open deze pagina in <strong>Chrome</strong>.</li>
+        <li>Tik op de knop <strong>Installeer de app</strong> hierboven, of op het menu met de drie puntjes.</li>
+        <li>Kies <strong>App installeren</strong> of <strong>Toevoegen aan startscherm</strong>.</li>
+      </ol>
+    </div>
+    <div class="card" data-toestel="desktop">
+      <h2 style="font-size:18px;margin-bottom:8px">Computer</h2>
+      <ol>
+        <li>Open deze pagina in <strong>Chrome</strong> of <strong>Edge</strong>.</li>
+        <li>Klik op de knop <strong>Installeer de app</strong>, of op het installatie-icoontje rechts in de adresbalk.</li>
+        <li>De app opent in een eigen venster en staat in uw startmenu.</li>
+      </ol>
+    </div>
+  </div>
+
+  <div class="card qr">
+    <div>
+      <h2 style="font-size:18px;margin-bottom:6px">Deel de app</h2>
+      <p class="lead" style="margin:0 0 8px">Scan de code met de camera van uw telefoon, of stuur de link door. Handig voor op de website, in een e-mail of op een flyer.</p>
+      <p style="margin:0;overflow-wrap:anywhere"><a href="<%= appUrl %>"><%= appUrl %></a></p>
+    </div>
+    <div class="qr-code" aria-label="QR-code naar <%= appUrl %>"><%- qr %></div>
+  </div>
+</main>
+<%- include('partials/foot') %>

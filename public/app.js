@@ -41,12 +41,40 @@ var installPrompt = null;
 window.addEventListener('beforeinstallprompt', function (e) {
   e.preventDefault();
   installPrompt = e;
-  document.querySelectorAll('[data-installeer]').forEach(function (b) { b.hidden = false; });
 });
+// Pagina /app: toestel herkennen voor de juiste uitleg, en melden als de app al geïnstalleerd is.
+(function () {
+  var instructies = document.getElementById('instructies');
+  if (!instructies) return;
+  var ua = navigator.userAgent || '';
+  var toestel = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ? 'ios' : /Android/.test(ua) ? 'android' : 'desktop';
+  instructies.querySelectorAll('[data-toestel]').forEach(function (el) { el.classList.toggle('actief', el.getAttribute('data-toestel') === toestel); });
+  var staand = (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) || window.navigator.standalone === true;
+  if (staand) {
+    var m = document.querySelector('[data-al-geinstalleerd]');
+    if (m) m.hidden = false;
+    document.querySelectorAll('[data-installeer]').forEach(function (b) { b.hidden = true; });
+  }
+})();
 document.addEventListener('click', function (e) {
   var b = e.target.closest('[data-installeer]');
-  if (!b || !installPrompt) return;
-  installPrompt.prompt();
-  installPrompt = null;
-  b.hidden = true;
+  if (!b) return;
+  if (installPrompt) {
+    installPrompt.prompt();
+    installPrompt.userChoice.then(function (keuze) {
+      var s = document.querySelector('[data-installeer-status]');
+      if (s) s.textContent = keuze && keuze.outcome === 'accepted' ? 'De app wordt geïnstalleerd. U vindt hem op uw beginscherm.' : 'Niet geïnstalleerd. U kunt het later opnieuw proberen.';
+    });
+    installPrompt = null;
+    return;
+  }
+  var instructies = document.getElementById('instructies');
+  if (instructies) {
+    instructies.classList.add('toon');
+    instructies.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    var s = document.querySelector('[data-installeer-status]');
+    if (s) s.textContent = 'Uw browser installeert niet vanzelf; volg de stappen hieronder.';
+  } else {
+    window.location.href = '/app';
+  }
 });

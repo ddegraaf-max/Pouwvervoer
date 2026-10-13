@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.13.0 · 13 oktober 2026
+- Pagina `/app`: het app-icoon, een grote knop "Installeer de app", uitleg per toestel (iPhone, Android, computer, het eigen toestel vooraan) en een QR-code om de app te delen. Op elke pagina onderin de link "App op uw telefoon"; op de reis-stap en de bedanktpagina een tip met het icoon.
+
 ## 0.12.1 · 13 oktober 2026
 - Hotfix: de doorverwijzing naar `BASE_URL` werkt pas als dat adres aantoonbaar deze app serveert (gecontroleerd via `/health`, elke vijf minuten) en is tijdelijk (302). Een verkeerde of nog niet werkende `BASE_URL` maakt de site niet meer onbereikbaar.
 

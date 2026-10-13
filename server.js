@@ -14,6 +14,7 @@ const { version: VERSIE } = require('./package.json');
 const voorwaarden = require('./src/voorwaarden');
 const adres = require('./src/adres');
 const beleid = require('./src/beleid');
+const QRCode = require('qrcode');
 const meldingen = require('./src/meldingen');
 const { aanbetalingsplan } = require('./src/score');
 
@@ -957,6 +958,15 @@ app.post(
 );
 
 app.get('/voorwaarden', (req, res) => res.render('voorwaarden'));
+// App op de telefoon: uitleg, installeerknop en QR-code naar deze pagina.
+app.get(
+  '/app',
+  wrap(async (req, res) => {
+    const appUrl = `${svc.BASE_URL()}/app`;
+    const qr = await QRCode.toString(appUrl, { type: 'svg', margin: 1, width: 200, color: { dark: '#1D2333', light: '#ffffff' } });
+    res.render('app', { appUrl, qr });
+  }),
+);
 app.get('/health', (req, res) => res.json({ ok: true, versie: VERSIE, adres: CANONIEK ? CANONIEK.origin : null, adresActief: canoniekActief, host: req.hostname, instantie: APP_ID }));
 
 app.use((req, res) => res.status(404).render('melding', { titel: 'Pagina niet gevonden', tekst: '' }));
