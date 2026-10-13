@@ -135,7 +135,7 @@ test('conceptMail: ontvanger, instructie en concept', async () => {
   const p = client.gezien[0];
   assert.equal(p.output_config.format.type, 'json_schema');
   assert.match(p.messages[0].content, /Instructie van de planner: De klant vraagt/);
-  assert.match(p.messages[0].content, /"ritprijs": "€s2.400,00"/);
+  assert.match(p.messages[0].content, /"ritprijs": "€\s2\.400,00"/);
 
   await assert.rejects(assistent.conceptMail(dossier, { aan: 'aanvrager', vraag: '', client }), /Schrijf kort/);
   await assert.rejects(assistent.conceptMail(dossier, { aan: 'niemand', vraag: 'test test', client }), /aan wie/);
