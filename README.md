@@ -6,6 +6,7 @@ Stack: Node 20+, Express, EJS, PostgreSQL. Geen buildstap.
 
 ## Flow
 
+0. **Reis** (`/reis`): dezelfde opbouw als de offertetool op aanvragen.pouwvervoer.nl, in de huisstijl van deze app: retour of enkele reis, aantal personen, route met maximaal 5 tussenstops en wachttijd, datum en tijd (vertrek of aankomst) per richting, eventueel een andere route terug. Wordt in de sessie bewaard en vult stap 1 van de aanvraag; de details staan in Bijzonderheden.
 1. **Aanvraag** (`/`): rit, aanvrager, opdrachtgever (soort, KvK, tekenbevoegde), factuurontvanger (PO-nummer verplicht voor onderwijs en overheid), reisleider.
 2. **Backoffice** (`/admin`): ritprijs en geschatte nakosten invullen, score wordt herberekend, offerte versturen.
 3. **Akkoord** (`/akkoord/:token`): de tekenbevoegde geeft akkoord en betaalt meteen wat bij akkoord verschuldigd is.
@@ -56,7 +57,7 @@ De tabellen worden bij de start automatisch aangemaakt.
 ## Testen
 
 ```
-npm test                  # scoremodel
+npm test                  # scoremodel, incasso en reis-stap
 node scripts/e2e.mjs           # volledige flow tegen een draaiende server (ADMIN_PASSWORD=test)
 node scripts/e2e-incasso.mjs   # daarna: overdracht en portaal (DEURWAARDER_PASSWORD=dw, DATABASE_URL)
 ```

@@ -1,0 +1,29 @@
+<%
+// Datum en tijd van een richting, met de keuze of de tijd een vertrek- of aankomsttijd is.
+// Parameters: p ('heen' of 'terug'), v, fouten, vandaag, legenda, labelDatum, labelTijd.
+const type = v[`tijdtype_${p}`];
+const fd = fouten[`datum_${p}`] || '';
+const ft = fouten[`tijd_${p}`] || '';
+%>
+<div class="wanneer">
+  <p class="label">Datum en tijd</p>
+  <fieldset class="segment compact">
+    <legend class="sr-only"><%= legenda %></legend>
+    <div class="keuzes">
+      <label><input type="radio" name="tijdtype_<%= p %>" value="vertrek"<%= type === 'vertrek' ? ' checked' : '' %>><span>Vertrek</span></label>
+      <label><input type="radio" name="tijdtype_<%= p %>" value="aankomst"<%= type === 'aankomst' ? ' checked' : '' %>><span>Aankomst</span></label>
+    </div>
+  </fieldset>
+  <div class="grid2 tijden">
+    <div class="icoon datum">
+      <label class="sr-only" for="datum_<%= p %>"><%= labelDatum %></label>
+      <input type="date" id="datum_<%= p %>" name="datum_<%= p %>" value="<%= v[`datum_${p}`] || '' %>" min="<%= vandaag %>"<%- fd ? ` aria-invalid="true" aria-describedby="datum_${p}-fout"` : '' %>>
+      <p class="fout" id="datum_<%= p %>-fout"><%= fd %></p>
+    </div>
+    <div class="icoon tijd">
+      <label class="sr-only" for="tijd_<%= p %>"><%= labelTijd %></label>
+      <input type="time" id="tijd_<%= p %>" name="tijd_<%= p %>" value="<%= v[`tijd_${p}`] || '' %>" step="900"<%- ft ? ` aria-invalid="true" aria-describedby="tijd_${p}-fout"` : '' %>>
+      <p class="fout" id="tijd_<%= p %>-fout"><%= ft %></p>
+    </div>
+  </div>
+</div>

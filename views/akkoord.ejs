@@ -33,7 +33,7 @@
       <dt>Datum</dt><dd><%= datum(a.rit_datum) %><% if (a.vertrek_tijd) { %>, vertrek <%= a.vertrek_tijd %><% } %></dd>
       <dt>Route</dt><dd><%= a.van %> → <%= a.naar %></dd>
       <dt>Personen</dt><dd><%= a.personen %></dd>
-      <dt>Soort</dt><dd><%= { brengen_halen: 'Brengen en halen', hele_dag: 'Bus de hele dag beschikbaar', meerdaags: 'Meerdaagse reis' }[a.ritsoort] %></dd>
+      <dt>Soort</dt><dd><%= { brengen_halen: 'Brengen en halen', hele_dag: 'Bus de hele dag beschikbaar', meerdaags: 'Meerdaagse reis', enkel: 'Enkele reis' }[a.ritsoort] %></dd>
       <% if (a.po_nummer) { %><dt>Uw referentie</dt><dd><%= a.po_nummer %></dd><% } %>
       <dt>Factuur naar</dt><dd><%= a.factuur_email %></dd>
     </dl>

@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&display=swap">
 <link rel="stylesheet" href="/style.css">
 <script src="/app.js" defer></script>
+<% if (locals.script) { %><script src="<%= script %>" defer></script><% } %>
 </head>
 <body>
 <% if (demo.kvk || demo.betaling || demo.mail) { %><div class="demo">Testomgeving: <%= [demo.kvk && 'KvK-check gesimuleerd', demo.betaling && 'betalingen gesimuleerd', demo.mail && 'e-mails niet verstuurd'].filter(Boolean).join(' · ') %></div><% } %>

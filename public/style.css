@@ -140,3 +140,114 @@ footer .certs span{border:1px solid #4A5690;border-radius:3px;padding:2px 8px;fo
 .band.foto p{max-width:520px}
 .band.foto h1{max-width:560px}
 @media (max-width:820px){.band.foto::before{left:0;background:linear-gradient(rgba(27,39,96,.78),rgba(27,39,96,.86)),url(/bus.jpg) 60% 58%/cover no-repeat}}
+
+/* ===== Reis-stap (/reis): stappenbalk, keuzeknoppen, route met tussenstops, schakelaar ===== */
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+[hidden]{display:none!important}
+main.wizard{max-width:820px;padding-top:28px}
+.stappen{list-style:none;margin:0 0 22px;padding:0;display:flex}
+.stappen li{flex:1;position:relative;display:flex;flex-direction:column;align-items:center;gap:8px;font-size:14px;color:var(--muted);text-align:center;padding:0 4px}
+.stappen li::before,.stappen li::after{content:'';position:absolute;top:17px;height:4px;width:50%;background:#CCD2E0}
+.stappen li::before{left:0}.stappen li::after{right:0}
+.stappen li:first-child::before,.stappen li:last-child::after{display:none}
+.stappen li.klaar::before,.stappen li.klaar::after,.stappen li.nu::before{background:var(--navy)}
+.stappen .nr{position:relative;z-index:1;width:38px;height:38px;border-radius:50%;background:#fff;border:3px solid #CCD2E0;color:var(--muted);font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center}
+.stappen li.nu .nr{background:var(--navy);border-color:var(--navy);color:var(--geel-logo);box-shadow:0 0 0 4px var(--geel-zacht)}
+.stappen li.nu .tekst{color:var(--ink);font-weight:700}
+.stappen li.klaar .nr{background:var(--navy);border-color:var(--navy);color:#fff}
+
+.card.reis{padding:32px 36px 36px}
+.reis .kop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px 20px;flex-wrap:wrap;margin-bottom:22px}
+.reis .titel{font-size:27px;font-weight:800;margin-bottom:4px}
+.reis .kop .lead{margin:0}
+.reis .alert{margin-bottom:20px}
+.reis .basis{margin-bottom:28px;align-items:start}
+.leg{border-top:1px solid var(--line);padding-top:24px;margin-top:4px}
+.leg+.leg{margin-top:26px}
+.leg-kop{display:flex;align-items:center;gap:10px;font-size:18px;color:var(--navy);margin-bottom:16px}
+.leg-kop svg{width:26px;height:26px;flex:none}
+.spiegel{transform:scaleX(-1)}
+
+/* Twee keuzes naast elkaar; de gekozen in navy met geel, zoals het logo */
+.segment{border:0;padding:0;margin:0;min-width:0}
+.segment legend{font-size:14px;font-weight:700;margin-bottom:6px;padding:0}
+.segment .keuzes{display:flex;background:#fff;border:1px solid #B7BDCC;border-radius:4px;padding:4px;min-height:48px}
+.segment label{flex:1;margin:0;position:relative;font-weight:400}
+.segment input{position:absolute;opacity:0;pointer-events:none}
+.segment span{display:flex;align-items:center;justify-content:center;height:100%;min-height:38px;border-radius:3px;font-size:15px;font-weight:700;color:var(--ink);cursor:pointer;padding:0 12px;white-space:nowrap}
+.segment span:hover{background:var(--navy-zacht)}
+.segment input:checked+span{background:var(--navy);color:var(--geel-logo)}
+.segment input:focus-visible+span{outline:3px solid var(--geel);outline-offset:2px}
+
+/* Route: een rail met punten voor Van, Via en Naar */
+.route{display:flex;flex-direction:column;gap:14px;margin-bottom:22px}
+.punt{position:relative;padding-left:34px;--m:52px}
+.punt .marker{position:absolute;left:1px;top:calc(var(--m) - 8px);width:16px;height:16px;border-radius:50%;background:#fff;border:3px solid var(--navy);z-index:1}
+.punt.via .marker{width:12px;height:12px;left:3px;top:calc(var(--m) - 6px);background:var(--navy)}
+.punt.eind .marker{border:0;background:none;width:20px;height:24px;left:-1px;top:calc(var(--m) - 13px);color:var(--navy)}
+.punt.eind .marker svg{width:20px;height:24px;display:block}
+.punt::before,.punt::after{content:'';position:absolute;left:8px;width:2px;background:#CCD2E0}
+.punt::before{top:-14px;height:calc(var(--m) + 14px)}
+.punt::after{top:var(--m);bottom:0}
+.punt:first-child::before,.punt:last-child::after{display:none}
+.punt .veld{min-width:0}
+.punt .rij{display:flex;gap:12px 16px;flex-wrap:wrap;align-items:flex-start}
+.punt .rij .invoer{flex:1 1 240px;min-width:0}
+.punt .rij .wacht{flex:0 1 190px;min-width:150px}
+.punt .inp{position:relative}
+.punt .inp input{padding-right:48px}
+.weg{position:absolute;right:0;top:0;height:48px;width:46px;border:0;background:none;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;border-radius:0 4px 4px 0}
+.weg svg{width:20px;height:20px}
+.weg:hover{color:var(--bad);background:var(--badbg)}
+.punt.toevoegen{--m:20px;padding-left:0}
+.btn-stop{display:inline-flex;align-items:center;gap:10px;background:none;border:0;padding:0;color:var(--navy);font:700 15px var(--font);cursor:pointer;text-decoration:underline;text-underline-offset:3px;min-height:40px}
+.btn-stop svg{width:20px;height:20px;flex:none;margin-left:-1px;position:relative;z-index:1}
+.btn-stop:hover{color:var(--navy-diep)}
+
+/* Datum en tijd met icoontjes in de velden */
+.wanneer{display:flex;flex-direction:column;gap:12px}
+.wanneer>.label{font-size:14px;font-weight:700;margin:0}
+.wanneer .segment{max-width:320px}
+.wanneer .tijden{gap:12px}
+.icoon input{padding-left:44px;background-repeat:no-repeat;background-position:13px center;background-size:20px 20px;position:relative}
+.icoon input::-webkit-calendar-picker-indicator{position:absolute;left:0;top:0;bottom:0;width:46px;margin:0;padding:0;opacity:0;cursor:pointer}
+.icoon.datum input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23263680' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='16' rx='2'/%3E%3Cpath d='M3 10h18M8 3v4M16 3v4'/%3E%3C/svg%3E")}
+.icoon.tijd input{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23263680' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3 2'/%3E%3C/svg%3E")}
+
+/* Schakelaar "Andere route terug" met uitleg */
+.schakel{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px}
+.switch{display:inline-flex;align-items:center;gap:12px;font-size:15px;font-weight:600;margin:0;cursor:pointer;position:relative}
+.switch input{position:absolute;opacity:0;pointer-events:none}
+.switch .knop{width:52px;height:30px;border-radius:15px;background:#B7BDCC;position:relative;transition:background .15s;flex:none}
+.switch .knop::after{content:'';position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);transition:transform .15s}
+.switch input:checked+.knop{background:var(--groen)}
+.switch input:checked+.knop::after{transform:translateX(22px)}
+.switch input:focus-visible+.knop{outline:3px solid var(--geel);outline-offset:2px}
+.info-knop{width:26px;height:26px;border-radius:50%;border:0;background:var(--navy-zacht);color:var(--navy);font:italic 700 14px/1 Georgia,serif;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.info-knop:hover,.info-knop[aria-expanded=true]{background:var(--navy);color:#fff}
+.schakel .uitleg{flex-basis:100%;margin:0;background:var(--ground);border-radius:4px;padding:10px 12px;font-size:14px}
+
+/* Foutmeldingen bij het veld */
+.fout{display:block;color:var(--bad);font-size:13px;font-weight:600;margin:5px 0 0}
+.fout:empty{display:none}
+input[aria-invalid=true],select[aria-invalid=true]{border-color:var(--bad);box-shadow:inset 0 0 0 1px var(--bad)}
+
+.reis .actie{margin-top:30px;display:flex;flex-direction:column;gap:10px;align-items:center}
+.reis .actie .btn{min-height:56px;font-size:17px}
+.reis .actie .hint{margin:0;text-align:center}
+.bellen{text-align:center;color:var(--muted);margin:22px 0 0;font-size:15px}
+
+@media (max-width:640px){
+  main.wizard{padding-top:20px}
+  .card.reis{padding:20px 16px 24px}
+  .stappen .tekst{font-size:12px}
+  .stappen .nr{width:32px;height:32px;font-size:13px}
+  .stappen li::before,.stappen li::after{top:14px}
+  .reis .titel{font-size:23px}
+  .reis .basis{grid-template-columns:1fr}
+  .wanneer .tijden{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}
+  .wanneer .segment{max-width:none}
+  .punt.toevoegen{--m:24px;padding-left:34px}
+  .btn-stop{width:100%;justify-content:center;min-height:48px;border:2px solid var(--navy);border-radius:4px;text-decoration:none}
+  .btn-stop svg{margin:0}
+}

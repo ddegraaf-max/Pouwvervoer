@@ -1,0 +1,70 @@
+<%- include('partials/head', { titel: 'Uw reis', opAanvraag: true, script: '/reis.js' }) %>
+<section class="band foto"><div class="wrap">
+  <h1>Stel uw reis samen</h1>
+  <p>Van, naar, wanneer en met hoeveel personen. Meer hebben we voor een prijs niet nodig.</p>
+</div></section>
+<main class="wrap wizard">
+  <ol class="stappen" aria-label="Stappen">
+    <li class="nu" aria-current="step"><span class="nr">1</span><span class="tekst">Uw reis</span></li>
+    <li><span class="nr">2</span><span class="tekst">Uw gegevens</span></li>
+    <li><span class="nr">3</span><span class="tekst">Offerte en akkoord</span></li>
+  </ol>
+
+  <form method="post" action="/reis" novalidate data-reis class="card reis" data-vandaag="<%= vandaag %>">
+    <input type="hidden" name="_csrf" value="<%= csrf %>">
+    <div class="kop">
+      <div>
+        <h2 class="titel">Uw reis</h2>
+        <p class="lead">Vrijblijvend, we vragen nog geen persoonlijke gegevens.</p>
+      </div>
+      <% if (opgeslagen) { %><button class="btn ghost small" type="submit" formaction="/reis/opnieuw" formnovalidate>Opnieuw beginnen</button><% } %>
+    </div>
+
+    <% if (lijst.length) { %>
+    <div class="alert bad" role="alert"><strong>Bijna klaar. Controleer nog:</strong><ul><% lijst.forEach((f) => { %><li><%= f %></li><% }) %></ul></div>
+    <% } %>
+
+    <div class="grid2 basis">
+      <fieldset class="segment">
+        <legend>Ritsoort</legend>
+        <div class="keuzes">
+          <label><input type="radio" name="reistype" value="retour"<%= v.reistype === 'retour' ? ' checked' : '' %>><span>Retour</span></label>
+          <label><input type="radio" name="reistype" value="enkel"<%= v.reistype === 'enkel' ? ' checked' : '' %>><span>Enkele reis</span></label>
+        </div>
+        <p class="fout" id="reistype-fout"><%= fouten.reistype || '' %></p>
+      </fieldset>
+      <div>
+        <label for="personen">Aantal personen</label>
+        <input type="number" id="personen" name="personen" min="1" max="15000" inputmode="numeric" placeholder="45" value="<%= v.personen || '' %>"<%- fouten.personen ? ' aria-invalid="true" aria-describedby="personen-fout"' : '' %>>
+        <p class="fout" id="personen-fout"><%= fouten.personen || '' %></p>
+      </div>
+    </div>
+
+    <section class="leg" aria-labelledby="heen-kop">
+      <h2 class="leg-kop" id="heen-kop"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4 5.5A2.5 2.5 0 0 1 6.5 3h10A5.5 5.5 0 0 1 22 8.5V16a2 2 0 0 1-2 2h-.3a2.75 2.75 0 0 1-5.4 0H9.7a2.75 2.75 0 0 1-5.4 0H4a2 2 0 0 1-2-2V5.5zm2 .5v4.5h5V6H6zm7 0v4.5h6.9A3.5 3.5 0 0 0 16.5 6H13z"/><circle cx="7" cy="18.3" r="2.1" fill="currentColor"/><circle cx="17" cy="18.3" r="2.1" fill="currentColor"/></svg>Heenreis</h2>
+      <%- include('partials/reis-route', { prefix: '', v, fouten, terug: false }) %>
+      <%- include('partials/reis-wanneer', { p: 'heen', v, fouten, vandaag, legenda: 'Is dit de vertrek- of aankomsttijd van de heenreis?', labelDatum: 'Datum heenreis', labelTijd: 'Tijd heenreis' }) %>
+    </section>
+
+    <section class="leg" aria-labelledby="terug-kop" data-terug<%= v.reistype === 'enkel' ? ' hidden' : '' %>>
+      <h2 class="leg-kop" id="terug-kop"><svg class="spiegel" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4 5.5A2.5 2.5 0 0 1 6.5 3h10A5.5 5.5 0 0 1 22 8.5V16a2 2 0 0 1-2 2h-.3a2.75 2.75 0 0 1-5.4 0H9.7a2.75 2.75 0 0 1-5.4 0H4a2 2 0 0 1-2-2V5.5zm2 .5v4.5h5V6H6zm7 0v4.5h6.9A3.5 3.5 0 0 0 16.5 6H13z"/><circle cx="7" cy="18.3" r="2.1" fill="currentColor"/><circle cx="17" cy="18.3" r="2.1" fill="currentColor"/></svg>Terugreis</h2>
+      <div class="schakel">
+        <label class="switch"><input type="checkbox" role="switch" name="andere_route" id="andere_route"<%= v.andere_route ? ' checked' : '' %>><span class="knop" aria-hidden="true"></span>Andere route terug</label>
+        <button type="button" class="info-knop" aria-expanded="false" aria-controls="uitleg-route" aria-label="Uitleg: andere route terug">i</button>
+        <p class="hint uitleg" id="uitleg-route" hidden>Standaard rijdt de bus dezelfde route terug. Zet dit aan als de terugreis ergens anders begint of eindigt, of via andere tussenstops loopt.</p>
+      </div>
+      <%- include('partials/reis-route', { prefix: 'terug_', v, fouten, terug: true }) %>
+      <%- include('partials/reis-wanneer', { p: 'terug', v, fouten, vandaag, legenda: 'Is dit de vertrektijd van de terugreis of de aankomsttijd op de opstapplaats?', labelDatum: 'Datum terugreis', labelTijd: 'Tijd terugreis' }) %>
+    </section>
+
+    <div class="actie">
+      <button class="btn wide" type="submit">Verder naar uw gegevens</button>
+      <p class="hint">Gratis en vrijblijvend. U betaalt pas na goedkeuring van de offerte.</p>
+    </div>
+  </form>
+
+  <template id="tpl-stop"><%- include('partials/reis-stop', { prefix: '', i: 0, waarde: '', wacht: 15, fout: '' }) %></template>
+
+  <p class="bellen">Liever bellen? <a href="tel:0306868300"><strong>030 68 68 300</strong></a>, maandag tot en met vrijdag van 08:00 tot 17:30.</p>
+</main>
+<%- include('partials/foot') %>

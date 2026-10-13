@@ -8,6 +8,7 @@ const incasso = require('./src/incasso');
 const kvk = require('./src/kvk');
 const mail = require('./src/mail');
 const fmt = require('./src/format');
+const reis = require('./src/reis');
 const { aanbetalingsplan } = require('./src/score');
 
 const app = express();
@@ -67,6 +68,9 @@ Object.assign(app.locals, fmt, {
   deurwaarder: incasso.NAAM(),
   DOSSIER_STATUS: incasso.DOSSIER_STATUS,
   demo: { kvk: kvk.DEMO, mail: mail.DEMO, betaling: !process.env.MOLLIE_API_KEY },
+  MAX_STOPS: reis.MAX_STOPS,
+  WACHTTIJDEN: reis.WACHTTIJDEN,
+  wachtLabel: reis.wachtLabel,
 });
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -87,7 +91,26 @@ function rateLimit(max, windowMs) {
 
 // ================= Publiek =================
 
-app.get('/', (req, res) => res.render('aanvraag', { fouten: [], v: {} }));
+// Stap 1: de reis (zelfde opbouw als de offertetool op aanvragen.pouwvervoer.nl).
+// Bewaard in de sessie en vult daarna "De rit" van het aanvraagformulier.
+app.get('/reis', (req, res) => {
+  res.render('reis', { fouten: {}, lijst: [], v: req.session.reis || reis.leeg(), vandaag: reis.vandaag(), opgeslagen: !!req.session.reis });
+});
+app.post('/reis', rateLimit(60, 3600e3), (req, res) => {
+  const { fouten, lijst, v } = reis.valideer(req.body);
+  if (lijst.length) return res.status(422).render('reis', { fouten, lijst, v, vandaag: reis.vandaag(), opgeslagen: !!req.session.reis });
+  req.session.reis = v;
+  res.redirect('/');
+});
+app.post('/reis/opnieuw', (req, res) => {
+  delete req.session.reis;
+  res.redirect('/reis');
+});
+
+app.get('/', (req, res) => {
+  const r = req.session.reis;
+  res.render('aanvraag', { fouten: [], v: r ? reis.naarAanvraag(r) : {}, uitReis: !!r });
+});
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 function valideer(b) {
@@ -122,7 +145,7 @@ function valideer(b) {
   if (!v.naar) f.push('Vul de bestemming in (stap 1).');
   const p = Number(v.personen);
   if (!Number.isInteger(p) || p < 1 || p > 15000) f.push('Vul het aantal personen in (stap 1).');
-  if (!['brengen_halen', 'hele_dag', 'meerdaags'].includes(v.ritsoort)) f.push('Kies wat u nodig heeft (stap 1).');
+  if (!['brengen_halen', 'hele_dag', 'meerdaags', 'enkel'].includes(v.ritsoort)) f.push('Kies wat u nodig heeft (stap 1).');
   return { f, v };
 }
 
@@ -133,6 +156,7 @@ app.post(
     const { f, v } = valideer(req.body);
     if (f.length) return res.status(422).render('aanvraag', { fouten: f, v });
     await svc.nieuweAanvraag(v);
+    delete req.session.reis;
     res.render('bedankt', { v });
   }),
 );

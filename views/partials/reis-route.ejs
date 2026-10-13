@@ -1,0 +1,37 @@
+<%
+// Route van een richting: Van, tussenstops (maximaal 5), Naar.
+// Parameters: prefix ('' of 'terug_'), v, fouten, terug (true voor de terugreis).
+const p = prefix;
+const via = v[`${p}via`] || [];
+const wacht = v[`${p}wacht`] || [];
+const sr = terug ? ' voor de terugreis' : '';
+const veld = (naam, label) => {
+  const id = `${p}${naam}`;
+  const fout = fouten[id] || '';
+  return `<div class="veld">
+      <label for="${id}">${label}<span class="sr-only">${sr}</span></label>
+      <input type="text" id="${id}" name="${id}" value="${(v[id] || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" placeholder="Straat en huisnummer" autocomplete="off"${fout ? ` aria-invalid="true" aria-describedby="${id}-fout"` : ''}>
+      <p class="fout" id="${id}-fout">${fout}</p>
+    </div>`;
+};
+%>
+<div class="route" data-route="<%= p %>" data-prefix="<%= p %>"<%= terug && !v.andere_route ? ' hidden' : '' %>>
+  <div class="punt">
+    <span class="marker" aria-hidden="true"></span>
+    <%- veld('van', 'Van') %>
+  </div>
+  <% via.forEach((waarde, i) => { %><%- include('reis-stop', { prefix: p, i, waarde, wacht: wacht[i], fout: fouten[`${p}via.${i}`] || '' }) %><% }) %>
+  <div class="punt toevoegen" data-toevoegen<%= via.length >= MAX_STOPS && !fouten[`${p}via`] ? ' hidden' : '' %>>
+    <div class="veld">
+      <button type="button" class="btn-stop" data-max="<%= MAX_STOPS %>">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="#fff" stroke="currentColor" stroke-width="2"/><path d="M12 8v8M8 12h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span>Tussenstop toevoegen</span><span class="sr-only">, maximaal <%= MAX_STOPS %> tussenstops<%= sr %></span>
+      </button>
+      <p class="fout" id="<%= p %>via-fout"><%= fouten[`${p}via`] || '' %></p>
+    </div>
+  </div>
+  <div class="punt eind">
+    <span class="marker" aria-hidden="true"><svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a7 7 0 0 0-7 7c0 5.25 7 13 7 13s7-7.75 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6.5a2.5 2.5 0 0 1 0 5z"/></svg></span>
+    <%- veld('naar', 'Naar') %>
+  </div>
+</div>

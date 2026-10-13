@@ -1,0 +1,23 @@
+<%
+// Eén tussenstop in een route: adres, wachttijd en een verwijderknop.
+// Parameters: prefix ('' of 'terug_'), i, waarde, wacht, fout.
+const id = `${prefix}via_${i}`;
+const wid = `${prefix}wacht_${i}`;
+%>
+<div class="punt via" data-stop>
+  <span class="marker" aria-hidden="true"></span>
+  <div class="veld rij">
+    <div class="invoer">
+      <label for="<%= id %>">Via<span class="sr-only"> <span data-nr><%= i + 1 %></span></span></label>
+      <div class="inp">
+        <input type="text" id="<%= id %>" name="<%= prefix %>via" value="<%= waarde || '' %>" placeholder="Straat en huisnummer" autocomplete="off"<%- fout ? ` aria-invalid="true" aria-describedby="${id}-fout"` : '' %>>
+        <button type="button" class="weg" aria-label="Tussenstop <%= i + 1 %> verwijderen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button>
+      </div>
+      <p class="fout" id="<%= id %>-fout"><%= fout || '' %></p>
+    </div>
+    <div class="wacht">
+      <label for="<%= wid %>">Wachttijd</label>
+      <select id="<%= wid %>" name="<%= prefix %>wacht"><% WACHTTIJDEN.forEach((m) => { %><option value="<%= m %>"<%= Number(wacht) === m ? ' selected' : '' %>><%= wachtLabel(m) %></option><% }) %></select>
+    </div>
+  </div>
+</div>

@@ -24,6 +24,7 @@
 
   <div class="card">
     <div class="stap"><span class="nr">1</span><div><h2>De rit</h2><p>Waar en wanneer moet de bus rijden?</p></div></div>
+    <% if (locals.uitReis) { %><p class="alert info" style="margin:0 0 16px">Overgenomen uit uw reis. Klopt er iets niet? <a href="/reis">Reis wijzigen</a></p><% } %>
     <div class="grid2">
       <div><label for="rit_datum">Datum</label><input type="date" id="rit_datum" name="rit_datum" value="<%= v.rit_datum || '' %>" required></div>
       <div><label for="vertrek_tijd">Vertrektijd <span class="opt">(als u die al weet)</span></label><input type="time" id="vertrek_tijd" name="vertrek_tijd" value="<%= v.vertrek_tijd || '' %>"></div>
@@ -35,6 +36,7 @@
           <option value="brengen_halen" <%= v.ritsoort === 'brengen_halen' ? 'selected' : '' %>>Brengen en weer ophalen</option>
           <option value="hele_dag" <%= v.ritsoort === 'hele_dag' ? 'selected' : '' %>>Bus de hele dag bij de groep</option>
           <option value="meerdaags" <%= v.ritsoort === 'meerdaags' ? 'selected' : '' %>>Meerdaagse reis</option>
+          <option value="enkel" <%= v.ritsoort === 'enkel' ? 'selected' : '' %>>Enkele reis (alleen heen)</option>
         </select></div>
     </div>
     <div style="margin-top:14px"><label for="opmerkingen">Bijzonderheden <span class="opt">(rolstoel, bagage, tussenstops)</span></label><textarea id="opmerkingen" name="opmerkingen"><%= v.opmerkingen || '' %></textarea></div>

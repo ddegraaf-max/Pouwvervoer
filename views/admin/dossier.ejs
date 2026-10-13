@@ -194,7 +194,7 @@
         <dt>Datum</dt><dd><%= datum(a.rit_datum) %> <%= a.vertrek_tijd || '' %></dd>
         <dt>Route</dt><dd><%= a.van %> → <%= a.naar %></dd>
         <dt>Personen</dt><dd><%= a.personen %></dd>
-        <dt>Soort</dt><dd><%= { brengen_halen: 'Brengen en halen', hele_dag: 'Hele dag', meerdaags: 'Meerdaags' }[a.ritsoort] %></dd>
+        <dt>Soort</dt><dd><%= { brengen_halen: 'Brengen en halen', hele_dag: 'Hele dag', meerdaags: 'Meerdaags', enkel: 'Enkele reis' }[a.ritsoort] %></dd>
         <% if (a.opmerkingen) { %><dt>Opmerking</dt><dd><%= a.opmerkingen %></dd><% } %>
       </dl>
     </div>
