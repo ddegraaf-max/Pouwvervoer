@@ -5,6 +5,42 @@
     <form method="post" action="/admin/herinneringen" style="margin:0"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn small ghost" type="submit">Herinneringen nu controleren</button></form>
   </div>
   <% if (melding) { %><div class="alert info" role="status"><%= melding %></div><% } %>
+  <% const w = locals.werklijst; %>
+  <% if (w) { const totaal = w.meldingen.length + w.wijzigingen.length + w.signalen.length + w.offertes.length + w.facturen.length; %>
+  <div class="card <%= totaal ? 'key' : '' %>">
+    <div class="between" style="flex-wrap:wrap;gap:8px 16px">
+      <h2 style="font-size:18px">Werklijst<%= totaal ? ` (${totaal})` : '' %></h2>
+      <% if (Object.keys(w.perEigenaar).length) { %><div class="row" style="gap:6px"><% Object.entries(w.perEigenaar).forEach(([e, n]) => { %><span class="badge st"><%= MELDING_EIGENAREN[e] || e %>: <%= n %></span><% }) %></div><% } %>
+    </div>
+    <% if (!totaal) { %><p class="lead" style="margin:8px 0 0">Niets dat blijft liggen. Alle meldingen zijn opgelost, geen wijzigingen of aanmaningen open.</p><% } else { %>
+    <div class="scroll" style="margin-top:10px"><table>
+      <thead><tr><th>Wat</th><th>Dossier</th><th>Eigenaar</th><th>Deadline</th></tr></thead>
+      <tbody>
+        <% w.meldingen.forEach((m) => { %>
+        <tr>
+          <td><strong>M-<%= m.id %></strong> <%= MELDING_SOORTEN[m.soort] || m.soort %><br><span class="lead" style="font-size:13px"><%= m.omschrijving.length > 120 ? m.omschrijving.slice(0, 120) + '…' : m.omschrijving %></span></td>
+          <td><a href="/admin/aanvraag/<%= m.aanvraag_id %>">EPV-<%= m.aanvraag_id %></a><br><span class="lead" style="font-size:13px"><%= m.klant_naam %>, <%= datum(m.rit_datum) %></span></td>
+          <td><%= MELDING_EIGENAREN[m.eigenaar] || m.eigenaar %></td>
+          <td><span class="<%= m.teLaat > 0 ? 'neg' : '' %>"><%= datum(m.deadline) %><%= m.teLaat > 0 ? ` (${m.teLaat} dag${m.teLaat === 1 ? '' : 'en'} te laat)` : '' %></span></td>
+        </tr>
+        <% }) %>
+        <% w.wijzigingen.forEach((x) => { %>
+        <tr><td>Wijzigingsverzoek van de klant</td><td><a href="/admin/aanvraag/<%= x.id %>">EPV-<%= x.id %></a><br><span class="lead" style="font-size:13px"><%= x.klant_naam %>, <%= datum(x.rit_datum) %></span></td><td>Planning</td><td>Zo snel mogelijk</td></tr>
+        <% }) %>
+        <% w.signalen.forEach((x) => { %>
+        <tr><td>Aanbetaling 48 uur na herinnering niet binnen: beslissen of de rit doorgaat</td><td><a href="/admin/aanvraag/<%= x.id %>">EPV-<%= x.id %></a><br><span class="lead" style="font-size:13px"><%= x.klant_naam %>, <%= datum(x.rit_datum) %></span></td><td>Planning</td><td class="neg">Nu</td></tr>
+        <% }) %>
+        <% w.offertes.forEach((x) => { %>
+        <tr><td>Offerte <%= x.verlopen ? 'verlopen' : 'verloopt bijna' %>: nabellen of opnieuw versturen</td><td><a href="/admin/aanvraag/<%= x.id %>">EPV-<%= x.id %></a><br><span class="lead" style="font-size:13px"><%= x.klant_naam %>, <%= datum(x.rit_datum) %></span></td><td>Sales</td><td class="<%= x.verlopen ? 'neg' : '' %>"><%= datum(x.offerte_geldig_tot) %></td></tr>
+        <% }) %>
+        <% w.facturen.forEach((f) => { %>
+        <tr><td>Factuur <%= f.nummer %> <%= f.dagenTeLaat %> dag<%= f.dagenTeLaat === 1 ? '' : 'en' %> over de vervaldatum, <%= euro(f.te_betalen_cent) %><%= f.incasso ? ', bij de deurwaarder' : f.open_meldingen ? `, herinneringen gepauzeerd (${f.open_meldingen} melding${f.open_meldingen === 1 ? '' : 'en'} open)` : `, herinnering ${f.herinnering_niveau} van 4` %></td><td><a href="/admin/aanvraag/<%= f.aanvraag_id %>">EPV-<%= f.aanvraag_id %></a><br><span class="lead" style="font-size:13px"><%= f.klant_naam %></span></td><td>Administratie</td><td class="<%= f.open_meldingen ? '' : 'neg' %>"><%= datum(f.vervaldatum) %></td></tr>
+        <% }) %>
+      </tbody>
+    </table></div>
+    <% } %>
+  </div>
+  <% } %>
   <nav class="row" aria-label="Filter op status">
     <a class="badge <%= !filter ? 'k-B' : 'st' %>" href="/admin">Alle</a>
     <% Object.entries(STATUS).forEach(([k, lab]) => { %>

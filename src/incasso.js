@@ -47,8 +47,9 @@ function wettelijkeIncassokosten(hoofdsomCent) {
  * Alle klanten: aanmaning verstuurd (herinneringsniveau 4).
  * Particulieren: daarnaast moeten 14 dagen na de 14-dagenbrief verstreken zijn (+1 dag voor ontvangst).
  */
-function magOverdragen(f, klanttype, nu = new Date()) {
+function magOverdragen(f, klanttype, nu = new Date(), openMeldingen = 0) {
   if (f.betaald_op) return { mag: false, reden: 'De factuur is al betaald.' };
+  if (openMeldingen > 0) return { mag: false, reden: `Er ${openMeldingen === 1 ? 'staat nog 1 melding' : `staan nog ${openMeldingen} meldingen`} open (klacht, afspraak, creditnota). Eerst oplossen, dan pas overdragen.` };
   if (f.incasso) return { mag: false, reden: `De factuur is al overgedragen aan ${NAAM()}.` };
   if (f.herinnering_niveau < 4) return { mag: false, reden: 'Eerst moet de aanmaning verstuurd zijn (17 dagen na de vervaldatum).' };
   if (klanttype === 'particulier') {

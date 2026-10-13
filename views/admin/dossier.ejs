@@ -7,6 +7,7 @@
     <span class="badge st"><%= STATUS[a.status] %></span>
     <% if (a.signaal_planner) { %><span class="badge k-D">Aanbetaling 48 uur na herinnering niet binnen: beslis of de rit doorgaat</span><% } %>
     <% if (a.wijziging_open) { %><span class="badge k-C">Wijzigingsverzoek open</span><% } %>
+    <% if (locals.openMeldingen) { %><span class="badge k-D"><%= openMeldingen %> melding<%= openMeldingen === 1 ? '' : 'en' %> open: herinneringen en incasso staan stil</span><% } %>
   </div>
   <% if (melding) { %><div class="alert info" role="status"><%= melding %></div><% } %>
   <% if (a.geblokkeerd) { %><div class="alert bad"><strong>Geblokkeerd:</strong> <%= a.blokkade_reden %>. Offerte kan niet worden verstuurd.</div><% } %>
@@ -67,6 +68,53 @@
       </div>
       <% } %>
       <% } %>
+    </div>
+
+    <div class="card">
+      <h2 style="font-size:18px;margin-bottom:6px">Afspraken met de klant</h2>
+      <p class="lead" style="font-size:14px;margin:0 0 10px">Wat sales heeft toegezegd, zwart op wit: komt in de offerte, de bevestiging na het akkoord, de export voor trip en op deze pagina. Zo voert planning uit wat is afgesproken.</p>
+      <%- form('afspraken') %>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <textarea name="afspraken" aria-label="Afspraken" placeholder="Bijv. chauffeur wacht bij de Efteling; bus met toilet; factuur in twee delen; opstappen aan de achterkant van de school."><%= a.afspraken || '' %></textarea>
+          <div><button class="btn ghost small" type="submit">Afspraken opslaan</button></div>
+        </div>
+      </form>
+    </div>
+
+    <div class="card <%= locals.openMeldingen ? 'key' : '' %>">
+      <h2 style="font-size:18px;margin-bottom:6px">Meldingen<%= locals.openMeldingen ? ` (${openMeldingen} open)` : '' %></h2>
+      <p class="lead" style="font-size:14px;margin:0 0 10px">Elk los eindje met een eigenaar en een deadline: onduidelijke afspraak, planning die anders uitvoert, chauffeur te laat, klacht, creditnota, foutieve invoer in Trip. Zolang er een melding open staat, gaan er geen herinneringen naar de klant en kan de factuur niet naar <%= deurwaarder %>.</p>
+      <% (locals.meldingen || []).forEach((m) => { %>
+      <div style="border-top:1px solid var(--line);padding:10px 0">
+        <div class="between" style="flex-wrap:wrap;gap:6px 12px">
+          <strong>M-<%= m.id %> · <%= MELDING_SOORTEN[m.soort] || m.soort %></strong>
+          <span class="badge <%= m.status === 'open' ? (new Date(m.deadline) < new Date(new Date().toDateString()) ? 'k-D' : 'k-C') : 'k-A' %>"><%= m.status === 'open' ? `Open, ${MELDING_EIGENAREN[m.eigenaar] || m.eigenaar}, deadline ${datum(m.deadline)}` : `Opgelost ${datumTijd(m.opgelost_op)}` %></span>
+        </div>
+        <p style="margin:6px 0 0;white-space:pre-wrap"><%= m.omschrijving %></p>
+        <p class="lead" style="font-size:13px;margin:4px 0 0">Gemeld <%= datumTijd(m.created_at) %><%= m.gemeld_door ? ` door ${m.gemeld_door}` : '' %>.<%= m.oplossing ? ` Oplossing: ${m.oplossing}` : '' %></p>
+        <% if (m.status === 'open') { %>
+        <%- form(`melding/${m.id}/oplossen`) %>
+          <div class="inline-form" style="margin-top:8px">
+            <div><label for="opl<%= m.id %>">Hoe opgelost?</label><input type="text" id="opl<%= m.id %>" name="oplossing" placeholder="Bijv. klant gebeld, excuses, creditnota € 150 gemaakt"></div>
+            <button class="btn small ghost" type="submit">Opgelost</button>
+          </div>
+        </form>
+        <% } %>
+      </div>
+      <% }) %>
+      <%- form('melding') %>
+        <div style="display:flex;flex-direction:column;gap:8px;border-top:1px solid var(--line);padding-top:12px;margin-top:4px">
+          <div class="grid2">
+            <div><label for="msoort">Soort</label><select id="msoort" name="soort"><% Object.entries(MELDING_SOORTEN).forEach(([k2, lab]) => { %><option value="<%= k2 %>"><%= lab %></option><% }) %></select></div>
+            <div><label for="meigenaar">Eigenaar</label><select id="meigenaar" name="eigenaar"><option value="">Standaard bij deze soort</option><% Object.entries(MELDING_EIGENAREN).forEach(([k2, lab]) => { %><option value="<%= k2 %>"><%= lab %></option><% }) %></select></div>
+          </div>
+          <div><label for="momschrijving">Wat is er aan de hand?</label><textarea id="momschrijving" name="omschrijving" placeholder="Bijv. klant meldt dat de chauffeur 25 minuten te laat was bij de school; groep miste de eerste activiteit."></textarea></div>
+          <div class="inline-form">
+            <div><label for="mdeadline">Deadline <span class="opt">(standaard 5 werkdagen)</span></label><input type="date" id="mdeadline" name="deadline"></div>
+            <button class="btn ghost" type="submit">Melding aanmaken</button>
+          </div>
+        </div>
+      </form>
     </div>
 
     <div class="card scroll">
@@ -150,6 +198,7 @@
       <h2 style="font-size:18px;margin-bottom:10px"><%= a.annulering_op ? 'Annuleringsfactuur' : 'Eindfactuur' %> <%= factuur.nummer %></h2>
       <dl class="kv">
         <dt>Totaal</dt><dd><%= euro(factuur.totaal_cent) %></dd>
+        <% if (factuur.credit_cent) { %><dt>Creditnota</dt><dd>-<%= euro(factuur.credit_cent) %><%= factuur.credit_reden ? ` (${factuur.credit_reden})` : '' %></dd><% } %>
         <dt>Al betaald</dt><dd><%= euro(factuur.reeds_betaald_cent) %></dd>
         <dt><%= factuur.te_betalen_cent < 0 ? 'Terug te betalen' : 'Te betalen' %></dt><dd><strong><%= euro(Math.abs(factuur.te_betalen_cent)) %></strong></dd>
         <dt>Vervaldatum</dt><dd><%= datum(factuur.vervaldatum) %></dd>
@@ -158,6 +207,19 @@
       <% if (!factuur.betaald_op) { %>
       <div class="row" style="margin-top:14px">
         <%- form('factuur-betaald') %><button class="btn" type="submit">Betaling ontvangen</button></form>
+      </div>
+      <% } %>
+      <% if (!factuur.incasso) { %>
+      <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:12px">
+        <h3 style="margin-bottom:6px">Creditnota</h3>
+        <p class="lead" style="font-size:14px;margin:0 0 8px">Klopt er iets niet (te laat, afwijking, afspraak niet nagekomen)? Crediteer meteen; een creditnota die blijft liggen wordt een onbetaalde factuur. De klant krijgt de creditnota per e-mail.</p>
+        <%- form('creditnota') %>
+          <div class="inline-form">
+            <div><label for="cbedrag">Bedrag incl. btw</label><input type="text" inputmode="decimal" id="cbedrag" name="bedrag" placeholder="150,00"></div>
+            <div style="flex:2 1 260px"><label for="creden">Reden</label><input type="text" id="creden" name="reden" placeholder="Bijv. chauffeur 25 minuten te laat, coulance"></div>
+            <button class="btn ghost" type="submit">Creditnota maken</button>
+          </div>
+        </form>
       </div>
       <% } %>
       <% if (overdracht && !factuur.betaald_op && factuur.te_betalen_cent > 0) { %>

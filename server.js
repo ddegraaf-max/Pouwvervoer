@@ -14,6 +14,7 @@ const { version: VERSIE } = require('./package.json');
 const voorwaarden = require('./src/voorwaarden');
 const adres = require('./src/adres');
 const beleid = require('./src/beleid');
+const meldingen = require('./src/meldingen');
 const { aanbetalingsplan } = require('./src/score');
 
 const app = express();
@@ -74,6 +75,8 @@ app.use((req, res, next) => {
 
 Object.assign(app.locals, fmt, {
   versie: VERSIE,
+  MELDING_SOORTEN: meldingen.SOORTEN,
+  MELDING_EIGENAREN: meldingen.EIGENAREN,
   voorwaarden: {
     naam: voorwaarden.NAAM, versie: voorwaarden.VERSIE, url: voorwaarden.URL, depot: voorwaarden.DEPOT,
     annulering: voorwaarden.ANNULERING, kernpunten: voorwaarden.KERNPUNTEN, bedrijf: voorwaarden.BEDRIJF, bedrijfRegel: voorwaarden.bedrijfRegel(),
@@ -312,6 +315,23 @@ app.post(
   }),
 );
 
+// Klacht of vraag van de klant via de akkoordpagina: wordt een melding voor de administratie.
+app.post(
+  '/akkoord/:token/klacht',
+  rateLimit(10, 3600e3),
+  wrap(async (req, res) => {
+    const d = await laadAkkoord(req.params.token);
+    if (!d) return res.status(404).render('melding', { titel: 'Link niet gevonden', tekst: '' });
+    try {
+      await meldingen.klachtVanKlant(d.a.id, { tekst: req.body.tekst, door: `${d.k.tekenbevoegde} (klant, via de akkoordpagina)`, baseUrl: svc.BASE_URL() });
+      req.session.akkoordMelding = 'Uw klacht is ontvangen. U krijgt een bevestiging per e-mail; wij nemen contact met u op.';
+      res.redirect(303, `/akkoord/${req.params.token}`);
+    } catch (e) {
+      res.status(422).render('akkoord', { ...d, fout: e.message });
+    }
+  }),
+);
+
 // Demo-betaalpagina (vervangen door Mollie zodra MOLLIE_API_KEY er is)
 app.get(
   '/betalen/:token',
@@ -390,7 +410,8 @@ app.get(
     const tellingen = await db.all('SELECT status, count(*)::int n FROM aanvragen GROUP BY status');
     const melding = req.session.melding || null;
     req.session.melding = null;
-    res.render('admin/lijst', { rows, filter, melding, tellingen: Object.fromEntries(tellingen.map((t) => [t.status, t.n])) });
+    const werklijst = await meldingen.werklijst();
+    res.render('admin/lijst', { rows, filter, melding, werklijst, tellingen: Object.fromEntries(tellingen.map((t) => [t.status, t.n])) });
   }),
 );
 
@@ -410,9 +431,12 @@ async function dossier(id) {
   const dossierBerichten = incassoDossier
     ? await db.all('SELECT * FROM dossier_berichten WHERE dossier_id=$1 ORDER BY created_at, id', [incassoDossier.id])
     : [];
-  const overdracht = factuur && !incassoDossier ? incasso.magOverdragen(factuur, k.type) : null;
+  const lijstMeldingen = await meldingen.voorAanvraag(id);
+  const openMeldingen = lijstMeldingen.filter((m) => m.status === 'open').length;
+  const overdracht = factuur && !incassoDossier ? incasso.magOverdragen(factuur, k.type, new Date(), openMeldingen) : null;
   return {
     a, k, termijnen, nakosten, factuur, events, historie, plan, incassoDossier, dossierBerichten, overdracht,
+    meldingen: lijstMeldingen, openMeldingen,
     incassokosten: factuur ? incasso.wettelijkeIncassokosten(factuur.te_betalen_cent) : 0,
     annulering: ['wacht_op_betaling', 'bevestigd'].includes(a.status) && a.ritprijs_cent != null ? voorwaarden.annuleringsKostenDossier(a) : null,
     akkoordLink: `${svc.BASE_URL()}/akkoord/${a.akkoord_token}`,
@@ -640,6 +664,54 @@ app.post(
   }),
 );
 
+// ---- Afspraken, meldingen en creditnota's (zie src/meldingen.js) ----
+app.post(
+  '/admin/aanvraag/:id/afspraken',
+  admin,
+  wrap(async (req, res) => {
+    await svc.afsprakenOpslaan(Number(req.params.id), req.body.afspraken);
+    terug(req, res, 'Afspraken opgeslagen. Ze staan in de offerte, de bevestiging en de export voor trip.');
+  }),
+);
+app.post(
+  '/admin/aanvraag/:id/melding',
+  admin,
+  wrap(async (req, res) => {
+    try {
+      const m = await meldingen.maak(Number(req.params.id), { soort: req.body.soort, omschrijving: req.body.omschrijving, eigenaar: req.body.eigenaar, deadline: req.body.deadline });
+      terug(req, res, `Melding M-${m.id} aangemaakt voor ${meldingen.EIGENAREN[m.eigenaar]}, deadline ${fmt.datum(m.deadline)}. Herinneringen staan stil tot de melding is opgelost.`);
+    } catch (e) {
+      terug(req, res, e.message);
+    }
+  }),
+);
+app.post(
+  '/admin/aanvraag/:id/melding/:mid/oplossen',
+  admin,
+  wrap(async (req, res) => {
+    try {
+      const m = await meldingen.losOp(Number(req.params.mid), { oplossing: req.body.oplossing });
+      terug(req, res, `Melding M-${m.id} opgelost.`);
+    } catch (e) {
+      terug(req, res, e.message);
+    }
+  }),
+);
+app.post(
+  '/admin/aanvraag/:id/creditnota',
+  admin,
+  wrap(async (req, res) => {
+    try {
+      const f = await db.one('SELECT id FROM facturen WHERE aanvraag_id=$1', [Number(req.params.id)]);
+      if (!f) return terug(req, res, 'Er is nog geen factuur.');
+      const r = await svc.creditnota(f.id, { bedragCent: fmt.parseEuro(req.body.bedrag), reden: req.body.reden });
+      terug(req, res, `Creditnota ${fmt.euro(r.bedrag)} verwerkt en gemaild. ${r.teBetalen > 0 ? `Nog te betalen ${fmt.euro(r.teBetalen)}.` : r.teBetalen < 0 ? `Terug te betalen ${fmt.euro(-r.teBetalen)}.` : 'Factuur volledig voldaan.'}`);
+    } catch (e) {
+      terug(req, res, e.message);
+    }
+  }),
+);
+
 app.post(
   '/admin/aanvraag/:id/wijziging-af',
   admin,
@@ -693,7 +765,7 @@ app.get(
     );
     const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
     const kop = ['ref', 'datum', 'vertrektijd', 'van', 'naar', 'personen', 'ritsoort', 'opdrachtgever', 'reisleider', 'reisleider_tel', 'aanvrager', 'aanvrager_tel', 'opmerkingen',
-      'tijdtype', 'datum_terug', 'tijd_terug', 'tijdtype_terug', 'tussenstops', 'route_terug', 'bus_blijft', 'km_heen', 'reistijd_heen_min', 'km_terug', 'reistijd_terug_min'];
+      'tijdtype', 'datum_terug', 'tijd_terug', 'tijdtype_terug', 'tussenstops', 'route_terug', 'bus_blijft', 'km_heen', 'reistijd_heen_min', 'km_terug', 'reistijd_terug_min', 'afspraken'];
     const km = (m) => (m != null ? (m / 1000).toFixed(1).replace('.', ',') : '');
     const minuten = (s) => (s != null ? Math.round(s / 60) : '');
     const stopsTekst = (x) => (Array.isArray(x) ? x : []).map((s) => `${s.adres} (${reis.wachtLabel(s.wacht || 15)})`).join('; ');
@@ -702,7 +774,7 @@ app.get(
         a.reisleider_naam, a.reisleider_tel, a.aanvrager_naam, a.aanvrager_tel, a.opmerkingen,
         a.tijdtype_heen, a.datum_terug ? fmt.iso(a.datum_terug) : '', a.tijd_terug, a.tijdtype_terug, stopsTekst(a.via),
         a.andere_route ? [a.terug_van, stopsTekst(a.terug_via), a.terug_naar].filter(Boolean).join(' → ') : (a.ritsoort === 'enkel' ? '' : 'zelfde route'),
-        a.bus_blijft || a.ritsoort === 'hele_dag' ? 'ja' : 'nee', km(a.afstand_m), minuten(a.duur_s), km(a.terug_afstand_m), minuten(a.terug_duur_s)].map(esc).join(';'),
+        a.bus_blijft || a.ritsoort === 'hele_dag' ? 'ja' : 'nee', km(a.afstand_m), minuten(a.duur_s), km(a.terug_afstand_m), minuten(a.terug_duur_s), a.afspraken].map(esc).join(';'),
     );
     if (rows.length) await db.q('UPDATE aanvragen SET trip_export_op=now() WHERE id = ANY($1)', [rows.map((r) => r.id)]);
     res.set('Content-Type', 'text/csv; charset=utf-8');

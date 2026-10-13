@@ -170,7 +170,7 @@ async function verstuurOfferte(aanvraagId) {
     onderwerp: `Offerte busvervoer ${datum(a.rit_datum)} ter akkoord`,
     tekst:
       `Beste ${k.tekenbevoegde},\n\n${a.aanvrager_naam} heeft namens ${k.naam} busvervoer aangevraagd ` +
-      `op ${datum(a.rit_datum)} (${a.van} → ${a.naar}).\n${reis.samenvatting(reis.vanAanvraag(a))}\nRitprijs: ${euro(a.ritprijs_cent)} incl. 9% btw, geldig tot en met ${datum(geldigTot)}.\n` +
+      `op ${datum(a.rit_datum)} (${a.van} → ${a.naar}).\n${reis.samenvatting(reis.vanAanvraag(a))}\n${a.afspraken ? `Afspraken: ${a.afspraken}\n` : ''}Ritprijs: ${euro(a.ritprijs_cent)} incl. 9% btw, geldig tot en met ${datum(geldigTot)}.\n` +
       `Betaling: ${plan.omschrijving}\n\nBekijk en accordeer de offerte: ${link}\n\n` +
       `Met uw akkoord plaatst u een bestelling met betalingsverplichting en accepteert u de voorwaarden.\n\n${voorwaarden.mailBlok(BASE_URL())}\n\nVervoerder: ${voorwaarden.bedrijfRegel()}.\n\nMet vriendelijke groet,\nPouw Vervoer`,
     bijlagen: [voorwaarden.bijlage()],
@@ -231,7 +231,7 @@ async function stuurAkkoordBevestiging(aanvraagId) {
     `Bedankt voor uw akkoord op ${datumTijdNL(a.akkoord_op)}. Hierbij de bevestiging van uw bestelling EPV-${a.id} bij Pouw Vervoer.` +
     `${a.status === 'wacht_op_betaling' ? ' De rit staat definitief vast zodra de aanbetaling binnen is.' : ' De rit staat vast in onze planning.'}\n\n` +
     `Opdrachtgever: ${k.naam}${a.po_nummer ? ` (uw referentie ${a.po_nummer})` : ''}\nAangevraagd door: ${a.aanvrager_naam}\n\n` +
-    `${reis.samenvatting(reis.vanAanvraag(a))}\nPersonen: ${a.personen}${a.bus_blijft ? '\nDe bus blijft bij de groep.' : ''}${a.opmerkingen ? `\nBijzonderheden: ${a.opmerkingen}` : ''}\n\n` +
+    `${reis.samenvatting(reis.vanAanvraag(a))}\nPersonen: ${a.personen}${a.bus_blijft ? '\nDe bus blijft bij de groep.' : ''}${a.opmerkingen ? `\nBijzonderheden: ${a.opmerkingen}` : ''}${a.afspraken ? `\nAfspraken: ${a.afspraken}` : ''}\n\n` +
     `Ritprijs: ${euro(a.ritprijs_cent)} incl. 9% btw. Tol, parkeergeld, pont, verblijfskosten van de chauffeur en meerkosten door file of extra uren komen op de eindfactuur (artikel 6.6 en 6.7).\n` +
     `Betaling: ${plan.omschrijving}\n${betaling}\n\n` +
     `Annuleren kan alleen schriftelijk; de kosten zijn ${voorwaarden.annuleringZin()} (artikel 5.1). Voor personenvervoer geldt geen wettelijke bedenktijd.\n\n` +
@@ -370,6 +370,66 @@ async function wijzigingAfgehandeld(aanvraagId) {
   return !!a;
 }
 
+// Afspraken van sales met de klant: in de offerte, de bevestiging, het dossier en de export voor trip.
+async function afsprakenOpslaan(aanvraagId, tekst, door = 'backoffice') {
+  const t = String(tekst || '').trim().slice(0, 3000);
+  const a = await one('UPDATE aanvragen SET afspraken=$2 WHERE id=$1 RETURNING id, klant_id', [aanvraagId, t || null]);
+  if (!a) throw new Error('Aanvraag niet gevonden.');
+  await log(a.id, a.klant_id, 'afspraken', t ? `Afspraken vastgelegd door ${door}: ${t}` : `Afspraken leeggemaakt door ${door}.`);
+  return t;
+}
+
+// Creditnota op de factuur: verlaagt wat nog te betalen is; is alles voldaan, dan staat de factuur op betaald.
+async function creditnota(factuurId, { bedragCent, reden, door = 'backoffice' }) {
+  const bedrag = Math.round(Number(bedragCent) || 0);
+  const r = String(reden || '').trim().slice(0, 500);
+  if (bedrag <= 0) throw new Error('Vul een bedrag in.');
+  if (r.length < 3) throw new Error('Geef de reden van de creditnota.');
+  const uit = await tx(async (c) => {
+    const f = (await c.query('SELECT * FROM facturen WHERE id=$1 FOR UPDATE', [factuurId])).rows[0];
+    if (!f) throw new Error('Factuur niet gevonden.');
+    if (f.incasso) throw new Error('De factuur is overgedragen aan de deurwaarder; trek het dossier eerst terug.');
+    const credit = (f.credit_cent || 0) + bedrag;
+    if (credit > f.totaal_cent) throw new Error('De creditnota kan niet hoger zijn dan het factuurbedrag.');
+    const teBetalen = f.totaal_cent - credit - f.reeds_betaald_cent;
+    const nu = new Date();
+    const g = (
+      await c.query(
+        `UPDATE facturen SET credit_cent=$2, credit_reden=$3, credit_op=now(), te_betalen_cent=$4,
+           betaald_op = CASE WHEN $4 <= 0 AND betaald_op IS NULL THEN $5::date ELSE betaald_op END
+         WHERE id=$1 RETURNING *`,
+        [f.id, credit, f.credit_reden ? `${f.credit_reden}; ${r}` : r, teBetalen, nu],
+      )
+    ).rows[0];
+    if (teBetalen <= 0) await c.query("UPDATE aanvragen SET status='betaald' WHERE id=$1 AND status IN ('gefactureerd')", [f.aanvraag_id]);
+    await log(
+      f.aanvraag_id,
+      f.klant_id,
+      'credit',
+      `Creditnota ${euro(bedrag)} op factuur ${f.nummer} door ${door}: ${r}. ${teBetalen > 0 ? `Nog te betalen ${euro(teBetalen)}.` : teBetalen < 0 ? `Terug te betalen ${euro(-teBetalen)}.` : 'Volledig voldaan.'}`,
+      c,
+    );
+    return { f: g, bedrag, teBetalen };
+  });
+  const a = await one('SELECT * FROM aanvragen WHERE id=$1', [uit.f.aanvraag_id]);
+  await mail.verstuur({
+    aan: a.factuur_email,
+    cc: a.aanvrager_email,
+    onderwerp: `Creditnota op factuur ${uit.f.nummer}`,
+    tekst:
+      `Geachte heer/mevrouw,\n\nOp factuur ${uit.f.nummer} crediteren wij ${euro(uit.bedrag)}.\nReden: ${r}\n\n` +
+      (uit.teBetalen > 0
+        ? `Nog te betalen: ${euro(uit.teBetalen)} vóór ${datum(uit.f.vervaldatum)}. Online betalen: ${BASE_URL()}/factuur/${uit.f.token}`
+        : uit.teBetalen < 0
+          ? `U heeft ${euro(-uit.teBetalen)} te veel betaald; dat storten wij terug.`
+          : 'Daarmee is de factuur volledig voldaan.') +
+      '\n\nMet vriendelijke groet,\nPouw Vervoer',
+    aanvraagId: a.id,
+    klantId: a.klant_id,
+  });
+  return uit;
+}
+
 async function termijnBetaald(termijnId, betaalwijze) {
   return tx(async (c) => {
     const t = (await c.query('SELECT * FROM termijnen WHERE id=$1 FOR UPDATE', [termijnId])).rows[0];
@@ -465,7 +525,8 @@ async function draaiHerinneringen(vandaag = new Date()) {
     `SELECT t.*, a.klant_id, a.aanvrager_email, a.status, a.rit_datum, a.akkoord_op, a.signaal_planner,
             k.teken_email, k.tekenbevoegde
      FROM termijnen t JOIN aanvragen a ON a.id=t.aanvraag_id JOIN klanten k ON k.id=a.klant_id
-     WHERE t.betaald_op IS NULL AND a.status IN ('wacht_op_betaling','bevestigd')`,
+     WHERE t.betaald_op IS NULL AND a.status IN ('wacht_op_betaling','bevestigd')
+       AND NOT EXISTS (SELECT 1 FROM meldingen m WHERE m.aanvraag_id=a.id AND m.status='open')`,
   );
   for (const t of termijnen) {
     // Termijn met datum: herinnering op de uiterste dag. Termijn "bij akkoord": herinnering na 24 uur.
@@ -499,7 +560,8 @@ async function draaiHerinneringen(vandaag = new Date()) {
   const facturen = await all(
     `SELECT f.*, a.factuur_email, a.aanvrager_email, a.aanvrager_naam, a.po_nummer, k.type klanttype
      FROM facturen f JOIN aanvragen a ON a.id=f.aanvraag_id JOIN klanten k ON k.id=f.klant_id
-     WHERE f.betaald_op IS NULL AND f.incasso = false`,
+     WHERE f.betaald_op IS NULL AND f.incasso = false
+       AND NOT EXISTS (SELECT 1 FROM meldingen m WHERE m.aanvraag_id=a.id AND m.status='open')`,
   );
   for (const f of facturen) {
     const dagen = dagenTussen(f.vervaldatum, vandaag);
@@ -529,5 +591,5 @@ async function draaiHerinneringen(vandaag = new Date()) {
 module.exports = {
   nieuweAanvraag, herberekenScore, verstuurOfferte, geefAkkoord, termijnBetaald, maakEindfactuur,
   factuurBetaald, draaiHerinneringen, historie, log, emailDomeinKlopt, token, BASE_URL, stuurAkkoordBevestiging, annuleer,
-  wijzigingsverzoek, wijzigingAfgehandeld,
+  wijzigingsverzoek, wijzigingAfgehandeld, afsprakenOpslaan, creditnota,
 };

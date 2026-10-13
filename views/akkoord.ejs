@@ -35,6 +35,7 @@
     <%- include('partials/reis-samenvatting', { r: vanAanvraag(a) }) %>
     <dl class="kv" style="margin-top:8px">
       <% if (a.opmerkingen) { %><dt>Bijzonderheden</dt><dd><%= a.opmerkingen %></dd><% } %>
+      <% if (a.afspraken) { %><dt>Afspraken</dt><dd style="white-space:pre-wrap"><%= a.afspraken %></dd><% } %>
       <% if (a.po_nummer) { %><dt>Uw referentie</dt><dd><%= a.po_nummer %></dd><% } %>
       <dt>Factuur naar</dt><dd><%= a.factuur_email %></dd>
     </dl>
@@ -103,6 +104,18 @@
       <div><label for="wcat">Wat wilt u wijzigen?</label><select id="wcat" name="categorie"><% Object.entries(beleid.categorieen).forEach(([sleutel, lab]) => { %><option value="<%= sleutel %>"><%= lab %></option><% }) %></select></div>
       <div><label for="wtekst">Toelichting</label><textarea id="wtekst" name="tekst" placeholder="Bijv. graag een half uur later vertrekken, om 09:00."></textarea></div>
       <div><button class="btn ghost" type="submit">Wijziging doorgeven</button></div>
+    </form>
+  </div>
+  <% } %>
+
+  <% if (['wacht_op_betaling', 'bevestigd', 'gereden', 'gefactureerd', 'betaald'].includes(a.status)) { %>
+  <div class="card">
+    <h2 style="font-size:17px;margin-bottom:6px">Klacht of vraag</h2>
+    <p class="lead" style="margin:0 0 10px;font-size:14px">Is er iets niet goed gegaan? Meld het hier, dan pakt onze administratie het op. Wij nemen binnen 5 werkdagen contact op en handelen een klacht binnen een maand af (artikel 11 van de voorwaarden). Zolang uw klacht in behandeling is, sturen wij geen betalingsherinneringen.</p>
+    <form method="post" action="/akkoord/<%= a.akkoord_token %>/klacht" style="display:flex;flex-direction:column;gap:10px">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div><label for="ktekst">Wat is er gebeurd?</label><textarea id="ktekst" name="tekst" placeholder="Bijv. de bus was 25 minuten te laat bij de school, waardoor we de eerste activiteit misten."></textarea></div>
+      <div><button class="btn ghost" type="submit">Klacht indienen</button></div>
     </form>
   </div>
   <% } %>

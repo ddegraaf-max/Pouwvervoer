@@ -166,6 +166,29 @@ ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_duur_s INT;
 -- Beleid Pouw: geldigheid van de prijs en open wijzigingsverzoek
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS offerte_geldig_tot DATE;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS wijziging_open BOOLEAN DEFAULT FALSE;
+-- Afspraken van sales met de klant, expliciet vastgelegd en meegestuurd met offerte, bevestiging en export
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS afspraken TEXT;
+-- Creditnota op de factuur
+ALTER TABLE facturen ADD COLUMN IF NOT EXISTS credit_cent INT DEFAULT 0;
+ALTER TABLE facturen ADD COLUMN IF NOT EXISTS credit_reden TEXT;
+ALTER TABLE facturen ADD COLUMN IF NOT EXISTS credit_op TIMESTAMPTZ;
+
+-- Meldingen: losse eindjes met eigenaar en deadline (zie src/meldingen.js)
+CREATE TABLE IF NOT EXISTS meldingen (
+  id SERIAL PRIMARY KEY,
+  aanvraag_id INT NOT NULL REFERENCES aanvragen(id) ON DELETE CASCADE,
+  klant_id INT REFERENCES klanten(id),
+  soort TEXT NOT NULL,
+  omschrijving TEXT NOT NULL,
+  eigenaar TEXT NOT NULL,
+  deadline DATE NOT NULL,
+  status TEXT NOT NULL DEFAULT 'open',
+  oplossing TEXT,
+  gemeld_door TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  opgelost_op TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_meldingen_open ON meldingen(status, deadline);
 
 -- Incassodossiers bij de deurwaarder
 CREATE TABLE IF NOT EXISTS dossiers (

@@ -60,6 +60,20 @@ Op alle aanvragen, offertes en ritten gelden de Algemene Vervoer- en Reisvoorwaa
 - Offerte: de mail aan de tekenbevoegde bevat de link; de akkoordpagina toont de link en het vinkje "Ik ga akkoord met deze offerte en accepteer de voorwaarden". Bewaard: `akkoord_voorwaarden_versie` naast naam, tijdstip en IP van het akkoord, plus een regel in het logboek.
 - Het dossier in de backoffice en het portaal van Armaere tonen beide acceptaties als bewijs.
 
+## Werklijst en meldingen: eerst oplossen, dan pas aanmanen
+
+De meeste betaalproblemen ontstaan niet bij de klant maar door losse eindjes in de eigen organisatie: een afspraak van sales die niet is vastgelegd, planning die anders uitvoert dan afgesproken, een chauffeur die te laat is, een klacht die blijft liggen, een creditnota die niet komt, een foutieve invoer in Trip. Hoe langer zo'n punt ligt, hoe moeilijker het wordt. De backoffice maakt dat zichtbaar en legt de verantwoordelijkheid bij de organisatie:
+
+- **Afspraken** (dossier): wat sales toezegt staat zwart op wit en gaat mee in de offerte, de bevestiging na het akkoord, de export voor trip (kolom `afspraken`) en de akkoordpagina van de klant.
+- **Meldingen** (dossier, `src/meldingen.js`): elk los eindje als melding met soort, eigenaar (sales, planning, operatie, administratie, directie) en deadline (standaard `MELDING_WERKDAGEN` werkdagen; de KNV-voorwaarden eisen afhandeling van een klacht binnen een maand). Zolang er voor een aanvraag een melding open staat, pauzeren de herinneringen voor termijnen en facturen en kan de factuur niet naar Armaere. Oplossen vraagt een korte toelichting; alles staat in het logboek.
+- **Klacht van de klant** (akkoordpagina): de klant dient zelf een klacht in; dat wordt een melding voor de administratie, de planning krijgt een e-mail en de klant een ontvangstbevestiging met de termijnen uit artikel 11.
+- **Creditnota** (dossier, bij de factuur): bedrag en reden, direct verrekend en gemaild; is alles voldaan, dan staat de factuur op betaald. Het portaal van Armaere ziet het verlaagde bedrag.
+- **Werklijst** (`/admin`, bovenaan): alle open meldingen op volgorde van deadline met eigenaar en achterstand, open wijzigingsverzoeken, aanbetalingen die 48 uur na herinnering niet binnen zijn, offertes die (bijna) verlopen en facturen over de vervaldatum (met of zonder gepauzeerde herinneringen). Met een telling per eigenaar.
+
+### Aanpak tegenover de juridische weg
+
+Deze aanpak voorkomt eerst (afspraken expliciet, klantscore en aanbetaling bij risico), lost dan snel op (meldingen met eigenaar en deadline, creditnota's, geen aanmaning zolang iets open staat) en pas daarna volgt de vaste reeks herinneringen, de aanmaning of 14-dagenbrief en de overdracht aan Armaere met het complete dossier: wie akkoord gaf, welke voorwaarden ter hand zijn gesteld, de factuur, alle e-mails. Een faillissementsaanvraag als drukmiddel werkt alleen bij een onbetwiste vordering en een klant die wel kan maar niet wil betalen; bij een lopend dispuut wijst de rechter die af, en het kost tijd, geld en de klantrelatie. Door disputen eerst op te lossen en het bewijs compleet te hebben, blijft die weg over voor de enkeling die echt niet betaalt, en is die dan ook kansrijk.
+
 ## Incasso via Armaere
 
 Blijft een factuur onbetaald, dan draagt de backoffice hem over aan gerechtsdeurwaarder Armaere (naam instelbaar met `DEURWAARDER_NAAM`).

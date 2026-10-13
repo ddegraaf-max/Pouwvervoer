@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.9.0 · 13 oktober 2026
+- Backoffice volgens de input van Pouw (Bas): afspraken van sales vastleggen en meesturen (offerte, bevestiging, export voor trip, akkoordpagina); meldingen per dossier met soort, eigenaar en deadline (afspraak, planning, uitvoering, klacht, creditnota, Trip, betaling); herinneringen en overdracht aan Armaere staan stil zolang een melding open staat; creditnota op de factuur met e-mail aan de klant; klant dient zelf een klacht in via de akkoordpagina; werklijst bovenaan `/admin` met alles wat open staat en een telling per eigenaar.
+
 ## 0.8.2 · 13 oktober 2026
 - Adressuggesties sneller: Nederlandse adressen van PDOK komen direct, op Photon (bestemmingen en buitenland) wordt hooguit een halve seconde gewacht als PDOK al genoeg heeft.
 - Zoekindicator: zolang er gezocht wordt, rijdt er een busje met rookwolkjes in het adresveld.
