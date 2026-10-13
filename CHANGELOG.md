@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.9.1 · 13 oktober 2026
+- Kopjes Heenreis en Terugreis op de reis-stap: een weggetje met gele markering waarover een busje met rookwolkjes rijdt, naar een bestemmingsspeld (heen) of gespiegeld terug naar een huisje (terug). Bij "verminderde beweging" staat het busje stil.
+
 ## 0.9.0 · 13 oktober 2026
 - Backoffice volgens de input van Pouw (Bas): afspraken van sales vastleggen en meesturen (offerte, bevestiging, export voor trip, akkoordpagina); meldingen per dossier met soort, eigenaar en deadline (afspraak, planning, uitvoering, klacht, creditnota, Trip, betaling); herinneringen en overdracht aan Armaere staan stil zolang een melding open staat; creditnota op de factuur met e-mail aan de klant; klant dient zelf een klacht in via de akkoordpagina; werklijst bovenaan `/admin` met alles wat open staat en een telling per eigenaar.
 
