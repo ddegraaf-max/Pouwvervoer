@@ -47,6 +47,20 @@ app.use((req, res, next) => {
   if (PROD) res.set('Strict-Transport-Security', 'max-age=31536000');
   next();
 });
+// Eén adres: staat BASE_URL (bijv. https://boekpouwvervoer.nl), dan gaat verkeer op elk ander adres (railway.app, www.)
+// met een 301 daarheen. Zo werken links, cookies en de akkoordlinks altijd op het eigen domein. /health blijft overal bereikbaar.
+const CANONIEK = (() => {
+  try {
+    return process.env.BASE_URL ? new URL(process.env.BASE_URL) : null;
+  } catch {
+    return null;
+  }
+})();
+app.use((req, res, next) => {
+  if (!CANONIEK || req.path === '/health' || !req.hostname || req.hostname === 'localhost') return next();
+  if (req.hostname.toLowerCase() === CANONIEK.hostname.toLowerCase()) return next();
+  return res.redirect(301, `${CANONIEK.origin}${req.originalUrl}`);
+});
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use(express.urlencoded({ extended: false, limit: '50kb' }));
 app.use(
@@ -919,7 +933,7 @@ app.post(
 );
 
 app.get('/voorwaarden', (req, res) => res.render('voorwaarden'));
-app.get('/health', (req, res) => res.json({ ok: true, versie: VERSIE }));
+app.get('/health', (req, res) => res.json({ ok: true, versie: VERSIE, adres: CANONIEK ? CANONIEK.origin : null, host: req.hostname }));
 
 app.use((req, res) => res.status(404).render('melding', { titel: 'Pagina niet gevonden', tekst: '' }));
 app.use((err, req, res, next) => {
