@@ -1,4 +1,4 @@
-<%- include('partials/head', { titel: 'Offerte ter akkoord' }) %>
+<%- include('partials/head', { titel: 'Offerte ter akkoord', kaart: true }) %>
 <main class="wrap"><div class="narrow" style="display:flex;flex-direction:column;gap:16px">
   <% const fase = a.status === 'offerte_verstuurd' ? 2 : a.status === 'wacht_op_betaling' ? 3 : 5; %>
   <ol class="voortgang" aria-label="Voortgang">

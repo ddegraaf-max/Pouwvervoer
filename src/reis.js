@@ -29,6 +29,7 @@ function leeg() {
     tijdtype_heen: 'vertrek', datum_heen: '', tijd_heen: '',
     andere_route: false, terug_van: '', terug_naar: '', terug_via: [], terug_wacht: [],
     tijdtype_terug: 'aankomst', datum_terug: '', tijd_terug: '',
+    kaart: null, route: null,
   };
 }
 
@@ -40,6 +41,14 @@ function dichtstbij(min) {
   const n = Number(min);
   if (!Number.isFinite(n)) return 15;
   return WACHTTIJDEN.reduce((a, b) => (Math.abs(b - n) < Math.abs(a - n) ? b : a), 15);
+}
+
+function coord(lat, lon) {
+  if (lat == null || lon == null || lat === '' || lon === '') return null;
+  const a = Number(lat);
+  const o = Number(lon);
+  if (!Number.isFinite(a) || !Number.isFinite(o) || Math.abs(a) > 90 || Math.abs(o) > 180) return null;
+  return [Math.round(a * 1e6) / 1e6, Math.round(o * 1e6) / 1e6];
 }
 
 function geldigeDatum(s) {
@@ -59,6 +68,13 @@ function route(b, p, v, f, richting) {
   }
   v[`${p}via`] = via;
   v[`${p}wacht`] = via.map((_, i) => wacht[i] ?? 15);
+  // Coördinaten uit de adressuggesties (verborgen velden); ontbreken ze, dan blijft het adres gewoon tekst.
+  const viaLat = lijst(b[`${p}via_lat`]);
+  const viaLon = lijst(b[`${p}via_lon`]);
+  v.kaart = v.kaart || {};
+  v.kaart[`${p}van`] = coord(b[`${p}van_lat`], b[`${p}van_lon`]);
+  v.kaart[`${p}naar`] = coord(b[`${p}naar_lat`], b[`${p}naar_lon`]);
+  v.kaart[`${p}via`] = via.map((_, i) => coord(viaLat[i], viaLon[i]));
   if (!v[`${p}van`]) f[`${p}van`] = `Vul het vertrekadres${richting} in.`;
   via.forEach((s, i) => {
     if (!s) f[`${p}via.${i}`] = `Vul tussenstop ${i + 1}${richting} in of verwijder deze.`;
@@ -168,6 +184,11 @@ function velden(v) {
     terug_naar: anders ? v.terug_naar : '',
     terug_via: anders ? stops('terug_') : [],
     ritsoort: ritsoort(v),
+    kaart: v.kaart || null,
+    afstand_m: v.route && v.route.heen ? v.route.heen.afstand_m : null,
+    duur_s: v.route && v.route.heen ? v.route.heen.duur_s : null,
+    terug_afstand_m: anders && v.route && v.route.terug ? v.route.terug.afstand_m : null,
+    terug_duur_s: anders && v.route && v.route.terug ? v.route.terug.duur_s : null,
   };
 }
 
@@ -195,7 +216,33 @@ function vanAanvraag(a) {
     datum_terug: a.datum_terug ? fmt.iso(a.datum_terug) : '',
     tijd_terug: a.tijd_terug || '',
     bus_blijft: !!a.bus_blijft || a.ritsoort === 'hele_dag',
+    kaart: a.kaart && typeof a.kaart === 'object' ? a.kaart : null,
+    route: {
+      heen: a.afstand_m != null ? { afstand_m: a.afstand_m, duur_s: a.duur_s } : null,
+      terug: a.terug_afstand_m != null ? { afstand_m: a.terug_afstand_m, duur_s: a.terug_duur_s } : null,
+    },
   };
 }
 
-module.exports = { MAX_STOPS, WACHTTIJDEN, wachtLabel, vandaag, dichtstbij, leeg, valideer, samenvatting, dagen, ritsoort, soortLabel, velden, vanAanvraag };
+// Punten voor de kaart: [{ lat, lon, label }] van Van, tussenstops en Naar, alleen waar een coördinaat bekend is.
+function kaartPunten(r, p = '') {
+  const k = (r && r.kaart) || {};
+  const uit = [];
+  const voeg = (c, label) => {
+    if (Array.isArray(c) && c.length === 2 && Number.isFinite(c[0]) && Number.isFinite(c[1])) uit.push({ lat: c[0], lon: c[1], label: label || '' });
+  };
+  voeg(k[`${p}van`], r[`${p}van`]);
+  (r[`${p}via`] || []).forEach((s, i) => voeg((k[`${p}via`] || [])[i], s));
+  voeg(k[`${p}naar`], r[`${p}naar`]);
+  return uit;
+}
+
+// Reistijd als tekst: 50 min, 1 uur 20 min.
+function duurTekst(s) {
+  const m = Math.round((Number(s) || 0) / 60);
+  const u = Math.floor(m / 60);
+  const r = m % 60;
+  return u ? `${u} uur${r ? ` ${r} min` : ''}` : `${r} min`;
+}
+
+module.exports = { MAX_STOPS, WACHTTIJDEN, wachtLabel, vandaag, dichtstbij, leeg, valideer, samenvatting, dagen, ritsoort, soortLabel, velden, vanAanvraag, kaartPunten, duurTekst };

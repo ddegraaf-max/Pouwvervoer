@@ -28,6 +28,10 @@
       select.name = p + 'wacht';
       rij.querySelector('.wacht label').htmlFor = select.id;
       rij.querySelector('.weg').setAttribute('aria-label', 'Tussenstop ' + (i + 1) + ' verwijderen');
+      var lat = rij.querySelector('[data-lat]');
+      var lon = rij.querySelector('[data-lon]');
+      if (lat) lat.name = p + 'via_lat';
+      if (lon) lon.name = p + 'via_lon';
     });
     var toevoegen = $('[data-toevoegen]', route);
     var max = Number(toevoegen.querySelector('.btn-stop').getAttribute('data-max')) || 5;
@@ -36,10 +40,26 @@
     if (lijstFout) lijstFout.textContent = '';
   }
 
-  function voegToe(route, waarde, wacht) {
+  function coordVelden(el) {
+    var w = el.closest('.invoer') || el.closest('.veld') || el.parentElement;
+    return [w && w.querySelector('[data-lat]'), w && w.querySelector('[data-lon]')];
+  }
+  function zetCoord(el, c) {
+    var cv = coordVelden(el);
+    if (cv[0]) cv[0].value = c && c[0] != null ? c[0] : '';
+    if (cv[1]) cv[1].value = c && c[1] != null ? c[1] : '';
+    el.dispatchEvent(new CustomEvent('adres:coord', { bubbles: true }));
+  }
+  function leesCoord(el) {
+    var cv = coordVelden(el);
+    return cv[0] && cv[0].value && cv[1] && cv[1].value ? [cv[0].value, cv[1].value] : null;
+  }
+
+  function voegToe(route, waarde, wacht, coord) {
     var rij = tpl.content.cloneNode(true).querySelector('[data-stop]');
     if (waarde) rij.querySelector('input').value = waarde;
     if (wacht) rij.querySelector('select').value = String(wacht);
+    if (coord) { var cv = coordVelden(rij.querySelector('input')); if (cv[0]) cv[0].value = coord[0]; if (cv[1]) cv[1].value = coord[1]; }
     route.insertBefore(rij, $('[data-toevoegen]', route));
     hernummer(route);
     return rij;
@@ -48,7 +68,9 @@
   function leegRoute(route) {
     stops(route).forEach(function (rij) { rij.remove(); });
     $$('input[type=text]', route).forEach(function (i) { i.value = ''; });
+    $$('input[data-lat],input[data-lon]', route).forEach(function (i) { i.value = ''; });
     hernummer(route);
+    route.dispatchEvent(new CustomEvent('adres:coord', { bubbles: true }));
   }
 
   form.addEventListener('click', function (e) {
@@ -87,10 +109,13 @@
       // Standaard dezelfde route in omgekeerde volgorde, zoals de offertetool doet.
       leegRoute(terugRoute);
       $('#terug_van').value = $('#naar').value;
+      zetCoord($('#terug_van'), leesCoord($('#naar')));
       $('#terug_naar').value = $('#van').value;
+      zetCoord($('#terug_naar'), leesCoord($('#van')));
       stops(heenRoute).reverse().forEach(function (rij) {
-        voegToe(terugRoute, rij.querySelector('input').value, rij.querySelector('select').value);
+        voegToe(terugRoute, rij.querySelector('input').value, rij.querySelector('select').value, leesCoord(rij.querySelector('input')));
       });
+      terugRoute.dispatchEvent(new CustomEvent('adres:coord', { bubbles: true }));
       $('#terug_van').focus();
     } else {
       leegRoute(terugRoute);
@@ -206,8 +231,8 @@
         stops(route).forEach(function (rij) { rij.remove(); });
         v[p + 'via'].forEach(function (adres, i) { voegToe(route, adres, v[p + 'wacht'] ? v[p + 'wacht'][i] : 15); });
       }
-      zetWaarde(p + 'van', v[p + 'van']);
-      zetWaarde(p + 'naar', v[p + 'naar']);
+      if (v[p + 'van']) { zetWaarde(p + 'van', v[p + 'van']); zetCoord($('#' + p + 'van'), null); }
+      if (v[p + 'naar']) { zetWaarde(p + 'naar', v[p + 'naar']); zetCoord($('#' + p + 'naar'), null); }
     }
     function pasToe(v) {
       kiesRadio('reistype', v.reistype);
@@ -259,6 +284,7 @@
           intakeStatus.textContent = '';
           pasToe(data.v || {});
           toonResultaat(data);
+          form.dispatchEvent(new CustomEvent('reis:ingevuld'));
         })
         .catch(function () { intakeStatus.textContent = 'De assistent is even niet bereikbaar. Vul het formulier zelf in.'; })
         .then(function () { bezig = false; intakeKnop.disabled = false; });

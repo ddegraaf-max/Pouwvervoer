@@ -278,3 +278,14 @@ input[aria-invalid=true],select[aria-invalid=true]{border-color:var(--bad);box-s
 table.annulering{font-size:14px}
 table.annulering th,table.annulering td{padding:8px 8px 8px 0}
 ul.kern{margin:0 0 14px;padding-left:20px;font-size:14px;display:flex;flex-direction:column;gap:6px}
+
+/* Adressuggesties en kaart */
+.punt .veld{position:relative}
+.suggesties{position:absolute;left:0;right:0;top:100%;z-index:60;margin:2px 0 0;padding:4px;list-style:none;background:#fff;border:1px solid #B7BDCC;border-radius:4px;box-shadow:0 8px 24px rgba(29,35,51,.15);max-height:280px;overflow:auto}
+.suggesties li{padding:8px 10px;border-radius:3px;cursor:pointer;font-size:15px;display:flex;gap:10px;align-items:baseline}
+.suggesties li.actief,.suggesties li:hover{background:var(--navy-zacht)}
+.suggesties .s-type{flex:none;width:54px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--muted)}
+.kaart{height:300px;border:1px solid var(--line);border-radius:4px;margin:14px 0 4px;background:#E8EBF5;z-index:0}
+.kaart .pin{background:none;border:0}
+.leaflet-container{font:14px/1.4 var(--font)}
+@media (max-width:640px){.kaart{height:240px}}

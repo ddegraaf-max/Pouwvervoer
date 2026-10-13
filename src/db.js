@@ -157,6 +157,12 @@ ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS annulering_op TIMESTAMPTZ;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS annulering_reden TEXT;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS annulering_pct INT;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS annulering_kosten_cent INT;
+-- Kaart: coördinaten van de adressen en afstand/reistijd over de weg
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS kaart JSONB;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS afstand_m INT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS duur_s INT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_afstand_m INT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_duur_s INT;
 
 -- Incassodossiers bij de deurwaarder
 CREATE TABLE IF NOT EXISTS dossiers (

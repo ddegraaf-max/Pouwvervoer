@@ -2,6 +2,12 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.7.0 · 13 oktober 2026
+- Adressuggesties in alle adresvelden van de reis-stap (PDOK voor Nederlandse adressen, Photon voor bestemmingen en buitenland), met plaats en postcode; de plaats hoort er nu altijd bij.
+- Kaart op de reis-stap die meegroeit met wat de klant invult: vertrek, tussenstops, bestemming en de route over de weg, met afstand en reistijd (OSRM, Leaflet, OpenStreetMap). Andere route terug in een tweede kleur.
+- Kaart en afstand ook op de gegevenspagina, de bedanktpagina, de akkoordpagina en in de backoffice; afstand en reistijd in de export voor trip en in de database.
+- Alle aanroepen naar de kaartdiensten lopen via de eigen server, met cache.
+
 ## 0.6.0 · 13 oktober 2026
 - Voorwaarden echt ter hand gesteld: de pdf gaat als bijlage mee met de bevestigingsmail van de aanvraag, de offertemail en de nieuwe bevestiging na het akkoord; de SHA-256 van de pdf wordt per aanvraag bewaard.
 - Bevestiging van de bestelling na het akkoord, per e-mail aan de tekenbevoegde met de aanvrager in cc: reis, prijs, betaling, annuleringsregeling, vervoerder, klachtenregeling en de voorwaarden als pdf.

@@ -1,4 +1,4 @@
-<%- include('../partials/head', { titel: `EPV-${a.id}`, admin: true }) %>
+<%- include('../partials/head', { titel: `EPV-${a.id}`, admin: true, kaart: true }) %>
 <% const form = (actie) => `<form method="post" action="/admin/aanvraag/${a.id}/${actie}" style="margin:0"><input type="hidden" name="_csrf" value="${csrf}">`; %>
 <main class="wrap" style="display:flex;flex-direction:column;gap:20px">
   <div>

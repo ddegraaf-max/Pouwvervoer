@@ -113,8 +113,9 @@ async function nieuweAanvraag(d) {
         `INSERT INTO aanvragen (klant_id, aanvrager_naam, aanvrager_tel, aanvrager_email, aanvrager_rol, factuur_email,
           factuur_adres, po_nummer, reisleider_naam, reisleider_tel, rit_datum, vertrek_tijd, van, naar, personen, ritsoort,
           opmerkingen, akkoord_token, reistype, tijdtype_heen, via, datum_terug, tijd_terug, tijdtype_terug, andere_route,
-          terug_van, terug_naar, terug_via, bus_blijft, voorwaarden_versie, voorwaarden_akkoord_op, voorwaarden_ip, voorwaarden_hash)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,now(),$31,$32) RETURNING id`,
+          terug_van, terug_naar, terug_via, bus_blijft, voorwaarden_versie, voorwaarden_akkoord_op, voorwaarden_ip, voorwaarden_hash,
+          kaart, afstand_m, duur_s, terug_afstand_m, terug_duur_s)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,now(),$31,$32,$33,$34,$35,$36,$37) RETURNING id`,
         [
           klantId, d.aanvrager_naam, d.aanvrager_tel, d.aanvrager_email, d.aanvrager_rol || null, d.factuur_email,
           d.factuur_adres || null, d.po_nummer || null, d.reisleider_naam || null, d.reisleider_tel || null,
@@ -122,6 +123,7 @@ async function nieuweAanvraag(d) {
           d.reistype || null, d.tijdtype_heen || null, JSON.stringify(d.via || []), d.datum_terug || null, d.tijd_terug || null,
           d.tijdtype_terug || null, !!d.andere_route, d.terug_van || null, d.terug_naar || null, JSON.stringify(d.terug_via || []), !!d.bus_blijft,
           voorwaarden.VERSIE, d.voorwaarden_ip || null, voorwaarden.hash() || null,
+          d.kaart ? JSON.stringify(d.kaart) : null, d.afstand_m ?? null, d.duur_s ?? null, d.terug_afstand_m ?? null, d.terug_duur_s ?? null,
         ],
       )
     ).rows[0].id;

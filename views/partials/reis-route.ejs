@@ -8,9 +8,11 @@ const sr = terug ? ' voor de terugreis' : '';
 const veld = (naam, label) => {
   const id = `${p}${naam}`;
   const fout = fouten[id] || '';
+  const c = (v.kaart && v.kaart[id]) || null;
   return `<div class="veld">
       <label for="${id}">${label}<span class="sr-only">${sr}</span></label>
-      <input type="text" id="${id}" name="${id}" value="${(v[id] || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" placeholder="Straat en huisnummer" autocomplete="off"${fout ? ` aria-invalid="true" aria-describedby="${id}-fout"` : ''}>
+      <input type="text" id="${id}" name="${id}" value="${(v[id] || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;')}" placeholder="Straat en huisnummer, plaats" autocomplete="off" data-adres${fout ? ` aria-invalid="true" aria-describedby="${id}-fout"` : ''}>
+      <input type="hidden" name="${id}_lat" value="${c ? c[0] : ''}" data-lat><input type="hidden" name="${id}_lon" value="${c ? c[1] : ''}" data-lon>
       <p class="fout" id="${id}-fout">${fout}</p>
     </div>`;
 };
@@ -20,7 +22,7 @@ const veld = (naam, label) => {
     <span class="marker" aria-hidden="true"></span>
     <%- veld('van', 'Van') %>
   </div>
-  <% via.forEach((waarde, i) => { %><%- include('reis-stop', { prefix: p, i, waarde, wacht: wacht[i], fout: fouten[`${p}via.${i}`] || '' }) %><% }) %>
+  <% via.forEach((waarde, i) => { %><%- include('reis-stop', { prefix: p, i, waarde, wacht: wacht[i], fout: fouten[`${p}via.${i}`] || '', coord: ((v.kaart && v.kaart[`${p}via`]) || [])[i] || null }) %><% }) %>
   <div class="punt toevoegen" data-toevoegen<%= via.length >= MAX_STOPS && !fouten[`${p}via`] ? ' hidden' : '' %>>
     <div class="veld">
       <button type="button" class="btn-stop" data-max="<%= MAX_STOPS %>">

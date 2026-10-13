@@ -137,3 +137,24 @@ test('wachttijdlabels', () => {
   assert.equal(reis.WACHTTIJDEN.length, 16);
   assert.equal(reis.WACHTTIJDEN[15], 240);
 });
+
+test('coördinaten uit de verborgen velden komen in kaart en velden, en kaartPunten/duurTekst', () => {
+  const r = reis.valideer({ ...retour, van_lat: '51.98990449', van_lon: '5.10199009', naar_lat: '51.65', naar_lon: '5.04', via_lat: ['52.09', 'x'], via_lon: ['5.11', '5'] }, nu);
+  assert.deepEqual(r.v.kaart.van, [51.989904, 5.10199]);
+  assert.deepEqual(r.v.kaart.naar, [51.65, 5.04]);
+  assert.deepEqual(r.v.kaart.via, [[52.09, 5.11], null]);
+  const punten = reis.kaartPunten(r.v);
+  assert.deepEqual(punten.map((p) => p.label), ['Hagenweg 3c, Vianen', 'Utrecht CS', 'De Efteling, Kaatsheuvel']);
+  r.v.route = { heen: { afstand_m: 56985, duur_s: 2989 }, terug: null };
+  const d = reis.velden(r.v);
+  assert.equal(d.afstand_m, 56985);
+  assert.equal(d.terug_afstand_m, null);
+  assert.deepEqual(d.kaart.van, [51.989904, 5.10199]);
+  assert.equal(reis.duurTekst(2989), '50 min');
+  assert.equal(reis.duurTekst(4800), '1 uur 20 min');
+  assert.equal(reis.duurTekst(7200), '2 uur');
+  const terug = reis.vanAanvraag({ rit_datum: '2026-11-02', van: 'A', naar: 'B', kaart: { van: [51, 5], naar: [52, 6], via: [] }, afstand_m: 1000, duur_s: 120 });
+  assert.equal(reis.kaartPunten(terug).length, 2);
+  assert.deepEqual(terug.route.heen, { afstand_m: 1000, duur_s: 120 });
+  assert.equal(reis.valideer({ ...retour, van_lat: '', van_lon: '' }, nu).v.kaart.van, null);
+});

@@ -2,6 +2,11 @@
 // Samenvatting van een reis (vorm van src/reis.js: velden datum_heen, tijd_heen, via, wacht, ...).
 // Parameter: r. Gebruikt op de aanvraagpagina, de akkoordpagina, in de backoffice en op de bedanktpagina.
 const regel = (p) => [r[`${p}van`], ...(r[`${p}via`] || []).map((s, i) => `${s} (wacht ${wachtLabel((r[`${p}wacht`] || [])[i] || 15)})`), r[`${p}naar`]].filter(Boolean).join(' → ');
+const hr = r.route && r.route.heen ? r.route.heen : r.afstand_m != null ? { afstand_m: r.afstand_m, duur_s: r.duur_s } : null;
+const tr = r.route && r.route.terug ? r.route.terug : r.terug_afstand_m != null ? { afstand_m: r.terug_afstand_m, duur_s: r.terug_duur_s } : null;
+const km = (x) => ` · ± ${Math.round(x.afstand_m / 1000)} km, ${duurTekst(x.duur_s)}`;
+const heenP = kaartPunten(r);
+const terugP = r.reistype !== 'enkel' && r.andere_route ? kaartPunten(r, 'terug_') : [];
 const wanneer = (p, terug) => {
   const t = r[`tijdtype_${p}`];
   const d = r[`datum_${p}`] ? datum(r[`datum_${p}`]) : 'datum nog onbekend';
@@ -13,8 +18,12 @@ const wanneer = (p, terug) => {
 <dl class="kv reis-samenvatting">
   <dt>Soort</dt><dd><%= soortLabel(r) %><%= r.bus_blijft ? ', de bus blijft bij de groep' : '' %></dd>
   <dt>Personen</dt><dd><%= r.personen %></dd>
-  <dt>Heenreis</dt><dd><%= regel('') %><br><span class="lead" style="font-size:14px"><%= wanneer('heen', false) %></span></dd>
+  <dt>Heenreis</dt><dd><%= regel('') %><br><span class="lead" style="font-size:14px"><%= wanneer('heen', false) %><%= hr ? km(hr) : '' %></span></dd>
   <% if (r.reistype !== 'enkel') { %>
-  <dt>Terugreis</dt><dd><%= r.andere_route ? regel('terug_') : 'Dezelfde route terug' %><br><span class="lead" style="font-size:14px"><%= wanneer('terug', true) %></span></dd>
+  <dt>Terugreis</dt><dd><%= r.andere_route ? regel('terug_') : 'Dezelfde route terug' %><br><span class="lead" style="font-size:14px"><%= wanneer('terug', true) %><%= r.andere_route && tr ? km(tr) : '' %></span></dd>
   <% } %>
 </dl>
+<% if (heenP.length >= 2) { %>
+<div class="kaart" data-punten="<%= JSON.stringify(heenP) %>" data-terug="<%= JSON.stringify(terugP) %>" aria-label="Kaart van de route"></div>
+<p class="lead" data-kaart-info style="font-size:13px;margin:4px 0 0"></p>
+<% } %>

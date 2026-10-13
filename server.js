@@ -12,6 +12,7 @@ const reis = require('./src/reis');
 const assistent = require('./src/assistent');
 const { version: VERSIE } = require('./package.json');
 const voorwaarden = require('./src/voorwaarden');
+const adres = require('./src/adres');
 const { aanbetalingsplan } = require('./src/score');
 
 const app = express();
@@ -81,6 +82,8 @@ Object.assign(app.locals, fmt, {
   wachtLabel: reis.wachtLabel,
   soortLabel: reis.soortLabel,
   vanAanvraag: reis.vanAanvraag,
+  kaartPunten: reis.kaartPunten,
+  duurTekst: reis.duurTekst,
 });
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -106,12 +109,51 @@ function rateLimit(max, windowMs) {
 app.get('/reis', (req, res) => {
   res.render('reis', { fouten: {}, lijst: [], v: req.session.reis || reis.leeg(), vandaag: reis.vandaag(), opgeslagen: !!req.session.reis });
 });
-app.post('/reis', rateLimit(60, 3600e3), (req, res) => {
-  const { fouten, lijst, v } = reis.valideer(req.body);
-  if (lijst.length) return res.status(422).render('reis', { fouten, lijst, v, vandaag: reis.vandaag(), opgeslagen: !!req.session.reis });
-  req.session.reis = v;
-  res.redirect('/');
-});
+app.post(
+  '/reis',
+  rateLimit(60, 3600e3),
+  wrap(async (req, res) => {
+    const { fouten, lijst, v } = reis.valideer(req.body);
+    if (lijst.length) return res.status(422).render('reis', { fouten, lijst, v, vandaag: reis.vandaag(), opgeslagen: !!req.session.reis });
+    // Afstand en reistijd over de weg, als er coördinaten zijn; mislukt dit, dan gaat de reis gewoon door zonder.
+    const heenP = reis.kaartPunten(v).map((p) => [p.lat, p.lon]);
+    const terugP = v.reistype === 'retour' && v.andere_route ? reis.kaartPunten(v, 'terug_').map((p) => [p.lat, p.lon]) : [];
+    const [heen, terug] = await Promise.all([adres.route(heenP).catch(() => null), adres.route(terugP).catch(() => null)]);
+    v.route = {
+      heen: heen ? { afstand_m: heen.afstand_m, duur_s: heen.duur_s } : null,
+      terug: terug ? { afstand_m: terug.afstand_m, duur_s: terug.duur_s } : null,
+    };
+    req.session.reis = v;
+    res.redirect('/');
+  }),
+);
+// Adressuggesties en routes voor de browser, via onze server (zie src/adres.js).
+app.get(
+  '/api/adres',
+  rateLimit(600, 3600e3),
+  wrap(async (req, res) => {
+    try {
+      res.set('Cache-Control', 'private, max-age=300');
+      res.json(await adres.zoekAdres(req.query.q));
+    } catch (e) {
+      res.status(503).json({ fout: 'Adressen zijn even niet beschikbaar.' });
+    }
+  }),
+);
+app.get(
+  '/api/route',
+  rateLimit(300, 3600e3),
+  wrap(async (req, res) => {
+    try {
+      const r = await adres.route(adres.parsePunten(req.query.p));
+      if (!r) return res.status(400).json({ fout: 'Minstens twee punten nodig.' });
+      res.set('Cache-Control', 'private, max-age=3600');
+      res.json(r);
+    } catch (e) {
+      res.status(503).json({ fout: 'Route is even niet beschikbaar.' });
+    }
+  }),
+);
 app.post('/reis/opnieuw', (req, res) => {
   delete req.session.reis;
   res.redirect('/reis');
@@ -592,14 +634,16 @@ app.get(
     );
     const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
     const kop = ['ref', 'datum', 'vertrektijd', 'van', 'naar', 'personen', 'ritsoort', 'opdrachtgever', 'reisleider', 'reisleider_tel', 'aanvrager', 'aanvrager_tel', 'opmerkingen',
-      'tijdtype', 'datum_terug', 'tijd_terug', 'tijdtype_terug', 'tussenstops', 'route_terug', 'bus_blijft'];
+      'tijdtype', 'datum_terug', 'tijd_terug', 'tijdtype_terug', 'tussenstops', 'route_terug', 'bus_blijft', 'km_heen', 'reistijd_heen_min', 'km_terug', 'reistijd_terug_min'];
+    const km = (m) => (m != null ? (m / 1000).toFixed(1).replace('.', ',') : '');
+    const minuten = (s) => (s != null ? Math.round(s / 60) : '');
     const stopsTekst = (x) => (Array.isArray(x) ? x : []).map((s) => `${s.adres} (${reis.wachtLabel(s.wacht || 15)})`).join('; ');
     const lijnen = rows.map((a) =>
       [`EPV-${a.id}`, fmt.iso(a.rit_datum), a.vertrek_tijd, a.van, a.naar, a.personen, a.ritsoort, a.klant_naam,
         a.reisleider_naam, a.reisleider_tel, a.aanvrager_naam, a.aanvrager_tel, a.opmerkingen,
         a.tijdtype_heen, a.datum_terug ? fmt.iso(a.datum_terug) : '', a.tijd_terug, a.tijdtype_terug, stopsTekst(a.via),
         a.andere_route ? [a.terug_van, stopsTekst(a.terug_via), a.terug_naar].filter(Boolean).join(' → ') : (a.ritsoort === 'enkel' ? '' : 'zelfde route'),
-        a.bus_blijft || a.ritsoort === 'hele_dag' ? 'ja' : 'nee'].map(esc).join(';'),
+        a.bus_blijft || a.ritsoort === 'hele_dag' ? 'ja' : 'nee', km(a.afstand_m), minuten(a.duur_s), km(a.terug_afstand_m), minuten(a.terug_duur_s)].map(esc).join(';'),
     );
     if (rows.length) await db.q('UPDATE aanvragen SET trip_export_op=now() WHERE id = ANY($1)', [rows.map((r) => r.id)]);
     res.set('Content-Type', 'text/csv; charset=utf-8');

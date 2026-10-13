@@ -1,4 +1,4 @@
-<%- include('partials/head', { titel: 'Uw reis', opAanvraag: true, script: '/reis.js' }) %>
+<%- include('partials/head', { titel: 'Uw reis', opAanvraag: true, script: '/reis.js', kaart: true }) %>
 <section class="band foto"><div class="wrap">
   <h1>Stel uw reis samen</h1>
   <p>Van, naar, wanneer en met hoeveel personen. Meer hebben we voor een prijs niet nodig.</p>
@@ -65,6 +65,8 @@
     <section class="leg" aria-labelledby="heen-kop">
       <h2 class="leg-kop" id="heen-kop"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M4 5.5A2.5 2.5 0 0 1 6.5 3h10A5.5 5.5 0 0 1 22 8.5V16a2 2 0 0 1-2 2h-.3a2.75 2.75 0 0 1-5.4 0H9.7a2.75 2.75 0 0 1-5.4 0H4a2 2 0 0 1-2-2V5.5zm2 .5v4.5h5V6H6zm7 0v4.5h6.9A3.5 3.5 0 0 0 16.5 6H13z"/><circle cx="7" cy="18.3" r="2.1" fill="currentColor"/><circle cx="17" cy="18.3" r="2.1" fill="currentColor"/></svg>Heenreis</h2>
       <%- include('partials/reis-route', { prefix: '', v, fouten, terug: false }) %>
+      <div class="kaart" data-kaart-live hidden aria-label="Kaart van de route"></div>
+      <p class="lead" data-kaart-info style="font-size:13px;margin:0 0 16px"></p>
       <%- include('partials/reis-wanneer', { p: 'heen', v, fouten, vandaag, legenda: 'Is dit de vertrek- of aankomsttijd van de heenreis?', labelDatum: 'Datum heenreis', labelTijd: 'Tijd heenreis' }) %>
     </section>
 

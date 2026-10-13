@@ -24,6 +24,17 @@ Met `ANTHROPIC_API_KEY` (Claude, model instelbaar met `ANTHROPIC_MODEL`, standaa
 
 De assistent noemt nooit zelf prijzen of toezeggingen aan klanten en verzint geen feiten die niet in het dossier staan. Weigert het model een vraag, dan probeert de API automatisch een ander model. Persoonsgegevens gaan naar Anthropic: regel een verwerkersovereenkomst voordat dit live gaat.
 
+## Adressen en kaart
+
+Adresvelden geven suggesties terwijl de klant typt, en de route verschijnt op een kaart met afstand en reistijd. Dat gebeurt met gratis open diensten, altijd via onze eigen server (`src/adres.js`, routes `/api/adres` en `/api/route`), zodat de browser geen externe diensten aanroept en IP-adressen van klanten niet gedeeld worden:
+
+- **PDOK Locatieserver** (Kadaster): Nederlandse adressen, straten en plaatsen, zonder sleutel.
+- **Photon** (komoot, OpenStreetMap): bestemmingen en buitenland, bijvoorbeeld "Efteling" of "Disneyland Paris". Gratis op basis van redelijk gebruik.
+- **OSRM** (demo-server van het OSRM-project): route over de weg, afstand en reistijd. Gratis demo, geen garantie; bij veel verkeer is een eigen OSRM of een betaalde dienst beter.
+- **Kaart**: Leaflet (meegeleverd in `public/vendor/leaflet`) met tegels van OpenStreetMap, met bronvermelding.
+
+Kiest de klant een suggestie, dan worden de coördinaten meegestuurd en bewaard (`kaart`); de afstand en reistijd van heen- en terugreis komen in de samenvatting, de backoffice en de export voor trip (`km_heen`, `reistijd_heen_min`). Typt de klant een adres zonder te kiezen, dan blijft het gewoon tekst; de kaart gebruikt dan de beste match. Antwoorden worden een tijd in het geheugen bewaard.
+
 ## Voorwaarden
 
 Op alle aanvragen, offertes en ritten gelden de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer. Om er aanspraak op te kunnen maken, stelt de app ze ter hand en legt de acceptatie vast:
