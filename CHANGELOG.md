@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.13.1 · 13 oktober 2026
+- Hotfix: de agenda en de tijdkiezer openen weer, met één klik ergens in het veld (het kiezericoontje van de browser is weer zichtbaar). Een datum in het verleden, of een terugreis vóór de heenreis, geeft direct een melding in plaats van pas bij het versturen; de agenda biedt alleen vandaag en later aan.
+
 ## 0.13.0 · 13 oktober 2026
 - Pagina `/app`: het app-icoon, een grote knop "Installeer de app", uitleg per toestel (iPhone, Android, computer, het eigen toestel vooraan) en een QR-code om de app te delen. Op elke pagina onderin de link "App op uw telefoon"; op de reis-stap en de bedanktpagina een tip met het icoon.
 

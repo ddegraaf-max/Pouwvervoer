@@ -139,6 +139,28 @@
     datumTerug.min = datumHeen.value || vandaag;
   });
 
+  // ---- Agenda en tijdkiezer: één klik ergens in het veld opent de kiezer (showPicker), waar de browser dat kan ----
+  form.addEventListener('click', function (e) {
+    var el = e.target;
+    if (!(el instanceof HTMLInputElement) || (el.type !== 'date' && el.type !== 'time') || el.disabled) return;
+    if (typeof el.showPicker !== 'function') return;
+    try { el.showPicker(); } catch (err) { /* al open, of de browser staat het hier niet toe */ }
+  });
+
+  // ---- Een datum in het verleden of een terugreis vóór de heenreis geeft meteen een melding ----
+  function controleerDatums() {
+    [datumHeen, datumTerug].forEach(function (el) {
+      var p = document.getElementById(el.id + '-fout');
+      if (p) p.textContent = '';
+      el.removeAttribute('aria-invalid');
+    });
+    if (vandaag && datumHeen.value && datumHeen.value < vandaag) zetFout(datumHeen, 'De datum ligt in het verleden.');
+    if (vandaag && datumTerug.value && datumTerug.value < vandaag) zetFout(datumTerug, 'De datum ligt in het verleden.');
+    else if (datumHeen.value && datumTerug.value && datumTerug.value < datumHeen.value) zetFout(datumTerug, 'De terugreis kan niet vóór de heenreis zijn.');
+  }
+  datumHeen.addEventListener('change', controleerDatums);
+  datumTerug.addEventListener('change', controleerDatums);
+
   // ---- Controle vóór het versturen ----
   function wisFouten() {
     $$('.fout').forEach(function (p) { p.textContent = ''; });
