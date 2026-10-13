@@ -56,10 +56,28 @@ const CANONIEK = (() => {
     return null;
   }
 })();
+// Herkenning van deze app over het publieke adres heen: gelijk voor alle instanties met dezelfde SESSION_SECRET, lekt niets.
+const APP_ID = crypto.createHash('sha256').update(process.env.SESSION_SECRET || 'dev-alleen-lokaal').digest('hex').slice(0, 16);
+let canoniekActief = false;
+// Pas doorverwijzen als het adres in BASE_URL aantoonbaar deze app serveert (DNS, certificaat en Railway staan goed).
+// Anders zou een verkeerd of nog niet geregistreerd domein de hele site onbereikbaar maken. Elke vijf minuten opnieuw gecontroleerd.
+async function controleerCanoniek() {
+  if (!CANONIEK) return;
+  let actief = false;
+  try {
+    const res = await fetch(`${CANONIEK.origin}/health`, { signal: AbortSignal.timeout(5000), redirect: 'manual' });
+    const j = res.ok ? await res.json() : null;
+    actief = !!(j && j.instantie === APP_ID);
+  } catch {
+    actief = false;
+  }
+  if (actief !== canoniekActief) console.log(actief ? `Doorverwijzing naar ${CANONIEK.origin} actief.` : `${CANONIEK.origin} serveert deze app (nog) niet; geen doorverwijzing.`);
+  canoniekActief = actief;
+}
 app.use((req, res, next) => {
-  if (!CANONIEK || req.path === '/health' || !req.hostname || req.hostname === 'localhost') return next();
+  if (!canoniekActief || req.path === '/health' || !req.hostname || req.hostname === 'localhost') return next();
   if (req.hostname.toLowerCase() === CANONIEK.hostname.toLowerCase()) return next();
-  return res.redirect(301, `${CANONIEK.origin}${req.originalUrl}`);
+  return res.redirect(302, `${CANONIEK.origin}${req.originalUrl}`);
 });
 // Service worker met de versie in de cachenaam: elke nieuwe versie ververst de vaste bestanden op de telefoon.
 const SW = require('fs').readFileSync(path.join(__dirname, 'public', 'sw.js'), 'utf8').replace("'pouw-v1'", `'pouw-${VERSIE}'`);
@@ -939,7 +957,7 @@ app.post(
 );
 
 app.get('/voorwaarden', (req, res) => res.render('voorwaarden'));
-app.get('/health', (req, res) => res.json({ ok: true, versie: VERSIE, adres: CANONIEK ? CANONIEK.origin : null, host: req.hostname }));
+app.get('/health', (req, res) => res.json({ ok: true, versie: VERSIE, adres: CANONIEK ? CANONIEK.origin : null, adresActief: canoniekActief, host: req.hostname, instantie: APP_ID }));
 
 app.use((req, res) => res.status(404).render('melding', { titel: 'Pagina niet gevonden', tekst: '' }));
 app.use((err, req, res, next) => {
@@ -950,5 +968,9 @@ app.use((err, req, res, next) => {
 (async () => {
   await db.migrate();
   setInterval(() => svc.draaiHerinneringen().catch((e) => console.error('herinneringen', e)), 3600e3);
-  app.listen(PORT, () => console.log(`boekpouwvervoer draait op poort ${PORT}`));
+  app.listen(PORT, () => {
+    console.log(`boekpouwvervoer draait op poort ${PORT}`);
+    controleerCanoniek();
+    setInterval(() => controleerCanoniek().catch(() => {}), 5 * 60e3);
+  });
 })();

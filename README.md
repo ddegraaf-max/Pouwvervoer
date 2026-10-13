@@ -127,8 +127,8 @@ Wil Pouw ook in de App Store en Google Play staan, dan kan dezelfde webapp verpa
 1. **Registreren**: zolang het domein niet bestaat in DNS (NXDOMAIN), is het nog niet geregistreerd of heeft het geen nameservers. Registreer het bij een .nl-registrar (bijvoorbeeld TransIP, Mijndomein of Hostnet) met DNS-beheer.
 2. **Railway**: open de service → Settings → Networking → Custom Domain. Voeg `boekpouwvervoer.nl` én `www.boekpouwvervoer.nl` toe. Railway toont per naam de DNS-record die het verwacht (een CNAME naar een `.up.railway.app`-naam; voor het kale domein een CNAME/ALIAS als de registrar dat ondersteunt, anders de waarde die Railway daar toont).
 3. **DNS bij de registrar**: zet de records precies zoals Railway ze toont. Wacht tot Railway het certificaat heeft aangemaakt (meestal binnen een kwartier; DNS kan tot een paar uur duren).
-4. **Variabelen in Railway**: `BASE_URL=https://boekpouwvervoer.nl`. Vanaf dan stuurt de app elk ander adres (het railway.app-adres, www.) met een 301 naar dit adres, en gebruiken e-mails en akkoordlinks het.
-5. **Controleren**: `https://boekpouwvervoer.nl/health` geeft `{"ok":true,"versie":"…","adres":"https://boekpouwvervoer.nl"}`. Daarna `/reis` openen en een testaanvraag doen.
+4. **Variabelen in Railway**: `BASE_URL=https://boekpouwvervoer.nl`. De app controleert elke vijf minuten of dat adres echt deze app serveert (via `/health`); pas dan stuurt hij elk ander adres (het railway.app-adres, www.) met een 302 daarheen. Tot die tijd gebeurt er niets, zodat een verkeerde of nog niet werkende `BASE_URL` de site nooit onbereikbaar maakt. E-mails en akkoordlinks gebruiken `BASE_URL` wel direct: zet hem daarom pas op het domein als dat werkt, en tot die tijd op het railway.app-adres.
+5. **Controleren**: `https://boekpouwvervoer.nl/health` geeft `{"ok":true,"versie":"…","adres":"https://boekpouwvervoer.nl","adresActief":true}`. Daarna `/reis` openen en een testaanvraag doen.
 6. **E-mail**: zet in Resend het domein `boekpouwvervoer.nl` op (SPF en DKIM zoals Resend ze toont) en `MAIL_FROM=Pouw Vervoer <planning@boekpouwvervoer.nl>`; dan verlaat de demo-modus voor e-mail.
 
 ## Railway

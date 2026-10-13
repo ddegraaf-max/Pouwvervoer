@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.12.1 · 13 oktober 2026
+- Hotfix: de doorverwijzing naar `BASE_URL` werkt pas als dat adres aantoonbaar deze app serveert (gecontroleerd via `/health`, elke vijf minuten) en is tijdelijk (302). Een verkeerde of nog niet werkende `BASE_URL` maakt de site niet meer onbereikbaar.
+
 ## 0.12.0 · 13 oktober 2026
 - Installeerbare app: manifest, app-iconen, service worker met offline-pagina en de knop "App installeren op uw telefoon". De app start op de reis-stap. Basis voor een latere Google Play- en App Store-versie.
 
