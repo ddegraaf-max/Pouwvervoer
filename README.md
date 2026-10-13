@@ -1,4 +1,4 @@
-# easypouwvervoer
+# boekpouwvervoer
 
 Boekings- en betaalplatform voor Pouw Vervoer. Legt bij elke aanvraag vast wie de aanvrager, de opdrachtgever en de factuurontvanger is, berekent een klantscore en laat die de aanbetaling bepalen. Ritten gaan pas naar de planning (trip) na akkoord van de opdrachtgever en, waar nodig, de aanbetaling.
 
@@ -50,7 +50,7 @@ Zonder sleutels draait elk onderdeel apart in demo:
 1. Nieuw project → Deploy from GitHub repo → deze repo.
 2. Add → Database → PostgreSQL. Zet bij de app `DATABASE_URL=${{Postgres.DATABASE_URL}}`.
 3. Variabelen: `ADMIN_PASSWORD`, `DEURWAARDER_PASSWORD`, `SESSION_SECRET`, `NODE_ENV=production`, `BASE_URL`.
-4. Settings → Networking → Custom domain `easypouwvervoer.nl` en zet het CNAME-record dat Railway toont bij de domeinregistrar.
+4. Settings → Networking → Custom domain `boekpouwvervoer.nl` en zet het CNAME-record dat Railway toont bij de domeinregistrar.
 
 De tabellen worden bij de start automatisch aangemaakt.
 

@@ -660,5 +660,5 @@ app.use((err, req, res, next) => {
 (async () => {
   await db.migrate();
   setInterval(() => svc.draaiHerinneringen().catch((e) => console.error('herinneringen', e)), 3600e3);
-  app.listen(PORT, () => console.log(`easypouwvervoer draait op poort ${PORT}`));
+  app.listen(PORT, () => console.log(`boekpouwvervoer draait op poort ${PORT}`));
 })();
