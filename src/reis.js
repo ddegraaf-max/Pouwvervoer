@@ -128,19 +128,74 @@ function samenvatting(v) {
   return r.join('\n');
 }
 
-// Vult de velden van stap 1 (De rit) van het aanvraagformulier.
-function naarAanvraag(v) {
+// Aantal reisdagen (heen- en terugdag meegeteld).
+function dagen(v) {
+  if (v.reistype === 'enkel' || !v.datum_terug || !v.datum_heen) return 1;
+  const d = Math.round((Date.parse(`${v.datum_terug}T00:00:00Z`) - Date.parse(`${v.datum_heen}T00:00:00Z`)) / 864e5);
+  return Number.isFinite(d) && d >= 0 ? d + 1 : 1;
+}
+
+function ritsoort(v) {
+  if (v.reistype === 'enkel') return 'enkel';
+  return dagen(v) > 1 ? 'meerdaags' : 'brengen_halen';
+}
+
+function soortLabel(v) {
+  if (v.reistype === 'enkel') return 'Enkele reis';
+  const n = dagen(v);
+  return n > 1 ? `Meerdaagse reis, ${n} dagen` : 'Retour op dezelfde dag';
+}
+
+// Velden voor de tabel aanvragen uit een gevalideerde reis.
+function velden(v) {
   const retour = v.reistype === 'retour';
-  const meerdaags = retour && !!v.datum_terug && v.datum_terug !== v.datum_heen;
+  const anders = retour && !!v.andere_route;
+  const stops = (p) => (v[`${p}via`] || []).map((adres, i) => ({ adres, wacht: (v[`${p}wacht`] || [])[i] ?? 15 }));
   return {
+    reistype: v.reistype,
     rit_datum: v.datum_heen,
-    vertrek_tijd: v.tijdtype_heen === 'vertrek' ? v.tijd_heen : '',
+    vertrek_tijd: v.tijd_heen,
+    tijdtype_heen: v.tijdtype_heen,
     van: v.van,
     naar: v.naar,
+    via: stops(''),
     personen: v.personen,
-    ritsoort: !retour ? 'enkel' : meerdaags ? 'meerdaags' : 'brengen_halen',
-    opmerkingen: samenvatting(v),
+    datum_terug: retour ? v.datum_terug : '',
+    tijd_terug: retour ? v.tijd_terug : '',
+    tijdtype_terug: retour ? v.tijdtype_terug : '',
+    andere_route: anders,
+    terug_van: anders ? v.terug_van : '',
+    terug_naar: anders ? v.terug_naar : '',
+    terug_via: anders ? stops('terug_') : [],
+    ritsoort: ritsoort(v),
   };
 }
 
-module.exports = { MAX_STOPS, WACHTTIJDEN, wachtLabel, vandaag, dichtstbij, leeg, valideer, samenvatting, naarAanvraag };
+// Reis-vorm uit een rij van de tabel aanvragen, ook voor oude rijen zonder de nieuwe kolommen.
+function vanAanvraag(a) {
+  const stops = (x) => (Array.isArray(x) ? x : []).filter((s) => s && s.adres);
+  const via = stops(a.via);
+  const tvia = stops(a.terug_via);
+  return {
+    reistype: a.reistype || (a.ritsoort === 'enkel' ? 'enkel' : 'retour'),
+    personen: a.personen != null ? String(a.personen) : '',
+    van: a.van || '',
+    naar: a.naar || '',
+    via: via.map((s) => s.adres),
+    wacht: via.map((s) => dichtstbij(s.wacht)),
+    tijdtype_heen: a.tijdtype_heen || 'vertrek',
+    datum_heen: a.rit_datum ? fmt.iso(a.rit_datum) : '',
+    tijd_heen: a.vertrek_tijd || '',
+    andere_route: !!a.andere_route,
+    terug_van: a.terug_van || '',
+    terug_naar: a.terug_naar || '',
+    terug_via: tvia.map((s) => s.adres),
+    terug_wacht: tvia.map((s) => dichtstbij(s.wacht)),
+    tijdtype_terug: a.tijdtype_terug || 'aankomst',
+    datum_terug: a.datum_terug ? fmt.iso(a.datum_terug) : '',
+    tijd_terug: a.tijd_terug || '',
+    bus_blijft: !!a.bus_blijft || a.ritsoort === 'hele_dag',
+  };
+}
+
+module.exports = { MAX_STOPS, WACHTTIJDEN, wachtLabel, vandaag, dichtstbij, leeg, valideer, samenvatting, dagen, ritsoort, soortLabel, velden, vanAanvraag };

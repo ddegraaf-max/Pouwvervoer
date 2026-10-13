@@ -19,7 +19,7 @@
       <% rows.forEach(r => { %>
         <tr>
           <td><a href="/admin/aanvraag/<%= r.id %>">EPV-<%= r.id %></a></td>
-          <td><%= datum(r.rit_datum) %></td>
+          <td><%= datum(r.rit_datum) %><% if (r.datum_terug && iso(r.datum_terug) !== iso(r.rit_datum)) { %><br><span class="lead" style="font-size:13px">t/m <%= datum(r.datum_terug) %></span><% } %></td>
           <td><%= r.klant_naam %><br><span class="lead" style="font-size:13px"><%= KLANTTYPE[r.klanttype] %></span></td>
           <td><%= r.van %> → <%= r.naar %></td>
           <td><% if (r.klasse) { %><span class="badge k-<%= r.klasse %>"><%= r.klasse %> · <%= r.score %></span><% } %><% if (r.geblokkeerd) { %> <span class="badge k-D">Geblokkeerd</span><% } %></td>

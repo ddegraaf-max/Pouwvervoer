@@ -2,6 +2,11 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.4.0 · 13 oktober 2026
+- Boekingsvelden compleet: terugdatum en -tijd, vertrek of aankomst per richting, tussenstops met wachttijd, andere route terug en "bus blijft bij de groep" worden apart opgeslagen (nieuwe kolommen in `aanvragen`). Ze staan in de backoffice, op de akkoordpagina, in de mails, bij de assistent en in de export voor trip.
+- Stap 2 (`/`) vraagt de rit niet meer opnieuw, maar toont de samengestelde reis met een link om te wijzigen. Zonder reis stuurt `/` door naar `/reis`; de knop "Prijs aanvragen" wijst direct naar `/reis`.
+- Ritsoort wordt afgeleid: enkele reis, retour op dezelfde dag of meerdaags (aantal dagen).
+
 ## 0.3.0 · 13 oktober 2026
 - AI-assistent op basis van Claude: intake in één zin op `/reis` (typen of inspreken, het formulier vult zich), uitleg bij de klantscore in twee zinnen en concept-mails in de backoffice. Werkt met `ANTHROPIC_API_KEY`; zonder sleutel staat hij uit.
 - Nieuwe kolom `assistent_risico` in `aanvragen` (wordt automatisch aangemaakt).

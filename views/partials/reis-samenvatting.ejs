@@ -1,0 +1,20 @@
+<%
+// Samenvatting van een reis (vorm van src/reis.js: velden datum_heen, tijd_heen, via, wacht, ...).
+// Parameter: r. Gebruikt op de aanvraagpagina, de akkoordpagina, in de backoffice en op de bedanktpagina.
+const regel = (p) => [r[`${p}van`], ...(r[`${p}via`] || []).map((s, i) => `${s} (wacht ${wachtLabel((r[`${p}wacht`] || [])[i] || 15)})`), r[`${p}naar`]].filter(Boolean).join(' → ');
+const wanneer = (p, terug) => {
+  const t = r[`tijdtype_${p}`];
+  const d = r[`datum_${p}`] ? datum(r[`datum_${p}`]) : 'datum nog onbekend';
+  const u = r[`tijd_${p}`] ? ` om ${r[`tijd_${p}`]}` : '';
+  if (terug) return `${t === 'vertrek' ? 'Vertrek vanaf de bestemming' : 'Terug op de opstapplaats'} ${d}${u}`;
+  return `${t === 'aankomst' ? 'Aankomst' : 'Vertrek'} ${d}${u}`;
+};
+%>
+<dl class="kv reis-samenvatting">
+  <dt>Soort</dt><dd><%= soortLabel(r) %><%= r.bus_blijft ? ', de bus blijft bij de groep' : '' %></dd>
+  <dt>Personen</dt><dd><%= r.personen %></dd>
+  <dt>Heenreis</dt><dd><%= regel('') %><br><span class="lead" style="font-size:14px"><%= wanneer('heen', false) %></span></dd>
+  <% if (r.reistype !== 'enkel') { %>
+  <dt>Terugreis</dt><dd><%= r.andere_route ? regel('terug_') : 'Dezelfde route terug' %><br><span class="lead" style="font-size:14px"><%= wanneer('terug', true) %></span></dd>
+  <% } %>
+</dl>

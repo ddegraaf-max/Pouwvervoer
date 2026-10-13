@@ -74,6 +74,8 @@ Object.assign(app.locals, fmt, {
   MAX_STOPS: reis.MAX_STOPS,
   WACHTTIJDEN: reis.WACHTTIJDEN,
   wachtLabel: reis.wachtLabel,
+  soortLabel: reis.soortLabel,
+  vanAanvraag: reis.vanAanvraag,
 });
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);
@@ -122,9 +124,10 @@ app.post(
   }),
 );
 
+// Stap 2: gegevens. Zonder samengestelde reis eerst naar stap 1.
 app.get('/', (req, res) => {
-  const r = req.session.reis;
-  res.render('aanvraag', { fouten: [], v: r ? reis.naarAanvraag(r) : {}, uitReis: !!r });
+  if (!req.session.reis) return res.redirect('/reis');
+  res.render('aanvraag', { fouten: [], v: {}, reis: req.session.reis });
 });
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -133,8 +136,7 @@ function valideer(b) {
   const v = {};
   const tekst = (k, max = 200) => (v[k] = String(b[k] || '').trim().slice(0, max));
   ['aanvrager_naam', 'aanvrager_tel', 'aanvrager_email', 'aanvrager_rol', 'org_naam', 'kvk', 'tekenbevoegde', 'teken_email',
-    'factuur_email', 'factuur_adres', 'po_nummer', 'reisleider_naam', 'reisleider_tel', 'rit_datum', 'vertrek_tijd', 'van',
-    'naar', 'personen', 'ritsoort', 'klanttype'].forEach((k) => tekst(k));
+    'factuur_email', 'factuur_adres', 'po_nummer', 'reisleider_naam', 'reisleider_tel', 'klanttype'].forEach((k) => tekst(k));
   tekst('opmerkingen', 2000);
   v.factuur_zelfde = b.factuur_zelfde === 'on';
   if (!['onderwijs', 'bedrijf', 'vereniging', 'particulier'].includes(v.klanttype)) f.push('Kies bij stap 3 voor wie de rit is.');
@@ -153,14 +155,7 @@ function valideer(b) {
   if (v.factuur_zelfde) v.factuur_email = v.teken_email;
   if (!EMAIL.test(v.factuur_email)) f.push('Vul een geldig e-mailadres voor de factuur in (stap 4).');
   if (v.klanttype === 'onderwijs' && !v.po_nummer) f.push('Scholen en overheid: vul het inkoop- of referentienummer in (stap 4). Vraag het bij uw administratie.');
-  const d = new Date(v.rit_datum);
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(v.rit_datum) || Number.isNaN(d.getTime())) f.push('Kies de datum van de rit (stap 1).');
-  else if (d < new Date(new Date().toISOString().slice(0, 10))) f.push('De datum van de rit ligt in het verleden (stap 1).');
-  if (!v.van) f.push('Vul het vertrekadres in (stap 1).');
-  if (!v.naar) f.push('Vul de bestemming in (stap 1).');
-  const p = Number(v.personen);
-  if (!Number.isInteger(p) || p < 1 || p > 15000) f.push('Vul het aantal personen in (stap 1).');
-  if (!['brengen_halen', 'hele_dag', 'meerdaags', 'enkel'].includes(v.ritsoort)) f.push('Kies wat u nodig heeft (stap 1).');
+  v.bus_blijft = b.bus_blijft === 'on';
   return { f, v };
 }
 
@@ -168,11 +163,14 @@ app.post(
   '/aanvraag',
   rateLimit(10, 3600e3),
   wrap(async (req, res) => {
+    const r = req.session.reis;
+    if (!r) return res.redirect('/reis');
     const { f, v } = valideer(req.body);
-    if (f.length) return res.status(422).render('aanvraag', { fouten: f, v });
+    if (f.length) return res.status(422).render('aanvraag', { fouten: f, v, reis: r });
+    Object.assign(v, reis.velden(r), { bus_blijft: r.reistype !== 'enkel' && v.bus_blijft });
     await svc.nieuweAanvraag(v);
     delete req.session.reis;
-    res.render('bedankt', { v });
+    res.render('bedankt', { v, reis: { ...r, bus_blijft: v.bus_blijft } });
   }),
 );
 
@@ -579,10 +577,15 @@ app.get(
        WHERE a.status='bevestigd' ORDER BY a.rit_datum`,
     );
     const esc = (s) => `"${String(s ?? '').replace(/"/g, '""')}"`;
-    const kop = ['ref', 'datum', 'vertrektijd', 'van', 'naar', 'personen', 'ritsoort', 'opdrachtgever', 'reisleider', 'reisleider_tel', 'aanvrager', 'aanvrager_tel', 'opmerkingen'];
+    const kop = ['ref', 'datum', 'vertrektijd', 'van', 'naar', 'personen', 'ritsoort', 'opdrachtgever', 'reisleider', 'reisleider_tel', 'aanvrager', 'aanvrager_tel', 'opmerkingen',
+      'tijdtype', 'datum_terug', 'tijd_terug', 'tijdtype_terug', 'tussenstops', 'route_terug', 'bus_blijft'];
+    const stopsTekst = (x) => (Array.isArray(x) ? x : []).map((s) => `${s.adres} (${reis.wachtLabel(s.wacht || 15)})`).join('; ');
     const lijnen = rows.map((a) =>
       [`EPV-${a.id}`, fmt.iso(a.rit_datum), a.vertrek_tijd, a.van, a.naar, a.personen, a.ritsoort, a.klant_naam,
-        a.reisleider_naam, a.reisleider_tel, a.aanvrager_naam, a.aanvrager_tel, a.opmerkingen].map(esc).join(';'),
+        a.reisleider_naam, a.reisleider_tel, a.aanvrager_naam, a.aanvrager_tel, a.opmerkingen,
+        a.tijdtype_heen, a.datum_terug ? fmt.iso(a.datum_terug) : '', a.tijd_terug, a.tijdtype_terug, stopsTekst(a.via),
+        a.andere_route ? [a.terug_van, stopsTekst(a.terug_via), a.terug_naar].filter(Boolean).join(' → ') : (a.ritsoort === 'enkel' ? '' : 'zelfde route'),
+        a.bus_blijft || a.ritsoort === 'hele_dag' ? 'ja' : 'nee'].map(esc).join(';'),
     );
     if (rows.length) await db.q('UPDATE aanvragen SET trip_export_op=now() WHERE id = ANY($1)', [rows.map((r) => r.id)]);
     res.set('Content-Type', 'text/csv; charset=utf-8');

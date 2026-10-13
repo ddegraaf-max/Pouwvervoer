@@ -1,9 +1,14 @@
 <%- include('partials/head', { titel: 'Bus aanvragen', opAanvraag: true }) %>
 <section class="band foto"><div class="wrap">
   <h1>Vraag uw prijs aan</h1>
-  <p>Vul het formulier in, dan maken wij binnen twee werkdagen een offerte op maat. Gratis en vrijblijvend, in ongeveer vijf minuten.</p>
+  <p>Uw reis staat klaar. Vertel ons nu wie de rit regelt, wie bestelt en betaalt en waar de factuur heen moet. Dan maken wij binnen twee werkdagen een offerte op maat.</p>
 </div></section>
 <main class="wrap">
+<ol class="stappen" aria-label="Stappen" style="max-width:820px;margin:0 auto 26px">
+  <li class="klaar"><span class="nr">✓</span><span class="tekst">Uw reis</span></li>
+  <li class="nu" aria-current="step"><span class="nr">2</span><span class="tekst">Uw gegevens</span></li>
+  <li><span class="nr">3</span><span class="tekst">Offerte en akkoord</span></li>
+</ol>
 <form method="post" action="/aanvraag" novalidate data-aanvraag>
 <input type="hidden" name="_csrf" value="<%= csrf %>">
 <div class="cols">
@@ -23,23 +28,12 @@
   <% } %>
 
   <div class="card">
-    <div class="stap"><span class="nr">1</span><div><h2>De rit</h2><p>Waar en wanneer moet de bus rijden?</p></div></div>
-    <% if (locals.uitReis) { %><p class="alert info" style="margin:0 0 16px">Overgenomen uit uw reis. Klopt er iets niet? <a href="/reis">Reis wijzigen</a></p><% } %>
-    <div class="grid2">
-      <div><label for="rit_datum">Datum</label><input type="date" id="rit_datum" name="rit_datum" value="<%= v.rit_datum || '' %>" required></div>
-      <div><label for="vertrek_tijd">Vertrektijd <span class="opt">(als u die al weet)</span></label><input type="time" id="vertrek_tijd" name="vertrek_tijd" value="<%= v.vertrek_tijd || '' %>"></div>
-      <div><label for="van">Vertrekadres</label><input type="text" id="van" name="van" placeholder="Straat, plaats" value="<%= v.van || '' %>" required></div>
-      <div><label for="naar">Bestemming</label><input type="text" id="naar" name="naar" placeholder="Adres of naam van de locatie" value="<%= v.naar || '' %>" required></div>
-      <div><label for="personen">Aantal personen</label><input type="number" min="1" inputmode="numeric" id="personen" name="personen" value="<%= v.personen || '' %>" required></div>
-      <div><label for="ritsoort">Wat heeft u nodig?</label>
-        <select id="ritsoort" name="ritsoort">
-          <option value="brengen_halen" <%= v.ritsoort === 'brengen_halen' ? 'selected' : '' %>>Brengen en weer ophalen</option>
-          <option value="hele_dag" <%= v.ritsoort === 'hele_dag' ? 'selected' : '' %>>Bus de hele dag bij de groep</option>
-          <option value="meerdaags" <%= v.ritsoort === 'meerdaags' ? 'selected' : '' %>>Meerdaagse reis</option>
-          <option value="enkel" <%= v.ritsoort === 'enkel' ? 'selected' : '' %>>Enkele reis (alleen heen)</option>
-        </select></div>
-    </div>
-    <div style="margin-top:14px"><label for="opmerkingen">Bijzonderheden <span class="opt">(rolstoel, bagage, tussenstops)</span></label><textarea id="opmerkingen" name="opmerkingen"><%= v.opmerkingen || '' %></textarea></div>
+    <div class="stap"><span class="nr">1</span><div><h2>Uw reis</h2><p>Zoals u die zojuist heeft samengesteld. Klopt er iets niet? <a href="/reis">Reis wijzigen</a></p></div></div>
+    <%- include('partials/reis-samenvatting', { r: reis }) %>
+    <% if (reis.reistype !== 'enkel') { %>
+    <label class="check" for="bus_blijft" style="margin-top:16px"><input type="checkbox" id="bus_blijft" name="bus_blijft" <%= v.bus_blijft ? 'checked' : '' %>><span>De bus blijft de hele dag bij de groep <span class="opt">(standaard brengen en halen wij u; de bus ter plaatse houden is een toeslag per bus)</span></span></label>
+    <% } %>
+    <div style="margin-top:14px"><label for="opmerkingen">Bijzonderheden <span class="opt">(rolstoel, bagage, aanhanger)</span></label><textarea id="opmerkingen" name="opmerkingen"><%= v.opmerkingen || '' %></textarea></div>
   </div>
 
   <div class="card">

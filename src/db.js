@@ -134,6 +134,18 @@ CREATE TABLE IF NOT EXISTS events (
 
 ALTER TABLE facturen ADD COLUMN IF NOT EXISTS laatste_herinnering_op TIMESTAMPTZ;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS assistent_risico TEXT;
+-- Complete reis: terugreis, tijdtype per richting, tussenstops, andere route terug, bus blijft bij de groep
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS reistype TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS tijdtype_heen TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS via JSONB;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS datum_terug DATE;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS tijd_terug TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS tijdtype_terug TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS andere_route BOOLEAN DEFAULT FALSE;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_van TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_naar TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS terug_via JSONB;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS bus_blijft BOOLEAN DEFAULT FALSE;
 
 -- Incassodossiers bij de deurwaarder
 CREATE TABLE IF NOT EXISTS dossiers (

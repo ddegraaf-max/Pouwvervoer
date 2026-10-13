@@ -227,13 +227,8 @@
     </div>
     <div class="card">
       <h2 style="font-size:18px;margin-bottom:10px">Rit</h2>
-      <dl class="kv">
-        <dt>Datum</dt><dd><%= datum(a.rit_datum) %> <%= a.vertrek_tijd || '' %></dd>
-        <dt>Route</dt><dd><%= a.van %> → <%= a.naar %></dd>
-        <dt>Personen</dt><dd><%= a.personen %></dd>
-        <dt>Soort</dt><dd><%= { brengen_halen: 'Brengen en halen', hele_dag: 'Hele dag', meerdaags: 'Meerdaags', enkel: 'Enkele reis' }[a.ritsoort] %></dd>
-        <% if (a.opmerkingen) { %><dt>Opmerking</dt><dd><%= a.opmerkingen %></dd><% } %>
-      </dl>
+      <%- include('../partials/reis-samenvatting', { r: vanAanvraag(a) }) %>
+      <% if (a.opmerkingen) { %><dl class="kv" style="margin-top:8px"><dt>Bijzonderheden</dt><dd><%= a.opmerkingen %></dd></dl><% } %>
     </div>
     <div class="card">
       <h2 style="font-size:18px">Klasse aanpassen</h2>

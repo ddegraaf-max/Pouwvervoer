@@ -79,24 +79,55 @@ test('andere route terug vraagt om vertrek en bestemming van de terugreis', () =
   assert.deepEqual(r.v.terug_wacht, [60, 60]);
 });
 
-test('vertaling naar het aanvraagformulier', () => {
-  const dag = reis.naarAanvraag(reis.valideer(retour, nu).v);
-  assert.equal(dag.ritsoort, 'brengen_halen');
-  assert.equal(dag.rit_datum, '2026-11-02');
-  assert.equal(dag.vertrek_tijd, '08:00');
-  assert.equal(dag.personen, '45');
-  assert.match(dag.opmerkingen, /^Heenreis: Hagenweg 3c, Vianen → Utrecht CS \(wacht 30 min\) → Amersfoort \(wacht 15 min\) → De Efteling, Kaatsheuvel, vertrek 2 november 2026 om 08:00\.$/m);
-  assert.match(dag.opmerkingen, /^Terugreis: zelfde route terug, aankomst 2 november 2026 om 18:30\.$/m);
+test('velden voor de database', () => {
+  const d = reis.velden(reis.valideer(retour, nu).v);
+  assert.equal(d.reistype, 'retour');
+  assert.equal(d.ritsoort, 'brengen_halen');
+  assert.equal(d.rit_datum, '2026-11-02');
+  assert.equal(d.vertrek_tijd, '08:00');
+  assert.equal(d.tijdtype_heen, 'vertrek');
+  assert.deepEqual(d.via, [{ adres: 'Utrecht CS', wacht: 30 }, { adres: 'Amersfoort', wacht: 15 }]);
+  assert.equal(d.datum_terug, '2026-11-02');
+  assert.equal(d.tijd_terug, '18:30');
+  assert.equal(d.tijdtype_terug, 'aankomst');
+  assert.equal(d.andere_route, false);
+  assert.deepEqual(d.terug_via, []);
 
-  const meer = reis.naarAanvraag(reis.valideer({ ...retour, datum_terug: '2026-11-04', andere_route: 'on', terug_van: 'Efteling', terug_naar: 'Vianen' }, nu).v);
+  const meer = reis.velden(reis.valideer({ ...retour, datum_terug: '2026-11-04', andere_route: 'on', terug_van: 'Efteling', terug_naar: 'Vianen', terug_via: ['Breda'], terug_wacht: ['45'] }, nu).v);
   assert.equal(meer.ritsoort, 'meerdaags');
-  assert.match(meer.opmerkingen, /Terugreis: Efteling → Vianen, aankomst 4 november 2026 om 18:30\./);
+  assert.equal(meer.andere_route, true);
+  assert.deepEqual(meer.terug_via, [{ adres: 'Breda', wacht: 45 }]);
 
-  const enkel = reis.naarAanvraag(reis.valideer({ ...retour, reistype: 'enkel', tijdtype_heen: 'aankomst' }, nu).v);
+  const enkel = reis.velden(reis.valideer({ ...retour, reistype: 'enkel', tijdtype_heen: 'aankomst', andere_route: 'on', terug_van: 'X', terug_naar: 'Y' }, nu).v);
   assert.equal(enkel.ritsoort, 'enkel');
-  assert.equal(enkel.vertrek_tijd, '');
-  assert.match(enkel.opmerkingen, /aankomst 2 november 2026 om 08:00\.$/);
-  assert.doesNotMatch(enkel.opmerkingen, /Terugreis/);
+  assert.equal(enkel.tijdtype_heen, 'aankomst');
+  assert.equal(enkel.datum_terug, '');
+  assert.equal(enkel.andere_route, false);
+  assert.equal(enkel.terug_van, '');
+});
+
+test('reis terug uit een databaserij, ook een oude rij, en het soortlabel', () => {
+  const rij = { reistype: 'retour', rit_datum: new Date('2026-11-02T00:00:00Z'), vertrek_tijd: '08:00', tijdtype_heen: 'vertrek', van: 'Vianen', naar: 'Efteling', personen: 54,
+    via: [{ adres: 'Utrecht', wacht: 30 }], datum_terug: new Date('2026-11-04T00:00:00Z'), tijd_terug: '17:00', tijdtype_terug: 'aankomst', andere_route: true, terug_van: 'Efteling', terug_naar: 'Vianen', terug_via: [], bus_blijft: true };
+  const r = reis.vanAanvraag(rij);
+  assert.equal(r.datum_heen, '2026-11-02');
+  assert.equal(r.datum_terug, '2026-11-04');
+  assert.deepEqual(r.via, ['Utrecht']);
+  assert.deepEqual(r.wacht, [30]);
+  assert.equal(r.personen, '54');
+  assert.equal(r.bus_blijft, true);
+  assert.equal(reis.dagen(r), 3);
+  assert.equal(reis.soortLabel(r), 'Meerdaagse reis, 3 dagen');
+  assert.match(reis.samenvatting(r), /^Heenreis: Vianen → Utrecht \(wacht 30 min\) → Efteling, vertrek 2 november 2026 om 08:00\.$/m);
+  assert.match(reis.samenvatting(r), /^Terugreis: Efteling → Vianen, aankomst 4 november 2026 om 17:00\.$/m);
+
+  const oud = reis.vanAanvraag({ rit_datum: '2026-11-02', vertrek_tijd: null, van: 'A', naar: 'B', personen: 10, ritsoort: 'hele_dag' });
+  assert.equal(oud.reistype, 'retour');
+  assert.equal(oud.datum_terug, '');
+  assert.equal(oud.bus_blijft, true);
+  assert.deepEqual(oud.via, []);
+  assert.equal(reis.soortLabel(oud), 'Retour op dezelfde dag');
+  assert.equal(reis.soortLabel(reis.vanAanvraag({ rit_datum: '2026-11-02', van: 'A', naar: 'B', ritsoort: 'enkel' })), 'Enkele reis');
 });
 
 test('wachttijdlabels', () => {

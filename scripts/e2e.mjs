@@ -37,14 +37,28 @@ function client() {
 
 const dagen = (n) => new Date(Date.now() + n * 864e5).toISOString().slice(0, 10);
 
+// Stap 1: de reis (sessie), daarna stap 2: de gegevens.
+async function reisStap(c, extra = {}) {
+  const { token } = await c.csrf('/reis');
+  const r = await c.req('/reis', {
+    method: 'POST',
+    form: {
+      _csrf: token, reistype: 'retour', personen: '48', van: 'Vianen', naar: 'Efteling', via: 'Utrecht Centraal', wacht: '30',
+      tijdtype_heen: 'vertrek', datum_heen: dagen(60), tijd_heen: '08:30', tijdtype_terug: 'aankomst', datum_terug: dagen(60), tijd_terug: '17:30', ...extra,
+    },
+  });
+  assert.equal(r.status, 302, r.text.slice(0, 300));
+  assert.equal(r.location, '/');
+}
+
 async function aanvraag(c, extra) {
+  await reisStap(c, extra.naar ? { naar: extra.naar } : {});
   const { token } = await c.csrf('/');
   return c.req('/aanvraag', {
     method: 'POST',
     form: {
-      _csrf: token, rit_datum: dagen(60), vertrek_tijd: '08:30', van: 'Vianen', naar: 'Efteling', personen: '48',
-      ritsoort: 'brengen_halen', aanvrager_naam: 'Sanne Jansen', aanvrager_tel: '0612345678', aanvrager_email: 'sanne@example.nl',
-      tekenbevoegde: 'M. de Vries', teken_email: 'directie@obsvoorbeeld.nl', factuur_email: 'facturen@bestuur.nl', ...extra,
+      _csrf: token, aanvrager_naam: 'Sanne Jansen', aanvrager_tel: '0612345678', aanvrager_email: 'sanne@example.nl',
+      tekenbevoegde: 'M. de Vries', teken_email: 'directie@obsvoorbeeld.nl', factuur_email: 'facturen@bestuur.nl', bus_blijft: 'on', ...extra,
     },
   });
 }
@@ -52,8 +66,13 @@ async function aanvraag(c, extra) {
 const pub = client();
 const adm = client();
 
+// 0. Zonder reis stuurt de gegevenspagina door naar de reis-stap
+let r = await pub.req('/');
+assert.equal(r.status, 302);
+assert.equal(r.location, '/reis');
+
 // 1. Validatie
-let r = await aanvraag(pub, { klanttype: 'onderwijs', org_naam: 'OBS Voorbeeld', kvk: '123' });
+r = await aanvraag(pub, { klanttype: 'onderwijs', org_naam: 'OBS Voorbeeld', kvk: '123' });
 assert.equal(r.status, 422);
 assert.match(r.text, /KvK-nummer van 8 cijfers/);
 assert.match(r.text, /inkoop- of referentienummer/);

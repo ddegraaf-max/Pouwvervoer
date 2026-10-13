@@ -6,13 +6,13 @@ Stack: Node 20+, Express, EJS, PostgreSQL. Geen buildstap.
 
 ## Flow
 
-0. **Reis** (`/reis`): dezelfde opbouw als de offertetool op aanvragen.pouwvervoer.nl, in de huisstijl van deze app: retour of enkele reis, aantal personen, route met maximaal 5 tussenstops en wachttijd, datum en tijd (vertrek of aankomst) per richting, eventueel een andere route terug. Wordt in de sessie bewaard en vult stap 1 van de aanvraag; de details staan in Bijzonderheden.
-1. **Aanvraag** (`/`): rit, aanvrager, opdrachtgever (soort, KvK, tekenbevoegde), factuurontvanger (PO-nummer verplicht voor onderwijs en overheid), reisleider.
-2. **Backoffice** (`/admin`): ritprijs en geschatte nakosten invullen, score wordt herberekend, offerte versturen.
-3. **Akkoord** (`/akkoord/:token`): de tekenbevoegde geeft akkoord en betaalt meteen wat bij akkoord verschuldigd is.
-4. **Bevestigd**: rit staat in de export voor trip (`/admin/trip.csv`, puntkomma-gescheiden, UTF-8).
-5. **Na de rit**: nakosten invoeren, één eindfactuur met verrekening van wat al betaald is.
-6. **Herinneringen** (elk uur, of met de knop in de backoffice): termijnen, signaal aan de planner 48 uur na een herinnering, facturen op dag 0, 3, 10 (cc aanvrager) en 17 (aanmaning, bij particulieren als 14-dagenbrief).
+1. **Reis** (`/reis`): dezelfde opbouw als de offertetool op aanvragen.pouwvervoer.nl, in de huisstijl van deze app: retour of enkele reis, aantal personen, route met maximaal 5 tussenstops en wachttijd, datum en tijd (vertrek of aankomst) per richting, eventueel een andere route terug. Met `ANTHROPIC_API_KEY` vult de assistent dit in uit één zin. De reis staat in de sessie; `/` zonder reis stuurt door naar `/reis`.
+2. **Gegevens** (`/`): samenvatting van de reis, bus blijft bij de groep, bijzonderheden, aanvrager, opdrachtgever (soort, KvK, tekenbevoegde), factuurontvanger (PO-nummer verplicht voor onderwijs en overheid), reisleider. Alle reisvelden (terugdatum en -tijd, vertrek of aankomst, tussenstops met wachttijd, andere route terug, bus blijft) worden apart opgeslagen en staan in de backoffice, op de akkoordpagina en in de export voor trip.
+3. **Backoffice** (`/admin`): ritprijs en geschatte nakosten invullen, score wordt herberekend, offerte versturen.
+4. **Akkoord** (`/akkoord/:token`): de tekenbevoegde geeft akkoord en betaalt meteen wat bij akkoord verschuldigd is.
+5. **Bevestigd**: rit staat in de export voor trip (`/admin/trip.csv`, puntkomma-gescheiden, UTF-8).
+6. **Na de rit**: nakosten invoeren, één eindfactuur met verrekening van wat al betaald is.
+7. **Herinneringen** (elk uur, of met de knop in de backoffice): termijnen, signaal aan de planner 48 uur na een herinnering, facturen op dag 0, 3, 10 (cc aanvrager) en 17 (aanmaning, bij particulieren als 14-dagenbrief).
 
 ## AI-assistent
 

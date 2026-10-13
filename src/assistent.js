@@ -225,6 +225,8 @@ function feitenDossier({ a, k, historie, plan }) {
       naar: a.naar,
       personen: a.personen,
       ritsoort: a.ritsoort,
+      reis: reis.samenvatting(reis.vanAanvraag(a)),
+      bus_blijft: !!a.bus_blijft,
       ritprijs_euro: a.ritprijs_cent != null ? a.ritprijs_cent / 100 : null,
       geschatte_nakosten_euro: a.nakosten_schatting_cent ? a.nakosten_schatting_cent / 100 : 0,
       po_nummer_opgegeven: !!a.po_nummer,
@@ -281,7 +283,7 @@ async function conceptMail(d, { aan, vraag: instructie, client = null }) {
   const feiten = {
     referentie: `EPV-${a.id}`,
     status: fmt.STATUS[a.status] || a.status,
-    rit: { datum: fmt.datum(a.rit_datum), vertrektijd: a.vertrek_tijd || null, van: a.van, naar: a.naar, personen: a.personen, ritsoort: a.ritsoort, bijzonderheden: a.opmerkingen || null },
+    rit: { datum: fmt.datum(a.rit_datum), vertrektijd: a.vertrek_tijd || null, van: a.van, naar: a.naar, personen: a.personen, ritsoort: a.ritsoort, reis: reis.samenvatting(reis.vanAanvraag(a)), bus_blijft: !!a.bus_blijft, bijzonderheden: a.opmerkingen || null },
     opdrachtgever: k.naam,
     aanvrager: a.aanvrager_naam,
     tekenbevoegde: k.tekenbevoegde,

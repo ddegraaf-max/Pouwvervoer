@@ -5,10 +5,11 @@
       <li data-nr="1" class="klaar">Aanvraag</li><li data-nr="2" class="nu">Offerte</li><li data-nr="3">Goedkeuring</li><li data-nr="4">Rit vast</li>
     </ol>
     <h1 style="margin-top:12px">Bedankt, uw aanvraag is binnen</h1>
-    <p>We maken binnen twee werkdagen een offerte voor <strong><%= datum(v.rit_datum) %></strong> (<%= v.van %> → <%= v.naar %>).</p>
+    <p>We maken binnen twee werkdagen een offerte voor <strong><%= datum(v.rit_datum) %><% if (v.datum_terug && v.datum_terug !== v.rit_datum) { %> t/m <%= datum(v.datum_terug) %><% } %></strong> (<%= v.van %> → <%= v.naar %>).</p>
+    <%- include('partials/reis-samenvatting', { r: reis }) %>
     <p>De offerte gaat ter goedkeuring naar <strong><%= v.tekenbevoegde %></strong> (<%= v.teken_email %>). Na de goedkeuring ziet <%= v.tekenbevoegde %> direct of er een aanbetaling nodig is.</p>
     <p class="lead" style="margin:0">U krijgt een bevestiging op <%= v.aanvrager_email %>.</p>
   </div>
-  <div class="row"><a class="btn ghost" href="/">Nog een rit aanvragen</a><span class="lead" style="margin:0">Vragen? Bel <a href="tel:0306868300">030 68 68 300</a></span></div>
+  <div class="row"><a class="btn ghost" href="/reis">Nog een rit aanvragen</a><span class="lead" style="margin:0">Vragen? Bel <a href="tel:0306868300">030 68 68 300</a></span></div>
 </div></main>
 <%- include('partials/foot') %>
