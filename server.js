@@ -84,6 +84,10 @@ Object.assign(app.locals, fmt, {
   vanAanvraag: reis.vanAanvraag,
   kaartPunten: reis.kaartPunten,
   duurTekst: reis.duurTekst,
+  // Kaarttegels: standaard de BRT Achtergrondkaart van het Kadaster (PDOK, gratis, dekt Nederland). Een wereldwijde
+  // tegeldienst met sleutel kan via KAART_TEGELS_URL ({z}/{x}/{y}) en KAART_ATTRIBUTIE.
+  kaartTegels: process.env.KAART_TEGELS_URL || 'https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/standaard/EPSG:3857/{z}/{x}/{y}.png',
+  kaartAttributie: process.env.KAART_ATTRIBUTIE || 'Kaart: &copy; <a href="https://www.pdok.nl">Kadaster</a> (BRT Achtergrondkaart, CC BY 4.0)',
 });
 
 const wrap = (fn) => (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next);

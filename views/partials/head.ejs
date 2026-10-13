@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="/style.css">
 <script src="/app.js" defer></script>
 <% if (locals.script) { %><script src="<%= script %>" defer></script><% } %>
-<% if (locals.kaart) { %><link rel="stylesheet" href="/vendor/leaflet/leaflet.css"><script src="/vendor/leaflet/leaflet.js" defer></script><script src="/kaart.js" defer></script><% } %>
+<% if (locals.kaart) { %><meta name="kaart-tegels" content="<%= kaartTegels %>"><meta name="kaart-attributie" content="<%= kaartAttributie %>"><link rel="stylesheet" href="/vendor/leaflet/leaflet.css"><script src="/vendor/leaflet/leaflet.js" defer></script><script src="/kaart.js" defer></script><% } %>
 </head>
 <body>
 <% if (demo.kvk || demo.betaling || demo.mail || demo.assistent) { %><div class="demo">Testomgeving: <%= [demo.kvk && 'KvK-check gesimuleerd', demo.betaling && 'betalingen gesimuleerd', demo.mail && 'e-mails niet verstuurd', demo.assistent && 'AI-assistent uit'].filter(Boolean).join(' · ') %></div><% } %>

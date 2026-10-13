@@ -110,9 +110,15 @@
   // ---------- Kaart ----------
   if (typeof L === 'undefined') return;
 
+  // Tegelbron uit de pagina (standaard de BRT Achtergrondkaart van het Kadaster via PDOK; instelbaar met KAART_TEGELS_URL).
+  function meta(naam) { var m = document.querySelector('meta[name="' + naam + '"]'); return m ? m.getAttribute('content') : ''; }
   function maakKaart(el) {
     var kaart = L.map(el, { scrollWheelZoom: false, attributionControl: true });
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(kaart);
+    L.tileLayer(meta('kaart-tegels') || 'https://service.pdok.nl/brt/achtergrondkaart/wmts/v2_0/standaard/EPSG:3857/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      referrerPolicy: 'strict-origin-when-cross-origin',
+      attribution: meta('kaart-attributie') || 'Kaart: &copy; Kadaster (PDOK)',
+    }).addTo(kaart);
     kaart.setView([52.1, 5.3], 7);
     return { kaart: kaart, laag: L.layerGroup().addTo(kaart) };
   }

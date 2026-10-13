@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.7.1 · 13 oktober 2026
+- Kaarttegels komen van de BRT Achtergrondkaart van het Kadaster (PDOK) in plaats van OpenStreetMap, dat vanaf sommige netwerken "Access blocked" toonde. De tegelbron is instelbaar met `KAART_TEGELS_URL` en `KAART_ATTRIBUTIE`.
+
 ## 0.7.0 · 13 oktober 2026
 - Adressuggesties in alle adresvelden van de reis-stap (PDOK voor Nederlandse adressen, Photon voor bestemmingen en buitenland), met plaats en postcode; de plaats hoort er nu altijd bij.
 - Kaart op de reis-stap die meegroeit met wat de klant invult: vertrek, tussenstops, bestemming en de route over de weg, met afstand en reistijd (OSRM, Leaflet, OpenStreetMap). Andere route terug in een tweede kleur.
