@@ -1,14 +1,13 @@
-<%- include('partials/head', { titel: 'Bus aanvragen' }) %>
+<%- include('partials/head', { titel: 'Bus aanvragen', opAanvraag: true }) %>
+<section class="band"><div class="wrap">
+  <h1>Vraag uw prijs aan</h1>
+  <p>Vul het formulier in, dan maken wij binnen twee werkdagen een offerte op maat. Gratis en vrijblijvend, in ongeveer vijf minuten.</p>
+</div></section>
 <main class="wrap">
 <form method="post" action="/aanvraag" novalidate data-aanvraag>
 <input type="hidden" name="_csrf" value="<%= csrf %>">
 <div class="cols">
 <section class="main">
-  <div>
-    <h1>Bus aanvragen bij Pouw Vervoer</h1>
-    <p class="lead" style="max-width:640px;font-size:18px">Vul het formulier in, dan maken wij binnen twee werkdagen een offerte. Dat duurt ongeveer vijf minuten.</p>
-  </div>
-
   <div class="card soft">
     <h2 style="font-size:18px;margin-bottom:10px">Waarom vragen wij naar drie personen?</h2>
     <ul class="uitleg">

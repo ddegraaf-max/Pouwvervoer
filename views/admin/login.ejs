@@ -1,4 +1,4 @@
-<%- include('../partials/head', { titel: 'Inloggen', noindex: true }) %>
+<%- include('../partials/head', { titel: 'Inloggen', noindex: true, adminLogin: true }) %>
 <main class="wrap"><form method="post" class="narrow card" style="display:flex;flex-direction:column;gap:12px;max-width:420px">
   <input type="hidden" name="_csrf" value="<%= csrf %>">
   <h1>Backoffice</h1>

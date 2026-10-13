@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#FBB900">
+<meta name="theme-color" content="#263680">
 <title><%= titel %> · Pouw Vervoer</title>
 <meta name="robots" content="<%= locals.admin || locals.portaal || locals.noindex ? 'noindex,nofollow' : 'index,follow' %>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Source+Sans+3:wght@400;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700;800&display=swap">
 <link rel="stylesheet" href="/style.css">
 <script src="/app.js" defer></script>
 </head>
@@ -15,24 +15,35 @@
 <% if (demo.kvk || demo.betaling || demo.mail) { %><div class="demo">Testomgeving: <%= [demo.kvk && 'KvK-check gesimuleerd', demo.betaling && 'betalingen gesimuleerd', demo.mail && 'e-mails niet verstuurd'].filter(Boolean).join(' · ') %></div><% } %>
 <header class="top">
   <div class="wrap">
-    <a class="logo" href="<%= locals.admin ? '/admin' : locals.portaal ? '/deurwaarder' : '/' %>">
-      <img src="<%= logoUrl || '/logo.png' %>" alt="Pouw Vervoer" width="139" height="50">
-      <% if (locals.admin) { %><span class="sub">Backoffice</span><% } else if (locals.portaal) { %><span class="sub">Portaal <%= deurwaarder %></span><% } %>
+    <a class="logo" href="<%= locals.admin || locals.adminLogin ? '/admin' : locals.portaal ? '/deurwaarder' : 'https://www.pouwvervoer.nl/' %>">
+      <img src="<%= logoUrl || '/logo.png' %>" alt="Pouw Vervoer" width="144" height="52">
+      <% if (locals.admin || locals.adminLogin) { %><span class="sub">Backoffice</span><% } else if (locals.portaal) { %><span class="sub">Portaal <%= deurwaarder %></span><% } %>
     </a>
-    <% if (locals.admin) { %>
-    <nav>
-      <a href="/admin">Aanvragen</a>
-      <a href="/admin/trip.csv">Export voor trip</a>
-      <form method="post" action="/admin/uitloggen" style="margin:0"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn small ghost" type="submit">Uitloggen</button></form>
-    </nav>
-    <% } else if (locals.portaal && !locals.portaalLogin) { %>
-    <nav>
-      <a href="/deurwaarder">Open dossiers</a>
-      <a href="/deurwaarder?weergave=gesloten">Gesloten</a>
-      <% if (locals.csrf) { %><form method="post" action="/deurwaarder/uitloggen" style="margin:0"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn small ghost" type="submit">Uitloggen</button></form><% } %>
-    </nav>
-    <% } else { %>
-    <a class="tel" href="tel:0306868300">Bus huren? Bel ons direct op <b>030 68 68 300</b></a>
+    <% if (!locals.admin && !locals.adminLogin && !locals.portaal) { %>
+    <div class="top-cta">
+      <a class="tel" href="tel:0306868300">Bus huren? Bel ons direct op <b>030 68 68 300</b></a>
+      <% if (!locals.opAanvraag) { %><a class="btn geel" href="/">Prijs aanvragen</a><% } %>
+    </div>
     <% } %>
   </div>
 </header>
+<nav class="menubalk" aria-label="Hoofdmenu">
+  <div class="wrap">
+  <% if (locals.admin) { %>
+    <a href="/admin">Aanvragen</a>
+    <a href="/admin/trip.csv">Export voor trip</a>
+    <form method="post" action="/admin/uitloggen"><input type="hidden" name="_csrf" value="<%= csrf %>"><button type="submit">Uitloggen</button></form>
+  <% } else if (locals.portaal) { %>
+    <% if (!locals.portaalLogin) { %>
+    <a href="/deurwaarder">Open dossiers</a>
+    <a href="/deurwaarder?weergave=gesloten">Gesloten</a>
+    <form method="post" action="/deurwaarder/uitloggen"><input type="hidden" name="_csrf" value="<%= csrf %>"><button type="submit">Uitloggen</button></form>
+    <% } %>
+  <% } else if (!locals.adminLogin) { %>
+    <a href="https://www.pouwvervoer.nl/">Home</a>
+    <a href="https://www.pouwvervoer.nl/bus-huren/bus-huren">Bus huren</a>
+    <a href="https://www.pouwvervoer.nl/over-ons/over-ons">Over ons</a>
+    <a href="https://www.pouwvervoer.nl/contact">Contact</a>
+  <% } %>
+  </div>
+</nav>

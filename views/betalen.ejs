@@ -6,7 +6,7 @@
     <div class="alert ok"><strong>Betaald.</strong> Dank u wel.</div>
   <% } else { %>
     <% if (demo.betaling) { %><div class="alert info">Demo-modus: hier komt de iDEAL-betaling van Mollie. De knop hieronder simuleert een geslaagde betaling.</div><% } %>
-    <form method="post" action="<%= actie %>"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn wide" type="submit">Betaal <%= euro(bedrag) %> met iDEAL</button></form>
+    <form method="post" action="<%= actie %>"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn wide zin" type="submit">Betaal <%= euro(bedrag) %> met iDEAL</button></form>
   <% } %>
   <% if (terug) { %><a href="<%= terug %>">Terug naar de offerte</a><% } %>
 </div></main>
