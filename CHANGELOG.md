@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.14.2 · 14 oktober 2026
+- README: domein is live. Stap 1 beschrijft nu wat er in de praktijk gebeurde: het nameserverpaar is per Cloudflare-zone verschillend en moet exact bij Mijndomein staan, de .nl-registry publiceert met vertraging, en de door Cloudflare overgenomen parkeerrecords moeten weg om een 522 te voorkomen.
+
 ## 0.14.1 · 14 oktober 2026
 - README: stappenplan voor het domein bijgewerkt nu boekpouwvervoer.nl is geregistreerd met Cloudflare als DNS: wachten op de delegatie, in Railway zowel het CNAME- als het TXT-record zetten (zonder TXT blijft het 404), kaal domein als CNAME in Cloudflare, www naar het kale domein, proxy aan met SSL-modus Full (niet Flexible of Full strict) en Universal SSL aan.
 

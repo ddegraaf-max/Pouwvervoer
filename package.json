@@ -1,6 +1,6 @@
 {
   "name": "boekpouwvervoer",
-  "version": "0.14.1",
+  "version": "0.14.2",
   "private": true,
   "description": "Boekings- en betaalplatform voor Pouw Vervoer: rollen, klantscore en aanbetaling",
   "main": "server.js",
