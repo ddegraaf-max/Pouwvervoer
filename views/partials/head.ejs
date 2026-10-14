@@ -26,9 +26,9 @@
   <div class="wrap">
     <a class="logo" href="<%= locals.admin || locals.adminLogin ? '/admin' : locals.portaal ? '/deurwaarder' : 'https://www.pouwvervoer.nl/' %>">
       <img src="<%= logoUrl || '/logo.png' %>" alt="Pouw Vervoer" width="144" height="52">
-      <% if (locals.admin || locals.adminLogin) { %><span class="sub">Backoffice</span><% } else if (locals.portaal) { %><span class="sub">Portaal <%= deurwaarder %></span><% } %>
+      <% if (locals.admin || locals.adminLogin) { %><span class="sub">Backoffice</span><% } else if (locals.portaal) { %><span class="sub">Portaal <%= deurwaarder %></span><% } else if (locals.chauffeur) { %><span class="sub">Chauffeur</span><% } %>
     </a>
-    <% if (!locals.admin && !locals.adminLogin && !locals.portaal) { %>
+    <% if (!locals.admin && !locals.adminLogin && !locals.portaal && !locals.chauffeur) { %>
     <div class="top-cta">
       <a class="tel" href="tel:0306868300">Bus huren? Bel ons direct op <b>030 68 68 300</b></a>
       <% if (!locals.opAanvraag) { %><a class="btn geel" href="/reis">Prijs aanvragen</a><% } %>
@@ -48,6 +48,8 @@
     <a href="/deurwaarder?weergave=gesloten">Gesloten</a>
     <form method="post" action="/deurwaarder/uitloggen"><input type="hidden" name="_csrf" value="<%= csrf %>"><button type="submit">Uitloggen</button></form>
     <% } %>
+  <% } else if (locals.chauffeur) { %>
+    <a href="tel:0306868300">Planning: 030 68 68 300</a>
   <% } else if (!locals.adminLogin) { %>
     <a href="https://www.pouwvervoer.nl/">Home</a>
     <a href="https://www.pouwvervoer.nl/bus-huren/bus-huren">Bus huren</a>

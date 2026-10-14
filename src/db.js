@@ -168,6 +168,15 @@ ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS offerte_geldig_tot DATE;
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS wijziging_open BOOLEAN DEFAULT FALSE;
 -- Afspraken van sales met de klant, expliciet vastgelegd en meegestuurd met offerte, bevestiging en export
 ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS afspraken TEXT;
+-- Digitale chauffeursbriefing: persoonlijke link, chauffeur, checklist en afronding van de rit
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS chauffeur_token TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS chauffeur_naam TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS chauffeur_tel TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS rit_checklist JSONB;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS rit_gestart_op TIMESTAMPTZ;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS rit_afgerond_op TIMESTAMPTZ;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS rit_slot TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_aanvragen_chauffeur_token ON aanvragen(chauffeur_token);
 -- Creditnota op de factuur
 ALTER TABLE facturen ADD COLUMN IF NOT EXISTS credit_cent INT DEFAULT 0;
 ALTER TABLE facturen ADD COLUMN IF NOT EXISTS credit_reden TEXT;
@@ -189,6 +198,29 @@ CREATE TABLE IF NOT EXISTS meldingen (
   opgelost_op TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_meldingen_open ON meldingen(status, deadline);
+-- Ritrapport van de chauffeur: meldingen (schade, rotzooi, afwijking, kosten, incident) met foto's als bewijs
+CREATE TABLE IF NOT EXISTS rit_meldingen (
+  id SERIAL PRIMARY KEY,
+  aanvraag_id INT NOT NULL REFERENCES aanvragen(id) ON DELETE CASCADE,
+  soort TEXT NOT NULL,
+  omschrijving TEXT NOT NULL,
+  bedrag_cent INT,
+  locatie TEXT,
+  door TEXT,
+  melding_id INT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE TABLE IF NOT EXISTS rit_fotos (
+  id SERIAL PRIMARY KEY,
+  aanvraag_id INT NOT NULL REFERENCES aanvragen(id) ON DELETE CASCADE,
+  rit_melding_id INT REFERENCES rit_meldingen(id) ON DELETE CASCADE,
+  mime TEXT NOT NULL,
+  bytes INT NOT NULL,
+  data BYTEA NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_rit_meldingen_aanvraag ON rit_meldingen(aanvraag_id);
+CREATE INDEX IF NOT EXISTS idx_rit_fotos_aanvraag ON rit_fotos(aanvraag_id);
 -- Incasso: rente tot de overdracht en de grondslag van kosten en rente (particulier of zakelijk)
 ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS rente_cent INT DEFAULT 0;
 ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS grondslag TEXT;

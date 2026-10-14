@@ -2,6 +2,11 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.15.0 · 14 oktober 2026
+- Digitale chauffeursbriefing: de backoffice maakt op de briefingpagina een persoonlijke link voor de chauffeur (QR-code, kopiëren, WhatsApp). De chauffeur ziet de briefing op zijn telefoon, vinkt de checklist af en legt in het ritrapport vast wat afwijkt: controle vóór vertrek, schade aan de bus, rotzooi of vervuiling, afwijking van de afspraak, extra kosten, incident, opmerking; met plaats, bedrag en maximaal 4 foto's per melding (op de telefoon verkleind). Rit afronden met slotopmerking; de planning krijgt e-mail.
+- Alles komt in het dossier: logboek per melding, foto's bij de briefing in de backoffice, chauffeur en rapportstatus bij Rit, en meldingen met een bedrag met één klik als nakosten. Schade, rotzooi en extra kosten worden meldingen voor de administratie op de werklijst (nieuwe soorten schade, schoonmaak, nakosten), afwijkingen voor de planning, incidenten voor operatie; zolang ze open staan, gaan er geen herinneringen naar de klant. Grondslag: KNV-voorwaarden artikel 9.7 en 9.13.
+- Kopieerknop in de backoffice; ritpagina's en foto's blijven buiten de app-cache.
+
 ## 0.14.3 · 14 oktober 2026
 - Beschrijving voor Pouw als pdf (`docs/Zo werkt boekpouwvervoer.pdf`, 17 pagina's): wat er is gebouwd en hoe het werkt, van aanvraag tot betaalde rit, met de backoffice, klantscore, herinneringen en meldingen, incasso, voorwaarden en beleid, techniek en de openstaande keuzes. Bron in `docs/handleiding/`.
 

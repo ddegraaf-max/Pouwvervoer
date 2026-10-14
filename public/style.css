@@ -359,3 +359,15 @@ footer .installeer:hover{border-color:#fff;color:#fff}
 .qr-code{flex:none;background:#fff;padding:6px;border:1px solid var(--line);border-radius:4px}
 .qr-code svg{display:block;width:200px;height:200px}
 @media (max-width:640px){.app-hero{flex-direction:column;gap:14px}.app-tip{margin-inline:0}}
+
+/* Digitale chauffeursbriefing en ritrapport */
+.briefing ul.checklist li.af::before{background:var(--navy);content:"✓";color:#fff;font-size:12px;line-height:18px;text-align:center}
+.rit .checklist-form{display:flex;flex-direction:column;gap:2px}.rit .checklist-form label.check{padding:8px 0;border-bottom:1px solid var(--line,#D9DDE8)}
+.rit input[type=file]{width:100%;padding:12px;border:1px dashed var(--navy);border-radius:4px;background:#fff;font-size:15px}
+.rapport-lijst{display:flex;flex-direction:column;gap:12px}.rapport-lijst .item{border:1px solid var(--line,#D9DDE8);border-radius:4px;padding:10px 12px}
+.fotos{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}.fotos img{width:96px;height:96px;object-fit:cover;border-radius:4px;border:1px solid var(--line,#D9DDE8);display:block}
+.badge.r-schade,.badge.r-rotzooi{background:var(--badbg,#FBE9E7);color:var(--bad,#A12A1E)}.badge.r-kosten{background:var(--geel-zacht);color:var(--ink)}
+.badge.r-start,.badge.r-opmerking{background:var(--navy-zacht);color:var(--navy)}.badge.r-afwijking,.badge.r-incident{background:#FDE7C8;color:#8A4B00}
+.qr-klein svg{width:160px;height:160px;display:block;border:1px solid var(--line,#D9DDE8);border-radius:4px;padding:4px;background:#fff}
+.linkvak{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.linkvak input{flex:1 1 240px;min-width:0;font-family:Consolas,"Courier New",monospace;font-size:13px}
+.btn.whatsapp{background:#25D366;color:#fff}.btn.whatsapp:hover{background:#1DA851;color:#fff}

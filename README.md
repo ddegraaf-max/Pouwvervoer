@@ -68,12 +68,25 @@ De meeste betaalproblemen ontstaan niet bij de klant maar door losse eindjes in 
 - **Meldingen** (dossier, `src/meldingen.js`): elk los eindje als melding met soort, eigenaar (sales, planning, operatie, administratie, directie) en deadline (standaard `MELDING_WERKDAGEN` werkdagen; de KNV-voorwaarden eisen afhandeling van een klacht binnen een maand). Zolang er voor een aanvraag een melding open staat, pauzeren de herinneringen voor termijnen en facturen en kan de factuur niet naar Armaere. Oplossen vraagt een korte toelichting; alles staat in het logboek.
 - **Klacht van de klant** (akkoordpagina): de klant dient zelf een klacht in; dat wordt een melding voor de administratie, de planning krijgt een e-mail en de klant een ontvangstbevestiging met de termijnen uit artikel 11.
 - **Creditnota** (dossier, bij de factuur): bedrag en reden, direct verrekend en gemaild; is alles voldaan, dan staat de factuur op betaald. Het portaal van Armaere ziet het verlaagde bedrag.
-- **Chauffeursbriefing** (dossier, knop bij Rit): één printbare pagina met tijden, route met tussenstops en wachttijden, kaart, contact tijdens de rit, afspraken, bijzonderheden en een checklist. Zo voert de chauffeur uit wat is afgesproken en worden afwijkingen dezelfde dag gemeld.
+- **Chauffeursbriefing en ritrapport** (dossier, knop bij Rit): printbaar én digitaal op de telefoon van de chauffeur, met een ritrapport voor schade, rotzooi, afwijkingen, extra kosten en incidenten, met foto's. Zie het kopje hieronder.
 - **Werklijst** (`/admin`, bovenaan): alle open meldingen op volgorde van deadline met eigenaar en achterstand, open wijzigingsverzoeken, aanbetalingen die 48 uur na herinnering niet binnen zijn, offertes die (bijna) verlopen en facturen over de vervaldatum (met of zonder gepauzeerde herinneringen). Met een telling per eigenaar.
 
 ### Aanpak tegenover de juridische weg
 
 Deze aanpak voorkomt eerst (afspraken expliciet, klantscore en aanbetaling bij risico), lost dan snel op (meldingen met eigenaar en deadline, creditnota's, geen aanmaning zolang iets open staat) en pas daarna volgt de vaste reeks herinneringen, de aanmaning of 14-dagenbrief en de overdracht aan Armaere met het complete dossier: wie akkoord gaf, welke voorwaarden ter hand zijn gesteld, de factuur, alle e-mails. Een faillissementsaanvraag als drukmiddel werkt alleen bij een onbetwiste vordering en een klant die wel kan maar niet wil betalen; bij een lopend dispuut wijst de rechter die af, en het kost tijd, geld en de klantrelatie. Door disputen eerst op te lossen en het bewijs compleet te hebben, blijft die weg over voor de enkeling die echt niet betaalt, en is die dan ook kansrijk.
+
+## Digitale chauffeursbriefing en ritrapport
+
+De backoffice maakt op de briefingpagina een persoonlijke link voor de chauffeur (`/rit/:token`, met QR-code, kopieerknop en WhatsApp-knop; naam en mobiel nummer van de chauffeur erbij). De link werkt voor bevestigde en gereden ritten tot `GELDIG_DAGEN_NA_RIT` (14) dagen na de laatste ritdag en kan worden vernieuwd, waarna de oude vervalt. Geen login: de link is het geheim, net als de akkoordlink.
+
+De chauffeur ziet op zijn telefoon dezelfde briefing (tijden, route met tussenstops en wachttijden, kaart, contact, afspraken, bijzonderheden) en daarbij:
+
+- **Checklist** die hij afvinkt; elk vinkje wordt direct opgeslagen. Het eerste vinkje markeert de rit als gestart.
+- **Ritrapport** (`src/rit.js`): controle vóór vertrek, schade aan de bus, rotzooi of vervuiling, afwijking van de afspraak, extra kosten (tol, parkeren, pont), incident of overlast, opmerking. Met omschrijving, plaats, bedrag en maximaal 4 foto's per melding. De browser verkleint foto's tot 1400 pixels (jpeg) en stuurt ze als data-url in JSON; de server slaat ze op in `rit_fotos` (bytea) en serveert ze alleen via de ritlink of de backoffice. Elke melding komt in het logboek.
+- **Werklijst**: schade, rotzooi en extra kosten worden een melding voor de administratie (soorten `schade`, `schoonmaak`, `nakosten`), afwijkingen voor de planning en incidenten voor operatie, met e-mail naar `MAIL_PLANNING`. Zolang zo'n melding open staat, gaan er geen herinneringen en kan de factuur niet naar Armaere: eerst de schade of de meerkosten met de klant regelen, dan factureren. Schade en vervuiling door reizigers zijn voor rekening van de opdrachtgever (KNV-voorwaarden artikel 9.7 en 9.13); de foto's met tijdstip zijn het bewijs.
+- **Rit afronden** met een slotopmerking; de planning krijgt een e-mail met de samenvatting van het rapport.
+
+In het dossier staan chauffeur, status van het rapport en het aantal meldingen bij Rit; bij Rit en nakosten staan de meldingen met een bedrag (extra kosten, schade, rotzooi) met de knop "Als nakosten toevoegen". De briefingpagina in de backoffice toont het volledige rapport met foto's en de afgevinkte checklist, en blijft printbaar.
 
 ## Incasso via Armaere
 

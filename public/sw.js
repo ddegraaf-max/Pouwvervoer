@@ -16,7 +16,7 @@ self.addEventListener('fetch', (e) => {
   if (req.method !== 'GET') return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin') || url.pathname.startsWith('/deurwaarder')) return;
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/admin') || url.pathname.startsWith('/deurwaarder') || url.pathname.startsWith('/rit/')) return;
 
   // Vaste bestanden: eerst de cache, dan het netwerk (en de cache bijwerken).
   if (/\.(css|js|mjs|png|jpg|svg|webmanifest|pdf)$/.test(url.pathname) || url.pathname.startsWith('/vendor/')) {

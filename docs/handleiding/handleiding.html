@@ -66,7 +66,7 @@
     <table class="meta">
       <tr><td>Voor</td><td>Pouw Vervoer: directie, planning, sales en administratie</td></tr>
       <tr><td>Adres</td><td>https://boekpouwvervoer.nl (live sinds 14 oktober 2026)</td></tr>
-      <tr><td>Versie van de app</td><td>0.14.2</td></tr>
+      <tr><td>Versie van de app</td><td>0.15.0</td></tr>
       <tr><td>Datum</td><td>14 oktober 2026</td></tr>
       <tr><td>Opgesteld door</td><td>Daniel de Graaf</td></tr>
     </table>
@@ -97,7 +97,7 @@
 <ul>
   <li><strong>Betaalrisico wordt vooraf ingeschat.</strong> Een klantscore bepaalt automatisch of een klant vooraf betaalt, hoeveel en wanneer. Klanten met een faillissement of een openstaande vervallen factuur krijgen geen offerte.</li>
   <li><strong>Voorwaarden en akkoord zijn juridisch sluitend.</strong> De KNV-voorwaarden worden daadwerkelijk ter hand gesteld (als pdf-bijlage), de acceptatie wordt vastgelegd met naam, tijdstip en IP-adres, en het akkoord is een bestelling met betalingsverplichting. Daardoor kan Pouw er bij een dispuut of incasso ook echt aanspraak op maken.</li>
-  <li><strong>Losse eindjes worden zichtbaar vóórdat ze een betaalprobleem worden.</strong> Afspraken van sales staan zwart op wit, meldingen hebben een eigenaar en een deadline, en zolang iets open staat gaan er geen herinneringen naar de klant.</li>
+  <li><strong>Losse eindjes worden zichtbaar vóórdat ze een betaalprobleem worden.</strong> Afspraken van sales staan zwart op wit, meldingen hebben een eigenaar en een deadline, en zolang iets open staat gaan er geen herinneringen naar de klant. De chauffeur legt schade, rotzooi en extra kosten met foto's vast in hetzelfde dossier, op de dag zelf.</li>
 </ul>
 <div class="kader navy">
   <p><strong>Adressen</strong><br>
@@ -118,8 +118,8 @@
     <tr><td>4</td><td>Offerte maken</td><td>Planner vult ritprijs en geschatte nakosten in. De klantscore bepaalt de aanbetaling. Afspraken van sales worden vastgelegd. Offerte wordt gemaild aan de tekenbevoegde, 14 dagen geldig.</td><td>Pouw</td></tr>
     <tr><td>5</td><td>Akkoord</td><td>De tekenbevoegde opent de akkoordpagina, ziet reis, prijs, betaling, annuleringsregeling en vervoerder, accepteert de voorwaarden en klikt op "Akkoord: bestelling met betalingsverplichting". Is er een aanbetaling bij akkoord, dan betaalt hij direct via iDEAL.</td><td>Klant</td></tr>
     <tr><td>6</td><td>Bevestiging bestelling</td><td>E-mail aan de tekenbevoegde (cc aanvrager) met alle gegevens en de voorwaarden als pdf: het exemplaar van de overeenkomst. De rit staat in de export voor Trip.</td><td>Automatisch</td></tr>
-    <tr><td>7</td><td>Tot de rit</td><td>24 uur bedenktijd (kosteloos annuleren), kosteloos wijzigen tot 7 dagen voor vertrek, klacht indienen. Herinneringen voor aanbetalingen. Chauffeursbriefing printen.</td><td>Klant en Pouw</td></tr>
-    <tr><td>8</td><td>Na de rit</td><td>Rit markeren als gereden, nakosten invoeren, één eindfactuur met verrekening van wat al betaald is. Betaaltermijn 14 dagen.</td><td>Pouw</td></tr>
+    <tr><td>7</td><td>Tot en tijdens de rit</td><td>24 uur bedenktijd (kosteloos annuleren), kosteloos wijzigen tot 7 dagen voor vertrek, klacht indienen. Herinneringen voor aanbetalingen. De chauffeur krijgt de digitale briefing op zijn telefoon en legt onderweg schade, rotzooi, afwijkingen en extra kosten vast, met foto's.</td><td>Klant, Pouw en chauffeur</td></tr>
+    <tr><td>8</td><td>Na de rit</td><td>Rit markeren als gereden, nakosten invoeren (met één klik uit het ritrapport), één eindfactuur met verrekening van wat al betaald is. Betaaltermijn 14 dagen.</td><td>Pouw</td></tr>
     <tr><td>9</td><td>Betaling en opvolging</td><td>Automatische herinneringen op dag 0, 3, 10 en 17 (aanmaning of 14-dagenbrief). Pauze zolang een melding open staat. Creditnota bij een terechte klacht.</td><td>Automatisch en Pouw</td></tr>
     <tr><td>10</td><td>Incasso</td><td>Onbetaalde factuur overdragen aan Armaere met het complete dossier, incassokosten en rente volgens de KNV-voorwaarden. Armaere werkt in een eigen portaal.</td><td>Pouw en Armaere</td></tr>
   </tbody>
@@ -207,8 +207,17 @@
   </tbody>
 </table>
 
-<h2>4.3 Chauffeursbriefing</h2>
-<p>Eén printbare pagina per rit: tijden, route met tussenstops en wachttijden, kaart, contactpersoon tijdens de rit, afspraken, bijzonderheden en een checklist. Zo voert de chauffeur uit wat met de klant is afgesproken, en worden afwijkingen dezelfde dag gemeld in plaats van weken later bij de factuur.</p>
+<h2>4.3 Chauffeursbriefing en ritrapport</h2>
+<p>De briefing is printbaar én digitaal. De planner maakt op de briefingpagina een persoonlijke link voor de chauffeur, met QR-code, kopieerknop en WhatsApp-knop. De chauffeur opent de rit op zijn telefoon, zonder inloggen, en ziet tijden, route met tussenstops en wachttijden, kaart, contactpersoon tijdens de rit, afspraken en bijzonderheden. Daarbij:</p>
+<ul>
+  <li><strong>Checklist</strong> die hij onderweg afvinkt; elk vinkje wordt direct opgeslagen. Het eerste vinkje markeert de rit als gestart.</li>
+  <li><strong>Ritrapport:</strong> controle vóór vertrek, schade aan de bus, rotzooi of vervuiling, afwijking van de afspraak (andere tijd, route, extra stop, extra uren), extra kosten (tol, parkeren, pont), incident of overlast, opmerking. Met omschrijving, plaats, bedrag en maximaal vier foto's per melding; de telefoon verkleint de foto's zelf, zodat het ook met matig bereik werkt.</li>
+  <li><strong>Rit afronden</strong> met een slotopmerking; de planning krijgt een e-mail met de samenvatting.</li>
+</ul>
+<p>Alles komt direct in het dossier: elke melding in het logboek met tijdstip en naam van de chauffeur, de foto's bij de briefing in de backoffice, en bij "Rit en nakosten" de meldingen met een bedrag met één klik als nakosten op de eindfactuur. Schade, rotzooi en extra kosten worden bovendien meldingen voor de administratie op de werklijst, afwijkingen voor de planning en incidenten voor operatie. Zolang zo'n melding open staat, gaan er geen herinneringen naar de klant: eerst de schade of de meerkosten met de klant regelen, dan factureren.</p>
+<div class="kader">
+  <p><strong>Waarom dit het verschil maakt.</strong> Schade en vervuiling door reizigers zijn volgens de KNV-voorwaarden (artikel 9.7 en 9.13) voor rekening van de opdrachtgever. Dat is alleen te verhalen als het op de dag zelf is vastgelegd: wat, waar, wanneer, met foto's vóór het opruimen. Een chauffeur die dat in het rapport zet, levert het bewijs dat de administratie later nodig heeft, bij de factuur, bij een klacht en bij de deurwaarder. De link werkt tot veertien dagen na de rit, zodat ook een late melding nog in het dossier komt.</p>
+</div>
 
 <h2>4.4 Export voor Trip</h2>
 <p>Bevestigde ritten staan in een export (puntkomma-gescheiden, UTF-8) die in Trip kan worden ingelezen: referentie, klant, contactpersonen, ritsoort, personen, route met tussenstops en wachttijden, datums en tijden, afstand en reistijd per richting, bus blijft bij de groep, afspraken en bijzonderheden.</p>
@@ -255,7 +264,7 @@
 <h2>6.2 Eerst oplossen, dan pas aanmanen</h2>
 <p>De meeste betaalproblemen ontstaan niet bij de klant, maar door losse eindjes in de eigen organisatie: een toezegging van sales die niet is vastgelegd, een rit die anders is uitgevoerd dan afgesproken, een chauffeur die te laat was, een klacht die blijft liggen, een creditnota die niet komt, een foutieve invoer in Trip. Hoe langer zo'n punt ligt, hoe moeilijker het incasseren wordt. Daarom werkt de backoffice met <strong>meldingen</strong>:</p>
 <ul>
-  <li>Soorten: afspraak onduidelijk (sales), uitvoering anders dan afgesproken (planning), operationeel probleem (operatie), klacht van de klant, creditnota nodig, foutieve invoer in Trip, betalingsdispuut of liquiditeit, anders.</li>
+  <li>Soorten: afspraak onduidelijk (sales), uitvoering anders dan afgesproken (planning), operationeel probleem (operatie), klacht van de klant, creditnota nodig, foutieve invoer in Trip, betalingsdispuut of liquiditeit, en uit het ritrapport van de chauffeur: schade aan de bus, extra schoonmaak, extra kosten te verwerken.</li>
   <li>Elke melding heeft een <strong>eigenaar</strong> (sales, planning, operatie, administratie of directie) en een <strong>deadline</strong> (standaard 5 werkdagen; een klacht moet volgens de voorwaarden binnen een maand zijn afgehandeld).</li>
   <li>Zolang een melding open staat, <strong>pauzeren de herinneringen</strong> en kan de factuur <strong>niet naar Armaere</strong>. Oplossen vraagt een korte toelichting; alles staat in het logboek.</li>
   <li>De <strong>werklijst</strong> op het overzicht laat per eigenaar zien wat te laat is, zodat niets wekenlang blijft liggen.</li>
@@ -341,7 +350,8 @@
 <table>
   <thead><tr><th style="width:50pt">Versie</th><th style="width:70pt">Datum</th><th>Wat is toegevoegd of gewijzigd</th></tr></thead>
   <tbody>
-    <tr><td>0.14.2</td><td>14 okt 2026</td><td>Domein live; beschrijving van de domeinstappen bijgewerkt.</td></tr>
+    <tr><td>0.15.0</td><td>14 okt 2026</td><td>Digitale chauffeursbriefing met ritrapport: checklist, schade, rotzooi, afwijkingen, extra kosten en incidenten met foto's, direct in het dossier en op de werklijst.</td></tr>
+    <tr><td>0.14.x</td><td>14 okt 2026</td><td>Domein boekpouwvervoer.nl live; beschrijving voor Pouw als PDF.</td></tr>
     <tr><td>0.14.0</td><td>13 okt 2026</td><td>Busje op de reis-stap als voortgangsmeter per reisdeel.</td></tr>
     <tr><td>0.13.1</td><td>13 okt 2026</td><td>Agenda en tijdkiezer openen met één klik; datum in het verleden onmogelijk.</td></tr>
     <tr><td>0.13.0</td><td>13 okt 2026</td><td>Pagina /app met installeerknop, uitleg per toestel en QR-code.</td></tr>

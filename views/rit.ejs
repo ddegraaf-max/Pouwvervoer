@@ -1,0 +1,93 @@
+<%- include('partials/head', { titel: `Rit EPV-${a.id}`, kaart: true, noindex: true, script: '/rit.js', chauffeur: true }) %>
+<% const soortenJs = Object.fromEntries(Object.entries(RIT.SOORTEN).map(([id, s]) => [id, { bedrag: s.bedrag, hint: s.hint }])); %>
+<main class="wrap briefing rit" data-rit data-token="<%= a.chauffeur_token %>" data-soorten="<%= JSON.stringify(soortenJs) %>" data-max-fotos="<%= RIT.MAX_FOTOS %>">
+  <% if (locals.melding) { %><div class="alert ok" style="margin-bottom:16px"><%= melding %></div><% } %>
+  <% if (fouten.length) { %><div class="alert bad" role="alert" style="margin-bottom:16px"><strong>Nog niet vastgelegd:</strong><ul><% fouten.forEach((f) => { %><li><%= f %></li><% }) %></ul></div><% } %>
+
+  <div class="card soft" style="margin-bottom:16px">
+    <div class="lead" style="margin:0;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Uw rit<%= a.chauffeur_naam ? ` · ${a.chauffeur_naam}` : '' %></div>
+    <p style="margin:4px 0 0">Hieronder staat alles voor deze rit. Werk de <a href="#checklist">checklist</a> af en leg in het <a href="#rapport">ritrapport</a> vast wat afwijkt: schade, rotzooi, extra kosten, een andere route of tijd, incidenten. Maak foto's. Alles komt direct in het dossier van de planning.</p>
+    <% if (a.rit_afgerond_op) { %><p style="margin:8px 0 0"><strong>Rit afgerond op <%= datumTijd(a.rit_afgerond_op) %>.</strong> Nog iets vergeten? Vastleggen kan nog tot <%= RIT.GELDIG_DAGEN_NA_RIT %> dagen na de rit.</p><% } %>
+  </div>
+
+  <%- include('partials/briefing-inhoud', { a, k }) %>
+
+  <div class="cols" style="margin-top:16px">
+    <section class="main">
+      <div class="card" id="rapport">
+        <h2 style="font-size:18px;margin-bottom:6px">Ritrapport</h2>
+        <p class="lead" style="font-size:14px">Schade en vervuiling door reizigers zijn voor rekening van de opdrachtgever (KNV-voorwaarden, artikel 9.7 en 9.13). Pouw kan dat alleen aantonen als u het vastlegt: wat, waar, wanneer, en foto's vóór het opruimen.</p>
+        <form method="post" action="/rit/<%= a.chauffeur_token %>/melding" id="rapport-form" style="margin:0">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div>
+              <label for="soort">Wat wilt u vastleggen?</label>
+              <select id="soort" name="soort"><% Object.entries(RIT.SOORTEN).forEach(([id, s]) => { %><option value="<%= id %>"<%= id === 'schade' ? ' selected' : '' %>><%= s.label %></option><% }) %></select>
+              <p class="hint" data-hint style="margin:4px 0 0"><%= RIT.SOORTEN.schade.hint %></p>
+            </div>
+            <div><label for="omschrijving">Omschrijving</label><textarea id="omschrijving" name="omschrijving" placeholder="Bijv. kras op de rechterflank bij de achterdeur, ontdekt bij de tussenstop in Utrecht; reisleider geïnformeerd."></textarea></div>
+            <div class="inline-form">
+              <div><label for="locatie">Waar (op de bus of onderweg)</label><input type="text" id="locatie" name="locatie" placeholder="Bijv. rij 12 links, of parkeerplaats P1"></div>
+              <div data-bedrag><label for="bedrag">Bedrag incl. btw (als bekend)</label><input type="text" id="bedrag" name="bedrag" inputmode="decimal" placeholder="0,00"></div>
+            </div>
+            <div>
+              <label for="fotos">Foto's (maximaal <%= RIT.MAX_FOTOS %>)</label>
+              <input type="file" id="fotos" name="fotos" accept="image/*" capture="environment" multiple>
+              <p class="hint" data-foto-info style="margin:4px 0 0">Tik om de camera te openen of foto's te kiezen.</p>
+            </div>
+            <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+              <button class="btn" type="submit">Vastleggen in het dossier</button>
+              <span class="lead" style="margin:0;font-size:14px" data-status aria-live="polite"></span>
+            </div>
+          </div>
+        </form>
+
+        <% if (rapport.length) { %>
+        <h3 style="font-size:16px;margin:20px 0 8px">Vastgelegd voor deze rit</h3>
+        <div class="rapport-lijst">
+          <% rapport.forEach((m) => { const s = RIT.SOORTEN[m.soort] || RIT.SOORTEN.opmerking; %>
+          <div class="item">
+            <div class="between" style="flex-wrap:wrap;gap:6px"><span class="badge r-<%= m.soort %>"><%= s.label %></span><span class="lead" style="margin:0;font-size:13px"><%= datumTijd(m.created_at) %></span></div>
+            <p style="margin:6px 0 0;white-space:pre-wrap"><%= m.omschrijving %></p>
+            <% if (m.locatie || m.bedrag_cent != null) { %><p class="lead" style="margin:4px 0 0;font-size:14px"><%= [m.locatie, m.bedrag_cent != null ? euro(m.bedrag_cent) : ''].filter(Boolean).join(' · ') %></p><% } %>
+            <% if (m.fotos.length) { %><div class="fotos"><% m.fotos.forEach((f) => { %><a href="/rit/<%= a.chauffeur_token %>/foto/<%= f.id %>" target="_blank" rel="noopener"><img src="/rit/<%= a.chauffeur_token %>/foto/<%= f.id %>" alt="Foto bij <%= s.label %>" loading="lazy"></a><% }) %></div><% } %>
+          </div>
+          <% }) %>
+        </div>
+        <% } %>
+      </div>
+
+      <div class="card" id="afronden">
+        <h2 style="font-size:18px;margin-bottom:6px">Rit afronden</h2>
+        <% if (a.rit_afgerond_op) { %>
+        <p style="margin:0">Afgerond op <%= datumTijd(a.rit_afgerond_op) %>.<%= a.rit_slot ? ` Uw slotopmerking: ${a.rit_slot}` : '' %></p>
+        <% } else { %>
+        <p class="lead" style="font-size:14px">Klaar met de rit en de bus gecontroleerd? Sluit af; de planning krijgt dan een bericht met uw rapport.</p>
+        <form method="post" action="/rit/<%= a.chauffeur_token %>/afronden" style="margin:0">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <div><label for="slot">Slotopmerking (mag leeg)</label><textarea id="slot" name="slot" placeholder="Bijv. groep op tijd teruggebracht, bus schoon achtergelaten, geen bijzonderheden."></textarea></div>
+            <button class="btn" type="submit">Rit afronden en de planning informeren</button>
+          </div>
+        </form>
+        <% } %>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="card" id="checklist">
+        <h2 style="font-size:18px;margin-bottom:8px">Checklist</h2>
+        <form method="post" action="/rit/<%= a.chauffeur_token %>/checklist" id="checklist-form" class="checklist-form" style="margin:0">
+          <input type="hidden" name="_csrf" value="<%= csrf %>">
+          <% RIT.CHECKLIST.forEach(([id, tekst]) => { %><label class="check" for="cl_<%= id %>"><input type="checkbox" id="cl_<%= id %>" name="items" value="<%= id %>"<%= checklist[id] ? ' checked' : '' %>><span><%= tekst %></span></label><% }) %>
+          <div style="display:flex;gap:12px;align-items:center;margin-top:10px;flex-wrap:wrap"><button class="btn small ghost" type="submit">Opslaan</button><span class="lead" style="margin:0;font-size:13px" data-status aria-live="polite"></span></div>
+        </form>
+      </div>
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:8px">Hulp nodig?</h2>
+        <p style="margin:0">Bel de planning: <a href="tel:0306868300"><strong>030 68 68 300</strong></a>. Bij vertraging eerst de reisleider bellen, daarna de planning.</p>
+      </div>
+    </aside>
+  </div>
+</main>
+<%- include('partials/foot') %>

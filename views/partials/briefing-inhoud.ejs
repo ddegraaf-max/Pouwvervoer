@@ -1,0 +1,52 @@
+<%# Gedeeld door de printbare briefing (backoffice) en de digitale ritpagina (chauffeur): kop met contact, heen- en terugreis, kaart, aandachtspunten, opdrachtgever. Parameters: a, k. %>
+<% const r = vanAanvraag(a); const regel = (p) => [r[`${p}van`], ...(r[`${p}via`] || []).map((s, i) => `${s} (wacht ${wachtLabel((r[`${p}wacht`] || [])[i] || 15)})`), r[`${p}naar`]].filter(Boolean); %>
+  <div class="card">
+    <div class="between" style="flex-wrap:wrap;gap:8px 16px;align-items:flex-start">
+      <div>
+        <div class="lead" style="margin:0;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.04em">Chauffeursbriefing</div>
+        <h1 style="margin:2px 0 4px">EPV-<%= a.id %> · <%= k.naam %></h1>
+        <div style="font-size:18px;font-weight:700"><%= datum(a.rit_datum) %><% if (r.datum_terug && r.datum_terug !== r.datum_heen) { %> t/m <%= datum(r.datum_terug) %><% } %> · <%= a.personen %> personen · <%= soortLabel(r) %><%= r.bus_blijft ? ', bus blijft bij de groep' : '' %></div>
+      </div>
+      <div style="text-align:right;font-size:14px">
+        <div><strong>Reisleider / contact tijdens de rit</strong></div>
+        <% if (a.reisleider_naam) { %><div><%= a.reisleider_naam %>, <a href="tel:<%= a.reisleider_tel %>"><%= a.reisleider_tel %></a></div><% } else { %><div class="lead" style="margin:0">Nog niet opgegeven</div><% } %>
+        <div>Aanvrager: <%= a.aanvrager_naam %>, <a href="tel:<%= a.aanvrager_tel %>"><%= a.aanvrager_tel %></a></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="cols" style="margin-top:16px">
+    <section class="main">
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:10px">Heenreis</h2>
+        <p style="margin:0 0 8px;font-weight:700"><%= r.tijdtype_heen === 'aankomst' ? 'Aankomst' : 'Vertrek' %> <%= datum(r.datum_heen) %> om <%= r.tijd_heen || '-' %><% if (r.route && r.route.heen) { %> <span class="lead" style="font-weight:400">· ± <%= Math.round(r.route.heen.afstand_m / 1000) %> km, <%= duurTekst(r.route.heen.duur_s) %></span><% } %></p>
+        <ol class="stops">
+          <% regel('').forEach((s, i, arr) => { %><li class="<%= i === 0 ? 'van' : i === arr.length - 1 ? 'naar' : 'via' %>"><%= s %></li><% }) %>
+        </ol>
+      </div>
+      <% if (r.reistype !== 'enkel') { %>
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:10px">Terugreis</h2>
+        <p style="margin:0 0 8px;font-weight:700"><%= r.tijdtype_terug === 'vertrek' ? 'Vertrek vanaf de bestemming' : 'Terug op de opstapplaats' %> <%= datum(r.datum_terug) %> om <%= r.tijd_terug || '-' %><% if (r.andere_route && r.route && r.route.terug) { %> <span class="lead" style="font-weight:400">· ± <%= Math.round(r.route.terug.afstand_m / 1000) %> km, <%= duurTekst(r.route.terug.duur_s) %></span><% } %></p>
+        <% if (r.andere_route) { %>
+        <ol class="stops"><% regel('terug_').forEach((s, i, arr) => { %><li class="<%= i === 0 ? 'van' : i === arr.length - 1 ? 'naar' : 'via' %>"><%= s %></li><% }) %></ol>
+        <% } else { %><p style="margin:0">Dezelfde route terug, in omgekeerde volgorde.</p><% } %>
+      </div>
+      <% } %>
+      <% const heenP = kaartPunten(r); const terugP = r.reistype !== 'enkel' && r.andere_route ? kaartPunten(r, 'terug_') : []; %>
+      <% if (heenP.length >= 2) { %><div class="card no-print"><div class="kaart" data-punten="<%= JSON.stringify(heenP) %>" data-terug="<%= JSON.stringify(terugP) %>" style="margin:0"></div><p class="lead" data-kaart-info style="font-size:13px;margin:4px 0 0"></p></div><% } %>
+    </section>
+    <aside class="side">
+      <div class="card soft">
+        <h2 style="font-size:18px;margin-bottom:8px">Let op</h2>
+        <% if (a.afspraken) { %><p style="margin:0 0 8px;white-space:pre-wrap"><strong>Afspraken:</strong> <%= a.afspraken %></p><% } %>
+        <% if (a.opmerkingen) { %><p style="margin:0 0 8px;white-space:pre-wrap"><strong>Bijzonderheden:</strong> <%= a.opmerkingen %></p><% } %>
+        <% if (r.bus_blijft) { %><p style="margin:0 0 8px"><strong>De bus blijft de hele dag bij de groep.</strong></p><% } %>
+        <% if (!a.afspraken && !a.opmerkingen && !r.bus_blijft) { %><p class="lead" style="margin:0">Geen bijzonderheden.</p><% } %>
+      </div>
+      <div class="card">
+        <h2 style="font-size:18px;margin-bottom:8px">Opdrachtgever</h2>
+        <p style="margin:0"><%= k.naam %><br><span class="lead"><%= KLANTTYPE[k.type] %></span></p>
+      </div>
+    </aside>
+  </div>

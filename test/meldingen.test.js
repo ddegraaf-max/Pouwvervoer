@@ -28,7 +28,7 @@ test('normaliseren: soort, standaardeigenaar en standaarddeadline', () => {
   assert.equal(x.eigenaar, 'directie');
   assert.equal(x.deadline, '2026-11-01');
   assert.equal(meldingen.normaliseer({ soort: 'credit', omschrijving: 'x', eigenaar: 'sales' }).eigenaar, 'sales');
-  assert.equal(Object.keys(meldingen.SOORTEN).length, 8);
+  assert.equal(Object.keys(meldingen.SOORTEN).length, 11);
 });
 
 test('geen overdracht aan de deurwaarder zolang er een melding open staat', () => {

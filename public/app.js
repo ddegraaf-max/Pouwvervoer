@@ -78,3 +78,20 @@ document.addEventListener('click', function (e) {
     window.location.href = '/app';
   }
 });
+
+// Kopieerknop: [data-kopieer="#id"] kopieert de tekst of waarde van dat element.
+document.addEventListener('click', function (e) {
+  var b = e.target.closest('[data-kopieer]');
+  if (!b) return;
+  var el = document.querySelector(b.getAttribute('data-kopieer'));
+  if (!el) return;
+  var tekst = el.value || el.textContent;
+  var oud = b.textContent;
+  function klaar(ok) { b.textContent = ok ? 'Gekopieerd' : 'Kopiëren mislukt'; setTimeout(function () { b.textContent = oud; }, 1500); }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(tekst).then(function () { klaar(true); }, function () { if (el.select) el.select(); klaar(false); });
+  } else {
+    if (el.select) el.select();
+    try { klaar(document.execCommand('copy')); } catch (err) { klaar(false); }
+  }
+});

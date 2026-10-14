@@ -15,6 +15,7 @@ const voorwaarden = require('./src/voorwaarden');
 const adres = require('./src/adres');
 const beleid = require('./src/beleid');
 const QRCode = require('qrcode');
+const rit = require('./src/rit');
 const meldingen = require('./src/meldingen');
 const { aanbetalingsplan } = require('./src/score');
 
@@ -88,6 +89,7 @@ app.get('/sw.js', (req, res) => {
 });
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use(express.urlencoded({ extended: false, limit: '50kb' }));
+app.use(express.json({ limit: '12mb' })); // ritrapport van de chauffeur: foto's als data-url
 app.use(
   cookieSession({
     name: 'epv',
@@ -132,6 +134,7 @@ Object.assign(app.locals, fmt, {
   kaartPunten: reis.kaartPunten,
   duurTekst: reis.duurTekst,
   beleid: { uren: beleid.BEDENKTIJD_UREN, dagen: beleid.WIJZIGEN_TOT_DAGEN, geldigDagen: beleid.OFFERTE_GELDIG_DAGEN, punten: beleid.PUNTEN, categorieen: beleid.WIJZIGING_CATEGORIEEN },
+  RIT: { SOORTEN: rit.SOORTEN, CHECKLIST: rit.CHECKLIST, MAX_FOTOS: rit.MAX_FOTOS, GELDIG_DAGEN_NA_RIT: rit.GELDIG_DAGEN_NA_RIT },
   kaartStijl: KAART_STIJL,
 });
 
@@ -471,11 +474,12 @@ async function dossier(id) {
     ? await db.all('SELECT * FROM dossier_berichten WHERE dossier_id=$1 ORDER BY created_at, id', [incassoDossier.id])
     : [];
   const lijstMeldingen = await meldingen.voorAanvraag(id);
+  const ritrapport = await rit.rapport(id);
   const openMeldingen = lijstMeldingen.filter((m) => m.status === 'open').length;
   const overdracht = factuur && !incassoDossier ? incasso.magOverdragen(factuur, k.type, new Date(), openMeldingen) : null;
   return {
     a, k, termijnen, nakosten, factuur, events, historie, plan, incassoDossier, dossierBerichten, overdracht,
-    meldingen: lijstMeldingen, openMeldingen,
+    meldingen: lijstMeldingen, openMeldingen, ritrapport,
     incassokosten: factuur ? incasso.incassokosten(factuur.te_betalen_cent, k.type) : 0,
     incassoGrondslag: incasso.grondslag(k.type),
     rente: factuur ? incasso.rente(factuur.te_betalen_cent, factuur.vervaldatum, k.type) : null,
@@ -495,14 +499,40 @@ app.get(
   }),
 );
 
-// Chauffeursbriefing: alles wat de chauffeur moet weten op één printbare pagina (route, tijden, contact, afspraken).
+// Chauffeursbriefing: printbaar én digitaal. De backoffice maakt een persoonlijke link (QR, kopiëren, WhatsApp) voor de
+// chauffeur en ziet hier zijn ritrapport met foto's.
 app.get(
   '/admin/aanvraag/:id/briefing',
   admin,
   wrap(async (req, res) => {
     const d = await dossier(Number(req.params.id));
     if (!d) return res.status(404).render('melding', { titel: 'Niet gevonden', tekst: '' });
-    res.render('admin/briefing', { ...d });
+    const ritLink = d.a.chauffeur_token ? `${svc.BASE_URL()}/rit/${d.a.chauffeur_token}` : null;
+    const qr = ritLink ? await QRCode.toString(ritLink, { type: 'svg', margin: 1, width: 160, color: { dark: '#1D2333', light: '#ffffff' } }) : null;
+    res.render('admin/briefing', { ...d, ritLink, qr, rapport: d.ritrapport, linkGeldig: rit.linkGeldig(d.a), melding: req.session.melding || null });
+    req.session.melding = null;
+  }),
+);
+app.post(
+  '/admin/aanvraag/:id/chauffeur',
+  admin,
+  wrap(async (req, res) => {
+    try {
+      await rit.koppel(Number(req.params.id), { naam: req.body.naam, tel: req.body.tel }, 'backoffice', req.body.vernieuw === '1');
+      req.session.melding = req.body.vernieuw === '1' ? 'Nieuwe link gemaakt; de oude link werkt niet meer.' : 'Link voor de chauffeur klaar.';
+    } catch (e) {
+      req.session.melding = e.message;
+    }
+    res.redirect(303, `/admin/aanvraag/${req.params.id}/briefing`);
+  }),
+);
+app.get(
+  '/admin/aanvraag/:id/foto/:fid',
+  admin,
+  wrap(async (req, res) => {
+    const f = await rit.foto(Number(req.params.fid), Number(req.params.id));
+    if (!f) return res.status(404).end();
+    res.set({ 'Content-Type': f.mime, 'Cache-Control': 'private, max-age=3600' }).send(f.data);
   }),
 );
 
@@ -954,6 +984,78 @@ app.post(
     } catch (e) {
       terugDossier(req, res, e.message);
     }
+  }),
+);
+
+// Chauffeur: digitale briefing en ritrapport via een persoonlijke link (geen login). Foto's komen als data-url in JSON.
+async function laadRit(req, res) {
+  const d = await rit.metToken(req.params.token);
+  if (!d) {
+    res.status(404).render('melding', { titel: 'Ritlink niet gevonden', tekst: 'Deze link bestaat niet of is verlopen. Vraag de planning om een nieuwe link.' });
+    return null;
+  }
+  return d;
+}
+function ritPagina(d, extra) {
+  return { ...d, checklist: d.a.rit_checklist || {}, noindex: true, ...extra };
+}
+app.get(
+  '/rit/:token',
+  wrap(async (req, res) => {
+    const d = await laadRit(req, res);
+    if (!d) return;
+    const melding = req.session.ritMelding || null;
+    req.session.ritMelding = null;
+    res.render('rit', ritPagina(d, { rapport: await rit.rapport(d.a.id), melding, fouten: [] }));
+  }),
+);
+app.post(
+  '/rit/:token/checklist',
+  wrap(async (req, res) => {
+    const d = await laadRit(req, res);
+    if (!d) return;
+    const c = await rit.zetChecklist(d.a, req.body.items, d.a.chauffeur_naam || 'onbekend');
+    if (req.is('application/json')) return res.json({ ok: true, checklist: c });
+    req.session.ritMelding = 'Checklist opgeslagen.';
+    res.redirect(303, `/rit/${req.params.token}#checklist`);
+  }),
+);
+app.post(
+  '/rit/:token/melding',
+  wrap(async (req, res) => {
+    const d = await laadRit(req, res);
+    if (!d) return;
+    const json = !!req.is('application/json');
+    const v = rit.valideerMelding(req.body);
+    if (!v.ok) {
+      if (json) return res.status(422).json({ ok: false, fouten: v.fouten });
+      return res.status(422).render('rit', ritPagina(d, { rapport: await rit.rapport(d.a.id), melding: null, fouten: v.fouten }));
+    }
+    const fotos = rit.parseFotos(req.body.fotos);
+    const r = await rit.voegMeldingToe(d.a, d.k, v.waarde, fotos, d.a.chauffeur_naam || 'onbekend', svc.BASE_URL());
+    req.session.ritMelding = `Vastgelegd in het dossier${fotos.length ? ` met ${fotos.length} foto${fotos.length === 1 ? '' : "'s"}` : ''}.`;
+    if (json) return res.json({ ok: true, id: r.id, fotos: fotos.length });
+    res.redirect(303, `/rit/${req.params.token}#rapport`);
+  }),
+);
+app.post(
+  '/rit/:token/afronden',
+  wrap(async (req, res) => {
+    const d = await laadRit(req, res);
+    if (!d) return;
+    await rit.rondAf(d.a, d.k, req.body.slot, d.a.chauffeur_naam || 'onbekend', svc.BASE_URL());
+    req.session.ritMelding = 'Rit afgerond. Bedankt, alles staat in het dossier en de planning is geïnformeerd.';
+    res.redirect(303, `/rit/${req.params.token}`);
+  }),
+);
+app.get(
+  '/rit/:token/foto/:fid',
+  wrap(async (req, res) => {
+    const d = await rit.metToken(req.params.token);
+    if (!d) return res.status(404).end();
+    const f = await rit.foto(Number(req.params.fid), d.a.id);
+    if (!f) return res.status(404).end();
+    res.set({ 'Content-Type': f.mime, 'Cache-Control': 'private, max-age=3600' }).send(f.data);
   }),
 );
 

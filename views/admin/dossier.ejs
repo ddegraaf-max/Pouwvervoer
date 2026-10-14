@@ -179,6 +179,11 @@
       <div class="scroll" style="margin-top:12px"><table><tbody><% nakosten.forEach(n => { %><tr><td><%= n.omschrijving %></td><td class="num"><%= euro(n.bedrag_cent) %></td></tr><% }) %></tbody></table></div>
       <% } %>
       <% if (['bevestigd','gereden'].includes(a.status)) { %>
+      <% const uitRapport = ritrapport.filter((m) => m.bedrag_cent != null && ['kosten', 'schade', 'rotzooi'].includes(m.soort)); if (uitRapport.length) { %>
+      <div style="margin-top:12px"><p class="lead" style="font-size:14px;margin:0 0 6px"><strong>Uit het ritrapport van de chauffeur</strong> (foto's in de <a href="/admin/aanvraag/<%= a.id %>/briefing#rapport">briefing</a>):</p>
+        <div class="scroll"><table><tbody><% uitRapport.forEach((m) => { %><tr><td><span class="badge r-<%= m.soort %>"><%= RIT.SOORTEN[m.soort].label %></span> <%= m.omschrijving %></td><td class="num"><%= euro(m.bedrag_cent) %></td><td><%- form('nakosten') %><input type="hidden" name="omschrijving" value="<%= RIT.SOORTEN[m.soort].label %> (ritrapport R-<%= m.id %>)"><input type="hidden" name="bedrag" value="<%= (m.bedrag_cent / 100).toFixed(2).replace('.', ',') %>"><button class="btn small ghost" type="submit">Als nakosten toevoegen</button></form></td></tr><% }) %></tbody></table></div>
+      </div>
+      <% } %>
       <div style="margin-top:14px"><%- form('nakosten') %>
         <div class="inline-form">
           <div><label for="omschrijving">Nakosten</label><select id="omschrijving" name="omschrijving"><option>Tol</option><option>Parkeergeld</option><option>Pont</option><option>Verblijf chauffeur</option><option>Extra kilometers op locatie</option><option>Schoonmaakkosten</option></select></div>
@@ -292,8 +297,12 @@
       <% if (a.voorwaarden_akkoord_op) { %><p class="lead" style="margin:8px 0 0;font-size:14px">Voorwaarden <%= a.voorwaarden_versie %> ter hand gesteld en geaccepteerd door de aanvrager op <%= datumTijd(a.voorwaarden_akkoord_op) %><%= a.voorwaarden_ip ? ` (IP ${a.voorwaarden_ip})` : '' %>.</p><% } %>
     </div>
     <div class="card">
-      <div class="between" style="margin-bottom:10px;flex-wrap:wrap;gap:6px"><h2 style="font-size:18px;margin:0">Rit</h2><a class="btn small ghost" href="/admin/aanvraag/<%= a.id %>/briefing">Chauffeursbriefing</a></div>
+      <div class="between" style="margin-bottom:10px;flex-wrap:wrap;gap:6px"><h2 style="font-size:18px;margin:0">Rit</h2><a class="btn small ghost" href="/admin/aanvraag/<%= a.id %>/briefing">Chauffeursbriefing en ritrapport</a></div>
       <%- include('../partials/reis-samenvatting', { r: vanAanvraag(a) }) %>
+      <% if (a.chauffeur_naam || a.chauffeur_token) { %><dl class="kv" style="margin-top:8px">
+        <dt>Chauffeur</dt><dd><%= a.chauffeur_naam || 'Nog geen naam' %><%= a.chauffeur_tel ? `, ${a.chauffeur_tel}` : '' %></dd>
+        <dt>Ritrapport</dt><dd><%= a.rit_afgerond_op ? `Rit afgerond ${datumTijd(a.rit_afgerond_op)}` : a.rit_gestart_op ? `Geopend door de chauffeur ${datumTijd(a.rit_gestart_op)}` : 'Link gemaakt, nog niet geopend door de chauffeur' %><%= ritrapport.length ? `, ${ritrapport.length} melding${ritrapport.length === 1 ? '' : 'en'}` : '' %><% if (ritrapport.length) { %> (<a href="/admin/aanvraag/<%= a.id %>/briefing#rapport">bekijken</a>)<% } %></dd>
+      </dl><% } %>
       <% if (a.opmerkingen) { %><dl class="kv" style="margin-top:8px"><dt>Bijzonderheden</dt><dd><%= a.opmerkingen %></dd></dl><% } %>
     </div>
     <div class="card">
