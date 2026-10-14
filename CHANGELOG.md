@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.14.1 · 14 oktober 2026
+- README: stappenplan voor het domein bijgewerkt nu boekpouwvervoer.nl is geregistreerd met Cloudflare als DNS: wachten op de delegatie, in Railway zowel het CNAME- als het TXT-record zetten (zonder TXT blijft het 404), kaal domein als CNAME in Cloudflare, www naar het kale domein, proxy aan met SSL-modus Full (niet Flexible of Full strict) en Universal SSL aan.
+
 ## 0.14.0 · 13 oktober 2026
 - Het busje op de kopjes Heenreis en Terugreis is nu een voortgangsmeter: het rijdt precies zover als de velden van dat reisdeel goed zijn ingevuld (adressen, tussenstops, datum en tijd) en staat bij 100% bij de bestemming, die dan groen kleurt. Bij de terugreis staat het huisje links en komt de bus thuis aan; zonder "andere route terug" tellen de adressen van de heenreis mee. Rookwolkjes alleen terwijl de bus rijdt; de muisaanwijzer boven het weggetje toont "3 van 5 velden ingevuld (60%)".
 

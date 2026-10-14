@@ -124,9 +124,9 @@ Wil Pouw ook in de App Store en Google Play staan, dan kan dezelfde webapp verpa
 
 ## Domein boekpouwvervoer.nl activeren
 
-1. **Registreren**: zolang het domein niet bestaat in DNS (NXDOMAIN), is het nog niet geregistreerd of heeft het geen nameservers. Registreer het bij een .nl-registrar (bijvoorbeeld TransIP, Mijndomein of Hostnet) met DNS-beheer.
-2. **Railway**: open de service → Settings → Networking → Custom Domain. Voeg `boekpouwvervoer.nl` én `www.boekpouwvervoer.nl` toe. Railway toont per naam de DNS-record die het verwacht (een CNAME naar een `.up.railway.app`-naam; voor het kale domein een CNAME/ALIAS als de registrar dat ondersteunt, anders de waarde die Railway daar toont).
-3. **DNS bij de registrar**: zet de records precies zoals Railway ze toont. Wacht tot Railway het certificaat heeft aangemaakt (meestal binnen een kwartier; DNS kan tot een paar uur duren).
+1. **Registreren**: het domein is op 14 oktober 2026 geregistreerd via Mijndomein, met de nameservers van Cloudflare (`nola.ns.cloudflare.com` en `boyd.ns.cloudflare.com`). Zolang het .nl-register die delegatie nog niet heeft gepubliceerd, geeft elke DNS-vraag NXDOMAIN en antwoorden de Cloudflare-nameservers met "Query refused"; Cloudflare zet de zone dan nog op "Pending nameserver update". Dat lost zichzelf op, meestal binnen een uur; in Cloudflare kan "Check nameservers" het versnellen.
+2. **Railway**: open de service → Settings → Networking → Custom Domain. Voeg `boekpouwvervoer.nl` toe (en desgewenst `www.boekpouwvervoer.nl`). Railway toont per naam **twee** records: een CNAME naar een `….up.railway.app`-naam en een TXT-record als eigendomsbewijs. Beide zijn verplicht; zonder de TXT keurt Railway het domein niet goed en geeft het 404 "Application not found", ook als de CNAME al werkt.
+3. **DNS in Cloudflare**: zet de records precies zoals Railway ze toont. Het kale domein mag in Cloudflare gewoon een CNAME zijn (Cloudflare vlakt die af). Voor `www` volstaat een CNAME naar `boekpouwvervoer.nl`; de app stuurt www zelf door naar het kale domein zodra `BASE_URL` werkt (stap 4). Proxy (oranje wolkje) mag aan, maar zet dan bij SSL/TLS de modus op **Full**: "Flexible" geeft een eindeloze omleiding en "Full (strict)" werkt niet met Railway. Zet onder Edge Certificates "Universal SSL" aan. Blijft het certificaat in Railway hangen op "Validating challenges", zet de proxy dan tijdelijk uit (grijs wolkje, DNS only) tot Railway het certificaat heeft, en daarna weer aan. Railway geeft het certificaat meestal binnen een uur na de DNS-wijziging af; wereldwijde DNS-doorvoer kan langer duren.
 4. **Variabelen in Railway**: `BASE_URL=https://boekpouwvervoer.nl`. De app controleert elke vijf minuten of dat adres echt deze app serveert (via `/health`); pas dan stuurt hij elk ander adres (het railway.app-adres, www.) met een 302 daarheen. Tot die tijd gebeurt er niets, zodat een verkeerde of nog niet werkende `BASE_URL` de site nooit onbereikbaar maakt. E-mails en akkoordlinks gebruiken `BASE_URL` wel direct: zet hem daarom pas op het domein als dat werkt, en tot die tijd op het railway.app-adres.
 5. **Controleren**: `https://boekpouwvervoer.nl/health` geeft `{"ok":true,"versie":"…","adres":"https://boekpouwvervoer.nl","adresActief":true}`. Daarna `/reis` openen en een testaanvraag doen.
 6. **E-mail**: zet in Resend het domein `boekpouwvervoer.nl` op (SPF en DKIM zoals Resend ze toont) en `MAIL_FROM=Pouw Vervoer <planning@boekpouwvervoer.nl>`; dan verlaat de demo-modus voor e-mail.
@@ -136,7 +136,7 @@ Wil Pouw ook in de App Store en Google Play staan, dan kan dezelfde webapp verpa
 1. Nieuw project → Deploy from GitHub repo → deze repo.
 2. Add → Database → PostgreSQL. Zet bij de app `DATABASE_URL=${{Postgres.DATABASE_URL}}`.
 3. Variabelen: `ADMIN_PASSWORD`, `DEURWAARDER_PASSWORD`, `SESSION_SECRET`, `NODE_ENV=production`, `BASE_URL`.
-4. Settings → Networking → Custom domain `boekpouwvervoer.nl` en zet het CNAME-record dat Railway toont bij de domeinregistrar.
+4. Settings → Networking → Custom domain `boekpouwvervoer.nl` en zet het CNAME- én TXT-record dat Railway toont in Cloudflare (zie "Domein boekpouwvervoer.nl activeren").
 
 De tabellen worden bij de start automatisch aangemaakt.
 
