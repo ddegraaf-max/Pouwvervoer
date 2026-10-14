@@ -107,6 +107,16 @@ Zonder sleutels draait elk onderdeel apart in demo:
 - **Betalen** (`MOLLIE_API_KEY` ontbreekt): de betaalpagina simuleert een geslaagde iDEAL-betaling. Mollie is nog niet aangesloten; dat is de volgende stap.
 - **AI-assistent** (`ANTHROPIC_API_KEY` ontbreekt): staat uit; zie hierboven.
 
+## Beschrijving voor Pouw
+
+`docs/Zo werkt boekpouwvervoer.pdf` beschrijft voor Pouw (directie, planning, sales, administratie) wat er is gebouwd en hoe het werkt: het proces van aanvraag tot betaalde rit, de klantstappen, de backoffice, de klantscore, herinneringen en meldingen, incasso via Armaere, voorwaarden en beleid, techniek en beheer, en de keuzes die Pouw nog moet maken. De bron is `docs/handleiding/handleiding.html`; de pdf wordt gemaakt met headless Edge:
+
+```
+msedge --headless=new --no-pdf-header-footer --print-to-pdf="docs/Zo werkt boekpouwvervoer.pdf" file:///…/docs/handleiding/handleiding.html
+```
+
+Werk de html bij (versienummer, datum, nieuwe functies) en maak de pdf opnieuw bij elke versie die voor Pouw van belang is.
+
 ## Versies
 
 Elke update krijgt een versienummer `hoofd.sub.fix`: een fix of tekstwijziging verhoogt het laatste cijfer (0.3.0 → 0.3.1), een nieuwe functie het middelste (0.3.1 → 0.4.0), een grote verandering het eerste. Bij elke versie hoort:

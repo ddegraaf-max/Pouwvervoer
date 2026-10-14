@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.14.3 · 14 oktober 2026
+- Beschrijving voor Pouw als pdf (`docs/Zo werkt boekpouwvervoer.pdf`, 17 pagina's): wat er is gebouwd en hoe het werkt, van aanvraag tot betaalde rit, met de backoffice, klantscore, herinneringen en meldingen, incasso, voorwaarden en beleid, techniek en de openstaande keuzes. Bron in `docs/handleiding/`.
+
 ## 0.14.2 · 14 oktober 2026
 - README: domein is live. Stap 1 beschrijft nu wat er in de praktijk gebeurde: het nameserverpaar is per Cloudflare-zone verschillend en moet exact bij Mijndomein staan, de .nl-registry publiceert met vertraging, en de door Cloudflare overgenomen parkeerrecords moeten weg om een 522 te voorkomen.
 

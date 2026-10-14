@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>boekpouwvervoer.nl · Zo werkt het</title>
+<style>
+  @page { size: A4; margin: 18mm 17mm 20mm 17mm; }
+  :root { --navy:#263680; --navy-diep:#1B2760; --geel:#FBB900; --groen:#0B8F2C; --ink:#1D2333; --muted:#5B6478; --line:#D9DDE8; --zacht:#F3F5FA; --geelzacht:#FFF6DB; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body { font-family: "Open Sans", "Segoe UI", Arial, sans-serif; color: var(--ink); font-size: 10.5pt; line-height: 1.5; }
+  h1, h2, h3, h4 { color: var(--navy); line-height: 1.25; margin: 0 0 6pt; page-break-after: avoid; }
+  h1 { font-size: 20pt; border-bottom: 2.5pt solid var(--geel); padding-bottom: 5pt; margin-top: 0; margin-bottom: 10pt; }
+  h2 { font-size: 14pt; margin-top: 16pt; }
+  h3 { font-size: 11.5pt; margin-top: 12pt; }
+  p { margin: 0 0 7pt; }
+  ul, ol { margin: 0 0 8pt; padding-left: 18pt; }
+  li { margin-bottom: 3pt; }
+  li > ul { margin-top: 3pt; }
+  strong { color: var(--navy-diep); }
+  table { border-collapse: collapse; width: 100%; margin: 6pt 0 10pt; font-size: 9.5pt; page-break-inside: auto; }
+  th, td { border: 0.6pt solid var(--line); padding: 4pt 6pt; vertical-align: top; text-align: left; }
+  th { background: var(--navy); color: #fff; font-weight: 600; }
+  tr { page-break-inside: avoid; }
+  tbody tr:nth-child(even) td { background: var(--zacht); }
+  .kader { border: 0.8pt solid var(--line); border-left: 4pt solid var(--geel); background: var(--geelzacht); padding: 7pt 10pt; margin: 8pt 0 10pt; page-break-inside: avoid; }
+  .kader.navy { border-left-color: var(--navy); background: var(--zacht); }
+  .kader.groen { border-left-color: var(--groen); background: #EAF6EE; }
+  .kader p:last-child { margin-bottom: 0; }
+  .sectie { page-break-before: always; }
+  .klein { font-size: 9pt; color: var(--muted); }
+  code { font-family: Consolas, "Courier New", monospace; font-size: 9.5pt; background: var(--zacht); padding: 0 3pt; border-radius: 2pt; }
+  figure { margin: 8pt 0 12pt; text-align: center; page-break-inside: avoid; }
+  figure img { max-width: 100%; border: 0.6pt solid var(--line); }
+  figure figcaption { font-size: 9pt; color: var(--muted); margin-top: 4pt; }
+  .titelblad { height: 250mm; display: flex; flex-direction: column; justify-content: space-between; page-break-after: always; }
+  .titelblad .boven { display: flex; align-items: center; gap: 14pt; }
+  .titelblad .boven img { height: 42pt; }
+  .titelblad .midden h1 { font-size: 30pt; border: 0; padding: 0; margin: 0 0 8pt; }
+  .titelblad .midden .sub { font-size: 15pt; color: var(--muted); margin-bottom: 20pt; }
+  .titelblad .balk { height: 6pt; background: linear-gradient(90deg, var(--navy) 0 60%, var(--geel) 60% 80%, var(--groen) 80%); margin: 14pt 0 20pt; }
+  .meta td { border: 0; padding: 2pt 10pt 2pt 0; font-size: 10.5pt; background: none !important; }
+  .meta td:first-child { color: var(--muted); width: 110pt; }
+  .stappen { counter-reset: stap; list-style: none; padding: 0; }
+  .stappen li { counter-increment: stap; position: relative; padding-left: 26pt; margin-bottom: 6pt; }
+  .stappen li::before { content: counter(stap); position: absolute; left: 0; top: 1pt; width: 17pt; height: 17pt; border-radius: 50%; background: var(--navy); color: #fff; font-weight: 700; font-size: 9.5pt; text-align: center; line-height: 17pt; }
+  .twee { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; }
+  .inhoud ol { columns: 2; column-gap: 24pt; padding-left: 16pt; }
+  .inhoud li { break-inside: avoid; }
+  .tag { display: inline-block; font-size: 8.5pt; font-weight: 700; padding: 0 5pt; border-radius: 3pt; color: #fff; background: var(--navy); vertical-align: 1pt; }
+  .tag.geel { background: var(--geel); color: var(--ink); }
+  .tag.groen { background: var(--groen); }
+</style>
+</head>
+<body>
+
+<div class="titelblad">
+  <div class="boven">
+    <img src="logo.png" alt="Pouw Vervoer">
+    <div><strong>boekpouwvervoer.nl</strong><br><span class="klein">Boekings- en betaalplatform voor Pouw Vervoer</span></div>
+  </div>
+  <div class="midden">
+    <h1>Zo werkt boekpouwvervoer.nl</h1>
+    <div class="sub">Wat er is gebouwd, hoe de klant het gebruikt en hoe Pouw ermee werkt: van aanvraag tot betaalde rit.</div>
+    <div class="balk"></div>
+    <table class="meta">
+      <tr><td>Voor</td><td>Pouw Vervoer: directie, planning, sales en administratie</td></tr>
+      <tr><td>Adres</td><td>https://boekpouwvervoer.nl (live sinds 14 oktober 2026)</td></tr>
+      <tr><td>Versie van de app</td><td>0.14.2</td></tr>
+      <tr><td>Datum</td><td>14 oktober 2026</td></tr>
+      <tr><td>Opgesteld door</td><td>Daniel de Graaf</td></tr>
+    </table>
+  </div>
+  <div class="klein">Dit document beschrijft de werking op het moment van schrijven. Het versienummer staat onderin elke pagina van de app en op boekpouwvervoer.nl/health, zodat u altijd kunt zien welke versie draait.</div>
+</div>
+
+<h1>Inhoud</h1>
+<div class="inhoud">
+<ol>
+  <li>In het kort</li>
+  <li>Het proces in één oogopslag</li>
+  <li>De klant: stap voor stap</li>
+  <li>Pouw: de backoffice</li>
+  <li>Klantscore en aanbetaling</li>
+  <li>Herinneringen, meldingen en werklijst</li>
+  <li>Wanbetaling: incasso via Armaere</li>
+  <li>Voorwaarden, beleid en wetgeving</li>
+  <li>Techniek, beveiliging en beheer</li>
+  <li>Keuzes en acties voor Pouw</li>
+  <li>Bijlage: versieoverzicht</li>
+</ol>
+</div>
+
+<h1>1. In het kort</h1>
+<p><strong>boekpouwvervoer.nl</strong> is één systeem waarin een busrit van begin tot eind wordt afgehandeld: de klant stelt zijn reis samen, vraagt een prijs aan, krijgt een offerte, geeft akkoord met betalingsverplichting, betaalt wat vooraf verschuldigd is en ontvangt na de rit één eindfactuur. Pouw ziet alles in één dossier: wie de rit heeft aangevraagd, wie mag tekenen, wie de factuur betaalt, welke afspraken zijn gemaakt, welke voorwaarden zijn geaccepteerd, welke e-mails zijn verstuurd en wat er nog open staat.</p>
+<p>Het platform doet drie dingen anders dan een losse offertetool:</p>
+<ul>
+  <li><strong>Betaalrisico wordt vooraf ingeschat.</strong> Een klantscore bepaalt automatisch of een klant vooraf betaalt, hoeveel en wanneer. Klanten met een faillissement of een openstaande vervallen factuur krijgen geen offerte.</li>
+  <li><strong>Voorwaarden en akkoord zijn juridisch sluitend.</strong> De KNV-voorwaarden worden daadwerkelijk ter hand gesteld (als pdf-bijlage), de acceptatie wordt vastgelegd met naam, tijdstip en IP-adres, en het akkoord is een bestelling met betalingsverplichting. Daardoor kan Pouw er bij een dispuut of incasso ook echt aanspraak op maken.</li>
+  <li><strong>Losse eindjes worden zichtbaar vóórdat ze een betaalprobleem worden.</strong> Afspraken van sales staan zwart op wit, meldingen hebben een eigenaar en een deadline, en zolang iets open staat gaan er geen herinneringen naar de klant.</li>
+</ul>
+<div class="kader navy">
+  <p><strong>Adressen</strong><br>
+  Klant: <strong>boekpouwvervoer.nl/reis</strong> (start) en <strong>boekpouwvervoer.nl/app</strong> (app installeren).<br>
+  Pouw: <strong>boekpouwvervoer.nl/admin</strong> (backoffice, wachtwoord).<br>
+  Deurwaarder: <strong>boekpouwvervoer.nl/deurwaarder</strong> (portaal, eigen wachtwoord).<br>
+  Voorwaarden: <strong>boekpouwvervoer.nl/voorwaarden</strong>.</p>
+</div>
+<p>De site is ook een installeerbare app voor telefoon en computer, zonder app store. Een AI-assistent helpt de klant bij het invullen en helpt de planner in de backoffice.</p>
+
+<h1 class="sectie">2. Het proces in één oogopslag</h1>
+<table>
+  <thead><tr><th style="width:26pt">Stap</th><th style="width:120pt">Wat</th><th>Wat er gebeurt</th><th style="width:90pt">Wie</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>Reis samenstellen</td><td>Retour of enkele reis, aantal personen, vertrek, tussenstops, bestemming, datum en tijd. Adressuggesties, kaart met route, afstand en reistijd. Eventueel met de assistent in één zin.</td><td>Klant</td></tr>
+    <tr><td>2</td><td>Gegevens invullen</td><td>Aanvrager, opdrachtgever (wie mag tekenen) en factuurontvanger. Bijzonderheden, bus blijft bij de groep, reisleider. Verplicht akkoord met de voorwaarden.</td><td>Klant</td></tr>
+    <tr><td>3</td><td>Bevestiging aanvraag</td><td>Bedanktpagina en e-mail met de reis, het beleid van Pouw en de voorwaarden als pdf. De aanvraag staat in de backoffice met referentie EPV-nummer.</td><td>Automatisch</td></tr>
+    <tr><td>4</td><td>Offerte maken</td><td>Planner vult ritprijs en geschatte nakosten in. De klantscore bepaalt de aanbetaling. Afspraken van sales worden vastgelegd. Offerte wordt gemaild aan de tekenbevoegde, 14 dagen geldig.</td><td>Pouw</td></tr>
+    <tr><td>5</td><td>Akkoord</td><td>De tekenbevoegde opent de akkoordpagina, ziet reis, prijs, betaling, annuleringsregeling en vervoerder, accepteert de voorwaarden en klikt op "Akkoord: bestelling met betalingsverplichting". Is er een aanbetaling bij akkoord, dan betaalt hij direct via iDEAL.</td><td>Klant</td></tr>
+    <tr><td>6</td><td>Bevestiging bestelling</td><td>E-mail aan de tekenbevoegde (cc aanvrager) met alle gegevens en de voorwaarden als pdf: het exemplaar van de overeenkomst. De rit staat in de export voor Trip.</td><td>Automatisch</td></tr>
+    <tr><td>7</td><td>Tot de rit</td><td>24 uur bedenktijd (kosteloos annuleren), kosteloos wijzigen tot 7 dagen voor vertrek, klacht indienen. Herinneringen voor aanbetalingen. Chauffeursbriefing printen.</td><td>Klant en Pouw</td></tr>
+    <tr><td>8</td><td>Na de rit</td><td>Rit markeren als gereden, nakosten invoeren, één eindfactuur met verrekening van wat al betaald is. Betaaltermijn 14 dagen.</td><td>Pouw</td></tr>
+    <tr><td>9</td><td>Betaling en opvolging</td><td>Automatische herinneringen op dag 0, 3, 10 en 17 (aanmaning of 14-dagenbrief). Pauze zolang een melding open staat. Creditnota bij een terechte klacht.</td><td>Automatisch en Pouw</td></tr>
+    <tr><td>10</td><td>Incasso</td><td>Onbetaalde factuur overdragen aan Armaere met het complete dossier, incassokosten en rente volgens de KNV-voorwaarden. Armaere werkt in een eigen portaal.</td><td>Pouw en Armaere</td></tr>
+  </tbody>
+</table>
+<p>Een aanvraag doorloopt deze statussen: <span class="tag">nieuw</span> <span class="tag">offerte verstuurd</span> <span class="tag geel">wacht op betaling</span> <span class="tag groen">bevestigd</span> <span class="tag">gereden</span> <span class="tag">gefactureerd</span> <span class="tag groen">betaald</span>, of <span class="tag">geannuleerd</span>. "Wacht op betaling" komt alleen voor als er bij het akkoord een aanbetaling verschuldigd is; de rit gaat dan pas naar de planning als die binnen is.</p>
+
+<h1 class="sectie">3. De klant: stap voor stap</h1>
+
+<h2>3.1 Uw reis (boekpouwvervoer.nl/reis)</h2>
+<p>De eerste stap heeft dezelfde opbouw als de huidige offertetool van Pouw, in de huisstijl van pouwvervoer.nl. De klant hoeft nog geen persoonlijke gegevens te geven.</p>
+<ul>
+  <li><strong>Ritsoort en personen:</strong> retour of enkele reis, aantal personen (1 tot 15.000).</li>
+  <li><strong>Route:</strong> vertrekadres, maximaal 5 tussenstops met wachttijd (15 minuten tot meerdere uren), bestemming. Bij het typen verschijnen suggesties met straat, huisnummer, postcode en plaats; ook bestemmingen zoals "Efteling" of "Disneyland Paris" en adressen in het buitenland. Zolang er gezocht wordt, rijdt er een klein busje in het veld.</li>
+  <li><strong>Kaart:</strong> zodra adressen bekend zijn, verschijnt de route over de weg op een kaart van Europa en de wereld, met afstand en reistijd per richting. Een andere route terug krijgt een tweede kleur.</li>
+  <li><strong>Datum en tijd per richting:</strong> de klant kiest of de tijd de vertrek- of de aankomsttijd is. De agenda biedt alleen vandaag en later aan; een datum in het verleden of een terugreis vóór de heenreis geeft direct een melding. De terugdatum volgt de heendatum tot de klant zelf een andere kiest.</li>
+  <li><strong>Andere route terug:</strong> standaard rijdt de bus dezelfde route terug. Met de schakelaar vult de klant een eigen terugroute in; de app zet de heenroute alvast in omgekeerde volgorde klaar.</li>
+  <li><strong>Voortgang:</strong> boven elk reisdeel rijdt een busje op een weggetje precies zover als de velden van dat reisdeel goed zijn ingevuld. Staat het busje bij de bestemming, dan is dat reisdeel compleet.</li>
+  <li><strong>Assistent in één zin:</strong> de klant typt of spreekt in wat hij wil, bijvoorbeeld "schoolreis naar de Efteling op 12 mei met 48 kinderen en 6 begeleiders, om 17:00 terug". De assistent vult het formulier; wat ontbreekt, staat erbij. De klant controleert en vult aan.</li>
+</ul>
+<figure>
+  <img src="reis.png" alt="De reis-stap met een ingevuld voorbeeld" style="max-height:200mm;width:auto">
+  <figcaption>De reis-stap met een voorbeeld: van Vianen via Utrecht naar de Efteling in Kaatsheuvel, met kaart, afstand en reistijd.</figcaption>
+</figure>
+
+<h2>3.2 Uw gegevens (stap 2)</h2>
+<p>De tweede stap toont de samengestelde reis (met een link om die te wijzigen) en vraagt naar drie rollen. Die scheiding is bewust: de persoon die belt is vaak niet degene die mag tekenen of die de factuur betaalt, en juist daar ontstaan betaalproblemen.</p>
+<ul>
+  <li><strong>Aanvrager:</strong> naam, mobiel nummer, e-mailadres, functie.</li>
+  <li><strong>Opdrachtgever (wie bestelt en betaalt):</strong> soort klant (onderwijs of overheid, bedrijf, vereniging of stichting, particulier), naam organisatie, KvK-nummer, naam en e-mailadres van wie mag tekenen. Het KvK-nummer wordt gecontroleerd op inschrijving, leeftijd van de onderneming en faillissement.</li>
+  <li><strong>Factuurontvanger:</strong> e-mailadres voor de factuur, inkoop- of referentienummer (verplicht voor onderwijs en overheid), factuuradres.</li>
+  <li><strong>Reisleider:</strong> naam en mobiel nummer van de contactpersoon tijdens de rit.</li>
+  <li><strong>Bijzonderheden en "bus blijft bij de groep":</strong> extra wensen en de keuze of de bus ter plaatse blijft (meerkosten, nooit vooraf aangevinkt).</li>
+  <li><strong>Voorwaarden:</strong> verplicht vinkje met link naar de KNV-voorwaarden en de kernpunten in beeld (annuleren, aanbetaling, hoofdelijke aansprakelijkheid, meerkosten, weer en overmacht, klachten). Versie, tijdstip en IP-adres worden bewaard.</li>
+  <li><strong>Zo werkt het bij Pouw:</strong> het beleid staat op de pagina: 24 uur bedenktijd, kosteloos wijzigen tot 7 dagen voor vertrek, betaling na afloop tenzij aanbetaling, en het voorbehoud dat Pouw bepaalt of locaties bereikbaar zijn voor een touringbus.</li>
+</ul>
+
+<h2>3.3 Bevestiging van de aanvraag</h2>
+<p>Na het versturen ziet de klant de bedanktpagina met de reis op de kaart en krijgt hij een e-mail met de samenvatting, het beleid, de kernpunten van de voorwaarden, de link naar de voorwaarden en de voorwaarden als pdf-bijlage. De aanvraag krijgt een referentie (EPV-nummer) en staat direct in de backoffice.</p>
+
+<h2>3.4 De offerte en het akkoord</h2>
+<p>De tekenbevoegde ontvangt de offerte per e-mail met een persoonlijke akkoordlink. De akkoordpagina is het bestelmoment en toont alles wat de wet daarvoor eist:</p>
+<ul>
+  <li>de reis (route, tussenstops, datums, tijden, aantal personen, kaart met afstand en reistijd), de afspraken die sales heeft vastgelegd en de bijzonderheden;</li>
+  <li>de ritprijs inclusief btw, wat er nog bij kan komen (nakosten, bus blijft bij de groep) en de betaling: geen aanbetaling, of de aanbetaling met bedragen en uiterste data;</li>
+  <li>de annuleringsregeling als tabel met bedragen in euro's voor deze rit, de 24 uur bedenktijd, en de vermelding dat er voor personenvervoer geen wettelijke bedenktijd geldt;</li>
+  <li>de gegevens van de vervoerder (naam, adres, KvK- en btw-nummer) en de klachtenregeling;</li>
+  <li>het vinkje "Ik ga akkoord met deze offerte en accepteer de voorwaarden" met link, en de knop <strong>"Akkoord: bestelling met betalingsverplichting"</strong>.</li>
+</ul>
+<p>Na het akkoord legt de app naam, tijdstip, IP-adres en de geaccepteerde versie van de voorwaarden vast. Is er bij akkoord een aanbetaling verschuldigd, dan gaat de klant direct door naar de betaalpagina (iDEAL). De tekenbevoegde ontvangt een bevestigingsmail (cc de aanvrager) met alle gegevens en de voorwaarden als pdf: het exemplaar van de overeenkomst op een duurzame drager. Een offerte is 14 dagen geldig; daarna kan niet meer worden geaccordeerd, tenzij Pouw de offerte opnieuw verstuurt.</p>
+
+<h2>3.5 Na het akkoord: bedenktijd, wijzigen, klacht, factuur</h2>
+<ul>
+  <li><strong>Bedenktijd:</strong> binnen 24 uur na het akkoord annuleert de klant zelf op de akkoordpagina, kosteloos, met bevestiging per e-mail. Daarna gelden de annuleringskosten uit de voorwaarden en kan annuleren alleen schriftelijk.</li>
+  <li><strong>Wijziging doorgeven:</strong> categorie (vertrektijd, datum, aantal personen, opstapplaats, bestemming, anders) en toelichting. Tot 7 dagen voor vertrek kosteloos; daarna in overleg, mogelijk met meerkosten. De planning krijgt een e-mail, de klant een ontvangstbevestiging, en het dossier toont "Wijzigingsverzoek open" tot Pouw het afhandelt.</li>
+  <li><strong>Klacht indienen:</strong> de klacht wordt een melding voor de administratie, de planning krijgt een e-mail en de klant een ontvangstbevestiging met de termijnen uit artikel 11 van de voorwaarden.</li>
+  <li><strong>Eindfactuur:</strong> na de rit één factuur met ritprijs, nakosten en verrekening van aanbetalingen, betaaltermijn 14 dagen. Bij een creditnota ziet de klant het verlaagde bedrag.</li>
+</ul>
+
+<h2>3.6 De app op de telefoon (boekpouwvervoer.nl/app)</h2>
+<p>De site is een installeerbare app: op de iPhone via Delen en "Zet op beginscherm", op Android via Chrome en "App installeren", op de computer via Chrome of Edge. Geen app store, geen grote download, altijd de nieuwste versie. De pagina /app toont het icoon, een installeerknop, de uitleg voor het herkende toestel en een QR-code om de app te delen op de website, in e-mails of op een flyer. Onderin elke pagina staat de link "App op uw telefoon". Zonder verbinding toont de app een nette offline-pagina; formulieren en de backoffice worden nooit lokaal bewaard.</p>
+
+<h1 class="sectie">4. Pouw: de backoffice (boekpouwvervoer.nl/admin)</h1>
+<p>De backoffice is beveiligd met een wachtwoord en bestaat uit een overzicht met werklijst en een dossier per aanvraag.</p>
+
+<h2>4.1 Overzicht en werklijst</h2>
+<p>Bovenaan staat de <strong>werklijst</strong>: alles wat open staat, op volgorde van deadline, met eigenaar en achterstand in dagen en een telling per eigenaar. Daarin staan open meldingen, open wijzigingsverzoeken, aanbetalingen die 48 uur na een herinnering nog niet binnen zijn, offertes die (bijna) verlopen en facturen over de vervaldatum. Daaronder de lijst van alle aanvragen met status, klant, ritdatum, klasse en bedragen.</p>
+
+<h2>4.2 Het dossier</h2>
+<table>
+  <thead><tr><th style="width:120pt">Onderdeel</th><th>Wat Pouw daar doet of ziet</th></tr></thead>
+  <tbody>
+    <tr><td>Rollen</td><td>Aanvrager, opdrachtgever met tekenbevoegde, factuurontvanger en reisleider, met het resultaat van de KvK-controle.</td></tr>
+    <tr><td>Rit</td><td>De complete reis: ritsoort, personen, route met tussenstops en wachttijden, datums en tijden (vertrek of aankomst), andere route terug, bus blijft bij de groep, bijzonderheden, kaart met afstand en reistijd. Knop voor de chauffeursbriefing.</td></tr>
+    <tr><td>Opbouw van de score</td><td>Elke factor met bron en punten, de klasse en wat dat betekent voor de aanbetaling. De assistent geeft op verzoek een uitleg in twee zinnen, die bij het dossier wordt bewaard. De klasse kan per opdrachtgever handmatig worden aangepast, met verplichte reden.</td></tr>
+    <tr><td>Afspraken met de klant</td><td>Wat sales heeft toegezegd (opstaptijd, extra stop, bagage, prijsafspraak). Gaat mee in de offerte, de bevestiging, de akkoordpagina, de briefing en de export voor Trip.</td></tr>
+    <tr><td>Offerte</td><td>Ritprijs en geschatte nakosten invullen; de score wordt herberekend en het betaalplan getoond. Versturen mailt de offerte met de akkoordlink en de voorwaarden als pdf. Opnieuw versturen verlengt de geldigheid.</td></tr>
+    <tr><td>Aanbetaling</td><td>Termijnen met uiterste datum en status. Een overschrijving kan handmatig als ontvangen worden geregistreerd.</td></tr>
+    <tr><td>Rit en nakosten</td><td>Rit markeren als gereden, nakosten toevoegen (omschrijving en bedrag), eindfactuur maken en versturen. Betaling registreren.</td></tr>
+    <tr><td>Creditnota</td><td>Bedrag en reden; direct verrekend op de factuur en gemaild aan de klant. Is alles voldaan, dan staat de factuur op betaald.</td></tr>
+    <tr><td>Meldingen</td><td>Losse eindjes vastleggen met soort, eigenaar en deadline, en oplossen met een korte toelichting (zie hoofdstuk 6).</td></tr>
+    <tr><td>Assistent: mail opstellen</td><td>De planner schrijft in één regel wat hij wil laten weten; de assistent maakt een concept op basis van het dossier. De planner past aan en verstuurt. De mail komt in het logboek.</td></tr>
+    <tr><td>Annuleren</td><td>Annulering door de klant verwerken: de app rekent de kosten uit op de dag van opzegging (0% binnen de bedenktijd), maakt op verzoek een annuleringsfactuur met verrekening van aanbetalingen en mailt de bevestiging.</td></tr>
+    <tr><td>Overdragen aan Armaere</td><td>Pas mogelijk na de aanmaning (particulieren: 15 dagen na de 14-dagenbrief) en zonder open meldingen. Berichten met Armaere, terugtrekken.</td></tr>
+    <tr><td>Logboek en e-mails</td><td>Elke stap, elke e-mail (met bijlagen) en elke acceptatie van de voorwaarden, met tijdstip. Dit is het bewijsdossier.</td></tr>
+  </tbody>
+</table>
+
+<h2>4.3 Chauffeursbriefing</h2>
+<p>Eén printbare pagina per rit: tijden, route met tussenstops en wachttijden, kaart, contactpersoon tijdens de rit, afspraken, bijzonderheden en een checklist. Zo voert de chauffeur uit wat met de klant is afgesproken, en worden afwijkingen dezelfde dag gemeld in plaats van weken later bij de factuur.</p>
+
+<h2>4.4 Export voor Trip</h2>
+<p>Bevestigde ritten staan in een export (puntkomma-gescheiden, UTF-8) die in Trip kan worden ingelezen: referentie, klant, contactpersonen, ritsoort, personen, route met tussenstops en wachttijden, datums en tijden, afstand en reistijd per richting, bus blijft bij de groep, afspraken en bijzonderheden.</p>
+
+<h1 class="sectie">5. Klantscore en aanbetaling</h1>
+<p>Elke aanvraag krijgt automatisch een score van 0 tot 100. De score start op 40 punten en wordt opgebouwd uit controleerbare feiten: het formulier, het KvK-register en de eigen betaalhistorie van de opdrachtgever. De score bepaalt de klasse en daarmee of en hoeveel vooraf wordt betaald.</p>
+<table>
+  <thead><tr><th>Factor</th><th style="width:110pt">Bron</th><th style="width:50pt">Punten</th></tr></thead>
+  <tbody>
+    <tr><td>Startwaarde</td><td>Standaard</td><td>+40</td></tr>
+    <tr><td>Klanttype onderwijs of overheid</td><td>Formulier en KvK</td><td>+25</td></tr>
+    <tr><td>Bedrijf met actieve KvK-inschrijving</td><td>KvK</td><td>+15</td></tr>
+    <tr><td>Vereniging of stichting met inschrijving</td><td>KvK</td><td>+5</td></tr>
+    <tr><td>Onderneming ouder dan 3 jaar / jonger dan 1 jaar</td><td>KvK</td><td>+10 / −10</td></tr>
+    <tr><td>E-maildomein hoort bij de organisatie</td><td>Automatische controle</td><td>+5</td></tr>
+    <tr><td>Inkoop- of referentienummer opgegeven</td><td>Formulier</td><td>+5</td></tr>
+    <tr><td>Eerdere facturen steeds op tijd betaald</td><td>Betaalhistorie</td><td>+25</td></tr>
+    <tr><td>Eerder 1 tot 30 dagen te laat betaald</td><td>Betaalhistorie</td><td>−10</td></tr>
+    <tr><td>Ooit meer dan 30 dagen te laat of naar incasso</td><td>Betaalhistorie</td><td>−30</td></tr>
+    <tr><td>Ritwaarde boven € 5.000</td><td>Offerte</td><td>−10</td></tr>
+    <tr><td>Vertrek binnen 7 dagen na aanvraag</td><td>Formulier</td><td>−5</td></tr>
+  </tbody>
+</table>
+<table>
+  <thead><tr><th style="width:50pt">Klasse</th><th style="width:60pt">Score</th><th>Betaling vooraf</th></tr></thead>
+  <tbody>
+    <tr><td>A</td><td>70 en hoger</td><td>Geen aanbetaling. Eindfactuur na de rit, 14 dagen.</td></tr>
+    <tr><td>B</td><td>50 tot 69</td><td>30% uiterlijk 14 dagen voor vertrek. Rest en nakosten op de eindfactuur.</td></tr>
+    <tr><td>C</td><td>30 tot 49</td><td>50% bij akkoord, restant inclusief geschatte nakosten 7 dagen voor vertrek.</td></tr>
+    <tr><td>D</td><td>onder 30</td><td>100% plus geschatte nakosten bij akkoord.</td></tr>
+  </tbody>
+</table>
+<div class="kader">
+  <p><strong>Geblokkeerd:</strong> bij een faillissement of surseance in het KvK-register, of een openstaande vervallen factuur bij dezelfde opdrachtgever, kan geen offerte worden gemaakt. De backoffice kan de klasse handmatig aanpassen, altijd met een reden die in het logboek komt.</p>
+</div>
+
+<h1 class="sectie">6. Herinneringen, meldingen en werklijst</h1>
+<h2>6.1 Automatische herinneringen</h2>
+<p>Elk uur (of met de knop in de backoffice) controleert de app alle termijnen en facturen en verstuurt wat nodig is:</p>
+<ul>
+  <li><strong>Aanbetalingen:</strong> herinnering op de uiterste datum; is het bedrag 48 uur later nog niet binnen, dan krijgt de planner een signaal en staat het in de werklijst.</li>
+  <li><strong>Facturen:</strong> dag 0 (vervaldatum), dag 3, dag 10 (met de aanvrager in cc) en dag 17 de aanmaning. Bij particulieren is dat de wettelijke 14-dagenbrief, met het exacte bedrag aan incassokosten dat na die termijn volgt.</li>
+</ul>
+<h2>6.2 Eerst oplossen, dan pas aanmanen</h2>
+<p>De meeste betaalproblemen ontstaan niet bij de klant, maar door losse eindjes in de eigen organisatie: een toezegging van sales die niet is vastgelegd, een rit die anders is uitgevoerd dan afgesproken, een chauffeur die te laat was, een klacht die blijft liggen, een creditnota die niet komt, een foutieve invoer in Trip. Hoe langer zo'n punt ligt, hoe moeilijker het incasseren wordt. Daarom werkt de backoffice met <strong>meldingen</strong>:</p>
+<ul>
+  <li>Soorten: afspraak onduidelijk (sales), uitvoering anders dan afgesproken (planning), operationeel probleem (operatie), klacht van de klant, creditnota nodig, foutieve invoer in Trip, betalingsdispuut of liquiditeit, anders.</li>
+  <li>Elke melding heeft een <strong>eigenaar</strong> (sales, planning, operatie, administratie of directie) en een <strong>deadline</strong> (standaard 5 werkdagen; een klacht moet volgens de voorwaarden binnen een maand zijn afgehandeld).</li>
+  <li>Zolang een melding open staat, <strong>pauzeren de herinneringen</strong> en kan de factuur <strong>niet naar Armaere</strong>. Oplossen vraagt een korte toelichting; alles staat in het logboek.</li>
+  <li>De <strong>werklijst</strong> op het overzicht laat per eigenaar zien wat te laat is, zodat niets wekenlang blijft liggen.</li>
+</ul>
+<div class="kader groen">
+  <p><strong>Waarom zo, en niet meteen de juridische weg?</strong> Een faillissementsaanvraag of dagvaarding als drukmiddel werkt alleen bij een onbetwiste vordering en een klant die wel kan maar niet wil betalen. Bij een lopend dispuut wijst de rechter die af, en het kost tijd, geld en de klantrelatie. Door disputen eerst op te lossen en het bewijs compleet te hebben (wie akkoord gaf, welke voorwaarden ter hand zijn gesteld, alle e-mails), blijft die weg over voor de enkeling die echt niet betaalt, en is die dan ook kansrijk.</p>
+</div>
+
+<h1 class="sectie">7. Wanbetaling: incasso via Armaere</h1>
+<p>Blijft een factuur ondanks de herinneringen en de aanmaning onbetaald, dan draagt Pouw hem vanuit het dossier over aan gerechtsdeurwaarder Armaere.</p>
+<ul>
+  <li><strong>Voorwaarden voor overdracht:</strong> na de aanmaning; bij particulieren pas 15 dagen na de 14-dagenbrief; geen open meldingen.</li>
+  <li><strong>Kosten en rente volgens de KNV-voorwaarden:</strong> zakelijke opdrachtgevers 15% van de hoofdsom met een minimum van € 150 (artikel 4.7b) en 1,5% rente per begonnen maand zonder ingebrekestelling (artikel 4.6). Particulieren de wettelijke staffel (15%, 10%, 5%, 1%, 0,5%; minimaal € 40, maximaal € 6.775) en de wettelijke rente. Het dossier noemt het bedrag en de grondslag.</li>
+  <li><strong>Portaal voor Armaere:</strong> eigen login, alleen overgedragen dossiers, met het volledige bewijs: de vordering, debiteur en betrokkenen, de overeenkomst (wie akkoord gaf en wanneer, welke voorwaarden zijn geaccepteerd), de factuur met nakosten en verrekening, en alle correspondentie. Armaere zet de status (in behandeling, betalingsregeling, dagvaarding, beslag, betaald, oninbaar), registreert ontvangsten en stuurt berichten; Pouw ziet dat direct in het dossier en kan terugschrijven of het dossier terugtrekken.</li>
+  <li>Is de hoofdsom ontvangen, dan staat de factuur op betaald. Een incassoverleden telt daarna mee in de klantscore (−30 punten).</li>
+</ul>
+
+<h1 class="sectie">8. Voorwaarden, beleid en wetgeving</h1>
+<h2>8.1 KNV-voorwaarden</h2>
+<p>Op alle aanvragen, offertes en ritten gelden de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer (versie 2025). Om er aanspraak op te kunnen maken, moet Pouw ze ter hand stellen en de acceptatie kunnen bewijzen. De app regelt dat zo:</p>
+<ul>
+  <li>De pdf staat in de app op /voorwaarden en gaat als bijlage mee met de bevestiging van de aanvraag, de offerte en de bevestiging na het akkoord (artikel 6:234 BW). Van de pdf wordt een digitale vingerafdruk (SHA-256) per aanvraag bewaard, zodat achteraf vaststaat welke tekst is verstrekt.</li>
+  <li>Acceptatie op twee momenten: bij de aanvraag door de aanvrager en bij het akkoord door de tekenbevoegde, telkens met versie, tijdstip en IP-adres in het dossier en het logboek.</li>
+  <li>Voor consumenten voldoet de akkoordpagina aan de regels voor bestellen op afstand: alle verplichte informatie vóór de bestelling, een knop met de tekst "bestelling met betalingsverplichting" (artikel 6:230v BW), geen vooraf aangevinkte extra's, en de vermelding dat het wettelijke herroepingsrecht niet geldt voor personenvervoer met een vaste datum.</li>
+</ul>
+<h2>8.2 Annuleren (artikel 5.1)</h2>
+<table>
+  <thead><tr><th>Moment van opzegging</th><th style="width:140pt">Kosten</th></tr></thead>
+  <tbody>
+    <tr><td>Binnen 24 uur na het akkoord (beleid Pouw)</td><td>0%</td></tr>
+    <tr><td>Meer dan 22 dagen voor vertrek</td><td>30% van de ritprijs, minimaal € 125</td></tr>
+    <tr><td>22 tot en met 15 dagen voor vertrek</td><td>40%</td></tr>
+    <tr><td>14 tot en met 3 dagen voor vertrek</td><td>50%</td></tr>
+    <tr><td>2 dagen of 1 dag voor vertrek</td><td>75%</td></tr>
+    <tr><td>Op de dag van vertrek</td><td>100%</td></tr>
+  </tbody>
+</table>
+<p>Annuleren kan alleen schriftelijk. De backoffice rekent de kosten uit op de dag van opzegging, maakt een annuleringsfactuur met verrekening van aanbetalingen en mailt de bevestiging. Zonder gesloten overeenkomst zijn er geen kosten.</p>
+<h2>8.3 Beleid van Pouw</h2>
+<p>Bovenop de voorwaarden hanteert de app het beleid van de huidige offertetool, en wijkt daar niet van af. Alle termijnen zijn instelbaar.</p>
+<ul>
+  <li>24 uur bedenktijd na het akkoord, 0% annuleringskosten.</li>
+  <li>Kosteloos wijzigen tot 7 dagen voor vertrek; daarna in overleg, mogelijk meerkosten.</li>
+  <li>Betaling na afloop van de reis, tenzij de offerte een aanbetaling vermeldt (klasse B, C en D).</li>
+  <li>Pouw bepaalt of locaties bereikbaar zijn voor een touringbus en legt zo nodig een alternatief voor.</li>
+  <li>De offerte is 14 dagen geldig.</li>
+  <li>Eindfactuur binnen 14 dagen betalen (artikel 4.2). Wordt een aanbetaling niet op tijd betaald, dan mag Pouw ontbinden en is minimaal 30% verschuldigd (artikel 4.1).</li>
+</ul>
+
+<h1 class="sectie">9. Techniek, beveiliging en beheer</h1>
+<table>
+  <thead><tr><th style="width:120pt">Onderdeel</th><th>Hoe het is geregeld</th></tr></thead>
+  <tbody>
+    <tr><td>Adres en certificaat</td><td>boekpouwvervoer.nl, DNS en beveiliging via Cloudflare, HTTPS verplicht; www en het technische adres sturen door naar het hoofdadres.</td></tr>
+    <tr><td>Hosting</td><td>De app draait bij Railway en wordt automatisch bijgewerkt bij elke nieuwe versie. Een statuspagina (/health) toont of de app draait en welke versie.</td></tr>
+    <tr><td>Gegevens</td><td>Alle aanvragen, dossiers, facturen, e-mails en logboeken staan in een PostgreSQL-database bij Railway. Sessies van bezoekers zijn versleuteld.</td></tr>
+    <tr><td>E-mail</td><td>Verzending via Resend vanaf een adres op boekpouwvervoer.nl, met bijlagen en cc. Elke verstuurde e-mail staat in het logboek van het dossier.</td></tr>
+    <tr><td>Betalen</td><td>iDEAL via Mollie. Tot de Mollie-koppeling is geactiveerd simuleert de betaalpagina een geslaagde betaling (demo).</td></tr>
+    <tr><td>KvK-controle</td><td>Via de KvK API. Zonder sleutel geldt elk nummer als ingeschreven (demo) en wordt de leeftijd van de onderneming niet meegewogen.</td></tr>
+    <tr><td>Adressen en kaart</td><td>Nederlandse adressen van het Kadaster (PDOK), bestemmingen en buitenland van Photon (OpenStreetMap), routes van OSRM, kaart van OpenFreeMap. Gratis diensten zonder sleutel, altijd via de eigen server zodat de browser van de klant geen externe diensten aanroept.</td></tr>
+    <tr><td>AI-assistent</td><td>Claude (Anthropic). De assistent noemt nooit prijzen of toezeggingen, verzint geen feiten en werkt alleen met wat in het dossier staat. Zonder sleutel staat hij uit. Omdat persoonsgegevens naar Anthropic gaan, hoort hier een verwerkersovereenkomst bij.</td></tr>
+    <tr><td>Beveiliging</td><td>Wachtwoorden voor backoffice en deurwaarder, beperkt aantal inlogpogingen, beveiliging tegen vervalste formulieren (CSRF), strikte Content-Security-Policy, geen inline scripts. Akkoordlinks zijn persoonlijk en onvoorspelbaar.</td></tr>
+    <tr><td>Versies</td><td>Elke wijziging krijgt een versienummer met een regel in het wijzigingslogboek. Het nummer staat onderin elke pagina en op /health.</td></tr>
+    <tr><td>Instellingen</td><td>Termijnen (bedenktijd, wijzigen, geldigheid offerte, werkdagen voor meldingen), e-mailadres van de planning, bedrijfsgegevens (KvK, btw), naam van de deurwaarder, wettelijke rente en de kaartstijl zijn instelbaar zonder aanpassing van de code.</td></tr>
+  </tbody>
+</table>
+
+<h1 class="sectie">10. Keuzes en acties voor Pouw</h1>
+<p>Het platform is live en kan getest worden. Voor echte boekingen zijn nog enkele keuzes en koppelingen nodig:</p>
+<ol class="stappen">
+  <li><strong>Geldigheid van de offerte:</strong> nu 14 dagen (aanname). Bevestig de termijn die Pouw wil hanteren.</li>
+  <li><strong>E-mail:</strong> afzenderadres op boekpouwvervoer.nl kiezen (bijvoorbeeld planning@boekpouwvervoer.nl) en het e-mailadres van de planning waar wijzigingsverzoeken en klachten binnenkomen (nu info@pouwvervoer.nl).</li>
+  <li><strong>Bedrijfsgegevens:</strong> KvK- en btw-nummer van Pouw Vervoer voor de akkoordpagina en de bevestigingsmails.</li>
+  <li><strong>Betalen:</strong> Mollie-account koppelen voor echte iDEAL-betalingen.</li>
+  <li><strong>KvK:</strong> sleutel voor de KvK API, zodat inschrijving, leeftijd en faillissement echt worden gecontroleerd.</li>
+  <li><strong>AI-assistent:</strong> verwerkersovereenkomst met Anthropic sluiten, of de assistent uit laten staan.</li>
+  <li><strong>Armaere:</strong> wachtwoord voor het portaal afstemmen en de werkwijze doornemen.</li>
+  <li><strong>Testen:</strong> een aantal echte aanvragen doorlopen (onderwijs, bedrijf, particulier) tot en met de eindfactuur, en de teksten van de e-mails beoordelen.</li>
+  <li><strong>Optioneel, later:</strong> publicatie in Google Play en de App Store op basis van dezelfde app, en pushberichten over de status van de boeking.</li>
+</ol>
+
+<h1 class="sectie">11. Bijlage: versieoverzicht</h1>
+<table>
+  <thead><tr><th style="width:50pt">Versie</th><th style="width:70pt">Datum</th><th>Wat is toegevoegd of gewijzigd</th></tr></thead>
+  <tbody>
+    <tr><td>0.14.2</td><td>14 okt 2026</td><td>Domein live; beschrijving van de domeinstappen bijgewerkt.</td></tr>
+    <tr><td>0.14.0</td><td>13 okt 2026</td><td>Busje op de reis-stap als voortgangsmeter per reisdeel.</td></tr>
+    <tr><td>0.13.1</td><td>13 okt 2026</td><td>Agenda en tijdkiezer openen met één klik; datum in het verleden onmogelijk.</td></tr>
+    <tr><td>0.13.0</td><td>13 okt 2026</td><td>Pagina /app met installeerknop, uitleg per toestel en QR-code.</td></tr>
+    <tr><td>0.12.x</td><td>13 okt 2026</td><td>Installeerbare app (PWA) met offline-pagina; veilige doorverwijzing naar het eigen domein.</td></tr>
+    <tr><td>0.11.x</td><td>13 okt 2026</td><td>Chauffeursbriefing per rit; voorbereiding eigen domein.</td></tr>
+    <tr><td>0.10.0</td><td>13 okt 2026</td><td>Incassokosten en rente volgens de KNV-voorwaarden, in aanmaning en 14-dagenbrief.</td></tr>
+    <tr><td>0.9.x</td><td>13 okt 2026</td><td>Backoffice volgens de input van Pouw: afspraken, meldingen met eigenaar en deadline, werklijst, creditnota, klacht door de klant; animatie op de kopjes Heenreis en Terugreis.</td></tr>
+    <tr><td>0.8.x</td><td>13 okt 2026</td><td>Beleid van Pouw overgenomen (bedenktijd, wijzigen, betaling na afloop, bereikbaarheid, geldigheid offerte); kaart voor heel Europa; snellere suggesties.</td></tr>
+    <tr><td>0.7.x</td><td>13 okt 2026</td><td>Adressuggesties met plaats; kaart met route, afstand en reistijd op alle pagina's en in de export.</td></tr>
+    <tr><td>0.6.0</td><td>13 okt 2026</td><td>Voorwaarden ter hand gesteld als pdf; bestelknop; bevestiging van de bestelling; annuleren volgens artikel 5.1.</td></tr>
+    <tr><td>0.5.0</td><td>13 okt 2026</td><td>KNV-voorwaarden in de app, verplichte acceptatie bij aanvraag en akkoord, vastgelegd als bewijs.</td></tr>
+    <tr><td>0.4.0</td><td>13 okt 2026</td><td>Boekingsvelden compleet: terugdatum en -tijd, tussenstops, andere route terug, bus blijft.</td></tr>
+    <tr><td>0.3.0</td><td>13 okt 2026</td><td>AI-assistent: intake in één zin, uitleg bij de score, concept-mails; versienummers.</td></tr>
+    <tr><td>0.2.x</td><td>13 okt 2026</td><td>Reis-stap zoals de offertetool van Pouw, in de huisstijl; domeinnaam boekpouwvervoer.nl.</td></tr>
+    <tr><td>0.1.x</td><td>12 okt 2026</td><td>Eerste versie: aanvraag met drie rollen, klantscore en aanbetaling, backoffice, akkoord met iDEAL, eindfactuur, herinneringen, incasso via Armaere met portaal; huisstijl Pouw Vervoer.</td></tr>
+  </tbody>
+</table>
+<p class="klein">Het volledige wijzigingslogboek staat bij de broncode (CHANGELOG.md).</p>
+
+</body>
+</html>
