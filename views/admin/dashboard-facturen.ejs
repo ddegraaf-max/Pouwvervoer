@@ -1,0 +1,15 @@
+<%- include('../partials/head', { titel: `Openstaande facturen: ${bucket.label}`, admin: true }) %>
+<main class="wrap" style="display:flex;flex-direction:column;gap:20px">
+  <div class="between" style="flex-wrap:wrap;gap:10px">
+    <div><h1 style="margin:0">Openstaande facturen</h1><p class="lead" style="margin:4px 0 0;font-size:14px"><%= bucket.label %> · <%= bucket.aantal %> factu<%= bucket.aantal === 1 ? 'ur' : 'ren' %>, <%= euro(bucket.bedrag) %>. Peildatum <%= datum(peildatum) %>.</p></div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn small ghost" href="/admin/dashboard">Terug naar het dashboard</a><a class="btn small ghost" href="/admin/dashboard.csv?tabel=facturen">CSV (alle buckets)</a></div>
+  </div>
+  <div class="card">
+    <% if (!bucket.facturen.length) { %><p class="lead" style="margin:0">Geen facturen in deze groep.</p><% } else { %>
+    <div class="scroll"><table><thead><tr><th>Factuur</th><th>Debiteur</th><th class="num">Open</th><th>Vervaldatum</th><th class="num">Dagen vervallen</th><th></th></tr></thead><tbody>
+      <% bucket.facturen.sort((a, b) => b.open - a.open).forEach((f) => { %><tr><td><%= f.nummer %><%= f.incasso ? ` <span class="badge k-D">${deurwaarder}</span>` : '' %></td><td><%= f.klant %></td><td class="num"><%= euro(f.open) %></td><td><%= datum(f.vervaldatum) %></td><td class="num"><%= f.dagen %></td><td><a href="/admin/aanvraag/<%= f.aanvraag_id %>">Dossier</a></td></tr><% }) %>
+    </tbody></table></div>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/foot') %>

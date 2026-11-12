@@ -21,6 +21,8 @@ const gebruikers = require('./src/gebruikers');
 const context = require('./src/context');
 const afas = require('./src/afas');
 const berichten = require('./src/berichten');
+const dashboard = require('./src/dashboard');
+const rapport = require('./src/rapport');
 const meldingen = require('./src/meldingen');
 const { aanbetalingsplan } = require('./src/score');
 
@@ -660,7 +662,53 @@ function authRoutes({ basis, rollen, naar, portaal, migratieWachtwoord, migratie
   });
 }
 
-authRoutes({ basis: '/admin', rollen: auth.ADMIN_ROLLEN, naar: '/admin', portaal: false, migratieWachtwoord: () => process.env.ADMIN_PASSWORD, migratieRol: 'beheerder' });
+authRoutes({ basis: '/admin', rollen: auth.ADMIN_ROLLEN, naar: '/admin/dashboard', portaal: false, migratieWachtwoord: () => process.env.ADMIN_PASSWORD, migratieRol: 'beheerder' });
+
+// ================= Dashboard: laat zien dat de openstaande facturen onder controle komen =================
+app.get(
+  '/admin/dashboard',
+  admin,
+  wrap(async (req, res) => {
+    const d = dashboard.bereken(await dashboard.laadBasis());
+    res.render('admin/dashboard', { d });
+  }),
+);
+app.get(
+  '/admin/dashboard.csv',
+  admin,
+  wrap(async (req, res) => {
+    const maak = dashboard.TABELLEN[String(req.query.tabel || '')];
+    if (!maak) return res.status(404).render('melding', { titel: 'Onbekende tabel', tekst: `Kies uit: ${Object.keys(dashboard.TABELLEN).join(', ')}.` });
+    const d = dashboard.bereken(await dashboard.laadBasis());
+    res.set({ 'Content-Type': 'text/csv; charset=utf-8', 'Content-Disposition': `attachment; filename="dashboard-${req.query.tabel}-${d.peildatum}.csv"` }).send(maak(d));
+  }),
+);
+app.get(
+  '/admin/dashboard/facturen',
+  admin,
+  wrap(async (req, res) => {
+    const d = dashboard.bereken(await dashboard.laadBasis());
+    const bucket = d.ouderdom.find((b) => b.id === String(req.query.bucket || '')) || d.ouderdom[1];
+    res.render('admin/dashboard-facturen', { bucket, peildatum: d.peildatum });
+  }),
+);
+// Maandrapport als pdf: ?maand=JJJJ-MM voor een afgesloten maand, zonder parameter tot vandaag.
+app.get(
+  '/admin/dashboard/rapport.pdf',
+  admin,
+  wrap(async (req, res) => {
+    const m = /^(\d{4})-(\d{2})$/.exec(String(req.query.maand || ''));
+    const nu = new Date();
+    const jaar = m ? Number(m[1]) : nu.getUTCFullYear();
+    const maand = m ? Number(m[2]) : nu.getUTCMonth() + 1;
+    if (maand < 1 || maand > 12) return res.status(400).render('melding', { titel: 'Ongeldige maand', tekst: 'Gebruik JJJJ-MM.' });
+    const basis = await dashboard.laadBasis();
+    const peil = m ? dashboard.eindeMaand(jaar, maand) : nu;
+    const cijfers = dashboard.bereken(basis, peil);
+    const pdf = rapport.maakPdf(cijfers, { maandLabel: m ? rapport.maandLabel(jaar, maand) : `tot en met ${fmt.datum(nu)}`, peildatum: peil });
+    res.set({ 'Content-Type': 'application/pdf', 'Content-Disposition': `inline; filename="maandrapport-${m ? req.query.maand : cijfers.peildatum}.pdf"` }).send(pdf);
+  }),
+);
 
 app.get(
   '/admin',
@@ -1398,6 +1446,7 @@ app.use((err, req, res, next) => {
   setInterval(() => svc.draaiHerinneringen().catch((e) => console.error('herinneringen', e)), 3600e3);
   setInterval(() => afas.verwerkWachtrij().catch((e) => console.error('afas', e)), 60e3);
   setInterval(() => berichten.planRitMorgen(new Date(), svc.BASE_URL()).then(() => berichten.verwerk()).catch((e) => console.error('berichten', e)), 60e3);
+  setInterval(() => rapport.verstuurMaandrapport().catch((e) => console.error('maandrapport', e)), 60e3);
   app.listen(PORT, () => {
     console.log(`boekpouwvervoer draait op poort ${PORT}`);
     controleerCanoniek();

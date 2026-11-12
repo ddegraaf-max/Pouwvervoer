@@ -39,6 +39,7 @@
 <nav class="menubalk" aria-label="Hoofdmenu">
   <div class="wrap">
   <% if (locals.admin) { %>
+    <a href="/admin/dashboard">Dashboard</a>
     <a href="/admin">Aanvragen</a>
     <a href="/admin/trip.csv">Export voor trip</a>
     <% if (locals.gebruiker && gebruiker.rol === 'beheerder') { %><a href="/admin/gebruikers">Gebruikers</a><% } %>

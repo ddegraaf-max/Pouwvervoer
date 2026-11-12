@@ -16,7 +16,7 @@ async function verstuur({ aan, cc = [], onderwerp, tekst, bijlagen = [], aanvraa
   let status = 'demo: niet verstuurd';
   if (!DEMO) {
     try {
-      const attachments = bestanden.map((b) => ({ filename: b.naam, content: fs.readFileSync(b.pad).toString('base64') }));
+      const attachments = bestanden.map((b) => ({ filename: b.naam, content: (b.inhoud || fs.readFileSync(b.pad)).toString('base64') }));
       const res = await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },

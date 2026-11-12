@@ -303,6 +303,11 @@ CREATE TABLE IF NOT EXISTS optouts (
   bron TEXT,
   created_at TIMESTAMPTZ DEFAULT now()
 );
+-- Maandrapport: per maand één keer verstuurd aan de beheerders
+CREATE TABLE IF NOT EXISTS rapporten (
+  maand TEXT PRIMARY KEY,
+  verstuurd_op TIMESTAMPTZ DEFAULT now()
+);
 -- Incasso: rente tot de overdracht en de grondslag van kosten en rente (particulier of zakelijk)
 ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS rente_cent INT DEFAULT 0;
 ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS grondslag TEXT;

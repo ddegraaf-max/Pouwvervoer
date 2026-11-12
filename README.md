@@ -99,6 +99,17 @@ De chauffeur ziet op zijn telefoon dezelfde briefing (tijden, route met tussenst
 
 In het dossier staan chauffeur, status van het rapport en het aantal meldingen bij Rit; bij Rit en nakosten staan de meldingen met een bedrag (extra kosten, schade, rotzooi) met de knop "Als nakosten toevoegen". De briefingpagina in de backoffice toont het volledige rapport met foto's en de afgevinkte checklist, en blijft printbaar.
 
+## Dashboard en maandrapport
+
+`/admin/dashboard` is de eerste pagina na het inloggen en laat zien of het systeem het probleem van de openstaande facturen oplost (`src/dashboard.js`; alle cijfers rechtstreeks uit de database, berekend in pure functies met tests op vaste data inclusief deelbetalingen via de deurwaarder, creditnota's, annuleringsfacturen en aanbetalingen).
+
+- **Kerncijfers** met de vergelijking met het einde van de vorige maand: totaal openstaand (alleen hoofdsom: factuurbedrag min creditnota's, min aanbetalingen en ontvangsten), waarvan vervallen; DSO (gemiddeld aantal dagen van factuurdatum tot betaling over de facturen die in de laatste 90 dagen zijn betaald); aandeel van die facturen dat binnen de termijn is betaald; bedrag dat deze maand vooraf binnenkwam via aanbetalingen.
+- **Grafiek** openstaand en vervallen per week-einde over 26 weken; **ouderdomsanalyse** in buckets (niet vervallen, 1 tot 14, 15 tot 30, 31 tot 60, meer dan 60 dagen) met doorklik naar de facturen en het dossier.
+- **Per klantklasse A tot D en per klanttype** over de laatste 12 maanden: aantal ritten (facturen), omzet, aandeel te laat betaald (van de facturen waarvan de termijn is verstreken) en gemiddelde dagen te laat. Zo ziet Pouw of de klassegrenzen kloppen.
+- **Dossiers bij Armaere**: lopend aantal, hoofdsom, ontvangen, slagingspercentage (gesloten dossiers die volledig zijn betaald). **Top 10 debiteuren** op openstaand bedrag met klasse en laatste herinnering.
+- **CSV** per tabel (`/admin/dashboard.csv?tabel=weken|ouderdom|klasse|klanttype|armaere|debiteuren|facturen`, puntkomma, UTF-8 met BOM voor Excel).
+- **Maandrapport** (`src/rapport.js`, pdf zonder externe bibliotheek via `src/pdf.js`) met dezelfde cijfers per afgesloten maand: op de eerste werkdag van de maand om 08:00 automatisch per e-mail naar alle actieve beheerders (één keer per maand, tabel `rapporten`), en altijd te downloaden via `/admin/dashboard/rapport.pdf?maand=JJJJ-MM` of zonder parameter tot vandaag.
+
 ## WhatsApp en sms als tweede kanaal
 
 Herinneringen gaan per e-mail én, met toestemming, via WhatsApp Business (sms als terugval) via de API van SMSTools (`src/berichten.js`, `api.smsgatewayapi.com`). Zonder `SMSTOOLS_CLIENT_ID` en `SMSTOOLS_CLIENT_SECRET` draait dit in demo-modus: het bericht komt alleen in het dossier.

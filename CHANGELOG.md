@@ -2,6 +2,10 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.19.0 · 12 november 2026
+- Dashboard op /admin/dashboard, de eerste pagina na inloggen: totaal openstaand en vervallen (hoofdsom), DSO over 90 dagen, aandeel binnen de termijn betaald en vooraf ontvangen aanbetalingen, telkens vergeleken met vorige maand; grafiek per week over 26 weken; ouderdomsanalyse met doorklik naar de facturen; per klantklasse en per klanttype ritten, omzet, aandeel te laat en gemiddelde dagen te laat; lopende dossiers bij Armaere met slagingspercentage; top 10 debiteuren. Elke tabel als csv.
+- Maandrapport als pdf met dezelfde cijfers, op de eerste werkdag van de maand om 08:00 naar de beheerders, en te downloaden per maand. Berekeningen getest met vaste data, inclusief deelbetalingen, creditnota's en annuleringsfacturen.
+
 ## 0.18.0 · 12 november 2026
 - WhatsApp Business (en sms als terugval) als tweede kanaal via SMSTools: bij de aanvraag een vinkje "Herinneringen ook via WhatsApp" (standaard aan, bewaard met tijdstip) bij de mobiele nummers van aanvrager en tekenbevoegde (nieuw veld). Berichten als de offerte klaarstaat, bij een openstaande aanbetaling, als een factuur vervalt of is verlopen, en de dag vóór de rit om 08:00 met vertrektijd, adres en chauffeur. De 14-dagenbrief blijft per e-mail met alleen een seintje via WhatsApp.
 - Geen WhatsApp of afgekeurde template: dezelfde kern per sms. Per bericht in het dossier het kanaal en de afleverstatus (webhook van SMSTools met handtekeningcontrole). STOP of een opt-out in SMSTools zet het nummer op de afmeldlijst. Geen berichten tussen 21:00 en 08:00; die gaan om 08:00. Zonder SMSTools-sleutels demo-modus.
