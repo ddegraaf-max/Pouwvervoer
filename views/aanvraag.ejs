@@ -61,6 +61,8 @@
       <div data-zakelijk><label for="kvk">KvK-nummer</label><input type="text" inputmode="numeric" id="kvk" name="kvk" maxlength="8" value="<%= v.kvk || '' %>"><span class="hint">8 cijfers. Staat op briefpapier en facturen van de organisatie.</span></div>
       <div><label for="tekenbevoegde" data-teken-label>Naam van wie mag tekenen</label><input type="text" id="tekenbevoegde" name="tekenbevoegde" value="<%= v.tekenbevoegde || '' %>" required><span class="hint" data-zakelijk>Bijvoorbeeld de directeur of penningmeester. Dat mag u ook zelf zijn.</span></div>
       <div><label for="teken_email" data-teken-mail-label>E-mailadres van wie mag tekenen</label><input type="email" id="teken_email" name="teken_email" value="<%= v.teken_email || '' %>" required><span class="hint">Hier sturen wij de offerte heen.</span></div>
+      <div><label for="teken_tel" data-teken-tel-label>Mobiel nummer van wie mag tekenen <span class="opt">(optioneel)</span></label><input type="tel" id="teken_tel" name="teken_tel" autocomplete="tel" value="<%= v.teken_tel || '' %>"></div>
+      <label class="check" for="whatsapp_ok" style="grid-column:1 / -1"><input type="checkbox" id="whatsapp_ok" name="whatsapp_ok" <%= v.whatsapp_ok === undefined || v.whatsapp_ok ? 'checked' : '' %>><span><strong>Herinneringen ook via WhatsApp</strong> naar de mobiele nummers hierboven: als de offerte klaarstaat, bij een openstaande aanbetaling of factuur, en de dag vóór de rit. Geen WhatsApp? Dan een sms. Afmelden kan altijd door STOP terug te sturen.</span></label>
     </div>
   </div>
 

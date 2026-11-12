@@ -99,6 +99,31 @@ De chauffeur ziet op zijn telefoon dezelfde briefing (tijden, route met tussenst
 
 In het dossier staan chauffeur, status van het rapport en het aantal meldingen bij Rit; bij Rit en nakosten staan de meldingen met een bedrag (extra kosten, schade, rotzooi) met de knop "Als nakosten toevoegen". De briefingpagina in de backoffice toont het volledige rapport met foto's en de afgevinkte checklist, en blijft printbaar.
 
+## WhatsApp en sms als tweede kanaal
+
+Herinneringen gaan per e-mail én, met toestemming, via WhatsApp Business (sms als terugval) via de API van SMSTools (`src/berichten.js`, `api.smsgatewayapi.com`). Zonder `SMSTOOLS_CLIENT_ID` en `SMSTOOLS_CLIENT_SECRET` draait dit in demo-modus: het bericht komt alleen in het dossier.
+
+- **Toestemming**: bij de aanvraag staat bij de mobiele nummers van aanvrager en tekenbevoegde het vinkje "Herinneringen ook via WhatsApp" (standaard aan). Het wordt bewaard met tijdstip (`aanvragen.whatsapp_ok`, `whatsapp_ok_op`); het dossier toont het. Zonder vinkje gaat er niets via WhatsApp of sms.
+- **Momenten**: offerte klaar om goed te keuren (met link, naar de tekenbevoegde), aanbetaling nog open (met betaallink en bedrag, naar tekenbevoegde en aanvrager), factuur vervalt vandaag of is verlopen (met betaallink), en de dag vóór de rit om 08:00 (vertrektijd, opstapadres, naam van de chauffeur, naar de aanvrager). De wettelijke 14-dagenbrief blijft per e-mail; WhatsApp geeft daar alleen een seintje over.
+- **Terugval**: lukt WhatsApp niet (nummer zonder WhatsApp, template afgekeurd, fout van de API) of meldt SMSTools "niet afgeleverd", dan dezelfde kern per sms met de link. Alles staat per kanaal in het dossier met afleverstatus (verstuurd, afgeleverd, gelezen, mislukt).
+- **Afmelden**: antwoordt iemand STOP (of stop, afmelden, uitschrijven), dan komt het nummer in de opt-outlijst (`optouts`) en gaat er niets meer heen; dat geldt ook voor opt-outs uit SMSTools zelf.
+- **Stille uren**: geen WhatsApp of sms tussen 21:00 en 08:00 (Amsterdamse tijd); die berichten worden om 08:00 verstuurd. Dubbele berichten worden voorkomen met een sleutel per gebeurtenis.
+- **Webhook**: zet in SMSTools (Developer > API & Webhooks) een webhook op `https://boekpouwvervoer.nl/api/webhooks/smstools` (POST) met de types `delivery_report`, `read_report`, `inbox_message`, `add_optout` en `delete_optout`; zet het secret dat SMSTools eenmalig toont in `SMSTOOLS_WEBHOOK_SECRET`. De app controleert de handtekening (`X-Smstools-Signature`, HMAC-SHA256 over tijdstip en body, maximaal 5 minuten oud). Inkomende berichten vereisen in SMSTools een virtueel nummer of Social Messaging; daarzonder komt STOP niet binnen en werkt alleen de opt-out via het SMSTools-dashboard.
+
+### WhatsApp-templates (ter goedkeuring bij Meta)
+
+Pouw laat deze templates goedkeuren in SMSTools (WhatsApp Business), categorie "Utility", taal Nederlands. De namen staan in `.env.example` (`SMSTOOLS_TPL_*`). Knoppen zijn van het type "URL" met een dynamisch deel `{{1}}`.
+
+| Naam | Tekst | Knop |
+| --- | --- | --- |
+| `pouw_offerte` | Beste {{1}}, de offerte van Pouw Vervoer voor uw busrit op {{2}} staat klaar. Bekijk en accordeer de offerte via de knop hieronder. De offerte is geldig tot en met {{3}}. Vragen? Bel 030 68 68 300. | Offerte bekijken → `https://boekpouwvervoer.nl/akkoord/{{1}}` |
+| `pouw_aanbetaling` | Beste {{1}}, voor uw busrit op {{2}} staat de aanbetaling van {{3}} nog open. Betaal eenvoudig via de knop hieronder, dan staat de rit definitief vast. Pouw Vervoer | Nu betalen → `https://boekpouwvervoer.nl/betalen/{{1}}` |
+| `pouw_factuur` | Beste {{1}}, factuur {{2}} van Pouw Vervoer ({{3}}) {{4}}. Betaal via de knop hieronder. Vragen? Bel 030 68 68 300. | Factuur betalen → `https://boekpouwvervoer.nl/factuur/{{1}}` |
+| `pouw_rit_morgen` | Beste {{1}}, morgen {{2}} rijdt Pouw Vervoer voor u. Vertrek om {{3}} vanaf {{4}}. Uw chauffeur is {{5}}. Bij vragen: 030 68 68 300. Goede reis! | geen |
+| `pouw_brief` | Beste {{1}}, wij hebben u vandaag per e-mail een laatste herinnering (14-dagenbrief) gestuurd voor factuur {{2}}. Lees die e-mail goed: betaalt u binnen 14 dagen, dan voorkomt u incassokosten. Pouw Vervoer | Factuur betalen → `https://boekpouwvervoer.nl/factuur/{{1}}` |
+
+Variabelen: {{1}} naam; `pouw_offerte` {{2}} ritdatum, {{3}} geldig tot; `pouw_aanbetaling` {{2}} ritdatum, {{3}} bedrag; `pouw_factuur` {{2}} factuurnummer, {{3}} bedrag, {{4}} "vervalt vandaag" of "is verlopen op <datum>"; `pouw_rit_morgen` {{2}} datum, {{3}} vertrektijd, {{4}} opstapadres, {{5}} chauffeur; `pouw_brief` {{2}} factuurnummer. De sms-terugval gebruikt dezelfde kern met de volledige link (teksten in `src/berichten.js`).
+
 ## AFAS Online
 
 Facturen en betalingen gaan vanzelf naar de boekhouding van Pouw (AFAS Online, Profit REST API, UpdateConnectors) zodat de administratie niets dubbel invoert (`src/afas.js`). Zonder `AFAS_TOKEN` en `AFAS_OMGEVING` draait de koppeling in demo-modus: elke boeking wordt gemaakt, gecontroleerd op balans en met de volledige payload in het logboek gezet, maar niet verstuurd. Zo kan de AFAS-beheerder de boekingen nalezen vóór livegang.

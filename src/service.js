@@ -8,6 +8,7 @@ const { q, one, all, tx } = require('./db');
 const { berekenScore, aanbetalingsplan, dagenTussen } = require('./score');
 const context = require('./context');
 const afas = require('./afas');
+const berichten = require('./berichten');
 const kvk = require('./kvk');
 const mail = require('./mail');
 const { euro, datum } = require('./format');
@@ -100,15 +101,15 @@ async function nieuweAanvraag(d) {
       klantId = bestaand.id;
       await c.query(
         `UPDATE klanten SET type=$2, naam=$3, kvk=$4, kvk_actief=$5, kvk_opgericht=$6, kvk_faillissement=$7, kvk_bron=$8,
-         tekenbevoegde=$9, teken_email=$10 WHERE id=$1`,
-        [klantId, type, d.org_naam, d.kvk || null, ...kvkVelden, d.tekenbevoegde, d.teken_email],
+         tekenbevoegde=$9, teken_email=$10, teken_tel=coalesce($11, teken_tel) WHERE id=$1`,
+        [klantId, type, d.org_naam, d.kvk || null, ...kvkVelden, d.tekenbevoegde, d.teken_email, d.teken_tel || null],
       );
     } else {
       klantId = (
         await c.query(
-          `INSERT INTO klanten (sleutel, type, naam, kvk, kvk_actief, kvk_opgericht, kvk_faillissement, kvk_bron, tekenbevoegde, teken_email)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
-          [sleutel, type, d.org_naam, d.kvk || null, ...kvkVelden, d.tekenbevoegde, d.teken_email],
+          `INSERT INTO klanten (sleutel, type, naam, kvk, kvk_actief, kvk_opgericht, kvk_faillissement, kvk_bron, tekenbevoegde, teken_email, teken_tel)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING id`,
+          [sleutel, type, d.org_naam, d.kvk || null, ...kvkVelden, d.tekenbevoegde, d.teken_email, d.teken_tel || null],
         )
       ).rows[0].id;
     }
@@ -118,8 +119,8 @@ async function nieuweAanvraag(d) {
           factuur_adres, po_nummer, reisleider_naam, reisleider_tel, rit_datum, vertrek_tijd, van, naar, personen, ritsoort,
           opmerkingen, akkoord_token, reistype, tijdtype_heen, via, datum_terug, tijd_terug, tijdtype_terug, andere_route,
           terug_van, terug_naar, terug_via, bus_blijft, voorwaarden_versie, voorwaarden_akkoord_op, voorwaarden_ip, voorwaarden_hash,
-          kaart, afstand_m, duur_s, terug_afstand_m, terug_duur_s)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,now(),$31,$32,$33,$34,$35,$36,$37) RETURNING id`,
+          kaart, afstand_m, duur_s, terug_afstand_m, terug_duur_s, teken_tel, whatsapp_ok, whatsapp_ok_op)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,now(),$31,$32,$33,$34,$35,$36,$37,$38,$39,$40) RETURNING id`,
         [
           klantId, d.aanvrager_naam, d.aanvrager_tel, d.aanvrager_email, d.aanvrager_rol || null, d.factuur_email,
           d.factuur_adres || null, d.po_nummer || null, d.reisleider_naam || null, d.reisleider_tel || null,
@@ -128,6 +129,7 @@ async function nieuweAanvraag(d) {
           d.tijdtype_terug || null, !!d.andere_route, d.terug_van || null, d.terug_naar || null, JSON.stringify(d.terug_via || []), !!d.bus_blijft,
           voorwaarden.VERSIE, d.voorwaarden_ip || null, voorwaarden.hash() || null,
           d.kaart ? JSON.stringify(d.kaart) : null, d.afstand_m ?? null, d.duur_s ?? null, d.terug_afstand_m ?? null, d.terug_duur_s ?? null,
+          d.teken_tel || null, !!d.whatsapp_ok, d.whatsapp_ok ? new Date() : null,
         ],
       )
     ).rows[0].id;
@@ -181,6 +183,10 @@ async function verstuurOfferte(aanvraagId) {
     klantId: k.id,
   });
   await log(aanvraagId, k.id, 'offerte', `Offerte verstuurd naar ${k.teken_email} (klasse ${s.klasse}, score ${s.score}).`);
+  await berichten.plan({
+    aanvraagId, soort: 'offerte', naar: k.teken_tel || a.teken_tel, sleutel: `offerte:${a.id}:${new Date().toISOString().slice(0, 10)}`,
+    variabelen: { 1: k.tekenbevoegde, 2: datum(a.rit_datum), 3: datum(geldigTot), knop: a.akkoord_token, link },
+  }).catch((e) => console.error('bericht offerte', e));
   return link;
 }
 
@@ -532,8 +538,8 @@ async function draaiHerinneringen(vandaag = new Date()) {
   const verslag = [];
   // 1. Termijnen met een uiterste datum die verstreken is
   const termijnen = await all(
-    `SELECT t.*, a.klant_id, a.aanvrager_email, a.status, a.rit_datum, a.akkoord_op, a.signaal_planner,
-            k.teken_email, k.tekenbevoegde
+    `SELECT t.*, a.klant_id, a.aanvrager_email, a.aanvrager_tel, a.aanvrager_naam, a.status, a.rit_datum, a.akkoord_op, a.signaal_planner,
+            k.teken_email, k.tekenbevoegde, k.teken_tel
      FROM termijnen t JOIN aanvragen a ON a.id=t.aanvraag_id JOIN klanten k ON k.id=a.klant_id
      WHERE t.betaald_op IS NULL AND a.status IN ('wacht_op_betaling','bevestigd')
        AND NOT EXISTS (SELECT 1 FROM meldingen m WHERE m.aanvraag_id=a.id AND m.status='open')`,
@@ -554,6 +560,10 @@ async function draaiHerinneringen(vandaag = new Date()) {
       });
       await q('UPDATE termijnen SET herinnering_op=now() WHERE id=$1', [t.id]);
       verslag.push(`Herinnering termijn ${t.id}`);
+      for (const [naar, naam] of [[t.teken_tel, t.tekenbevoegde], [t.aanvrager_tel, t.aanvrager_naam]]) {
+        await berichten.plan({ aanvraagId: t.aanvraag_id, soort: 'aanbetaling', naar, sleutel: `aanbetaling:${t.id}:${berichten.normaliseerNummer(naar)}`, nu: vandaag,
+          variabelen: { 1: naam, 2: datum(t.rit_datum), 3: euro(t.bedrag_cent), knop: t.token, link: `${BASE_URL()}/betalen/${t.token}` } }).catch((e) => console.error('bericht aanbetaling', e));
+      }
     } else if (t.herinnering_op && vandaag - new Date(t.herinnering_op) >= 48 * 3600e3) {
       const gezet = await one(
         'UPDATE aanvragen SET signaal_planner=true WHERE id=$1 AND signaal_planner=false RETURNING id',
@@ -568,7 +578,7 @@ async function draaiHerinneringen(vandaag = new Date()) {
 
   // 2. Facturen
   const facturen = await all(
-    `SELECT f.*, a.factuur_email, a.aanvrager_email, a.aanvrager_naam, a.po_nummer, k.type klanttype
+    `SELECT f.*, a.factuur_email, a.aanvrager_email, a.aanvrager_naam, a.aanvrager_tel, a.po_nummer, k.type klanttype, k.tekenbevoegde, k.teken_tel
      FROM facturen f JOIN aanvragen a ON a.id=f.aanvraag_id JOIN klanten k ON k.id=f.klant_id
      WHERE f.betaald_op IS NULL AND f.incasso = false
        AND NOT EXISTS (SELECT 1 FROM meldingen m WHERE m.aanvraag_id=a.id AND m.status='open')`,
@@ -596,6 +606,15 @@ async function draaiHerinneringen(vandaag = new Date()) {
     });
     await q('UPDATE facturen SET herinnering_niveau=$2, laatste_herinnering_op=$3 WHERE id=$1', [f.id, nieuwNiveau, vandaag]);
     verslag.push(`${n.naam} factuur ${f.nummer}`);
+    // Tweede kanaal: WhatsApp (of sms). De 14-dagenbrief zelf blijft per e-mail; WhatsApp geeft daar alleen een seintje over.
+    const ontvangers = n.ccAanvrager ? [[f.teken_tel, f.tekenbevoegde], [f.aanvrager_tel, f.aanvrager_naam]] : [[f.teken_tel, f.tekenbevoegde]];
+    for (const [naar, naam] of ontvangers) {
+      const soort = veertienDagenBrief ? 'brief' : 'factuur';
+      const variabelen = veertienDagenBrief
+        ? { 1: naam, 2: f.nummer, knop: f.token, link: `${BASE_URL()}/factuur/${f.token}` }
+        : { 1: naam, 2: f.nummer, 3: euro(f.te_betalen_cent), 4: n.dag === 0 ? 'vervalt vandaag' : `is verlopen op ${datum(f.vervaldatum)}`, knop: f.token, link: `${BASE_URL()}/factuur/${f.token}` };
+      await berichten.plan({ aanvraagId: f.aanvraag_id, soort, naar, sleutel: `factuur:${f.id}:${nieuwNiveau}:${berichten.normaliseerNummer(naar)}`, nu: vandaag, variabelen }).catch((e) => console.error('bericht factuur', e));
+    }
   }
   return verslag;
 }

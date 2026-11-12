@@ -281,6 +281,13 @@
     <% } %>
 
     <div class="card">
+      <h2 style="font-size:18px;margin-bottom:10px">WhatsApp en sms</h2>
+      <p class="lead" style="font-size:14px"><%= a.whatsapp_ok ? `Toestemming gegeven bij de aanvraag${a.whatsapp_ok_op ? ` op ${datumTijd(a.whatsapp_ok_op)}` : ''}${a.teken_tel ? `; tekenbevoegde ${a.teken_tel}` : ''}, aanvrager ${a.aanvrager_tel}.` : 'Geen toestemming voor WhatsApp of sms; herinneringen gaan alleen per e-mail.' %></p>
+      <% if (locals.berichtenLijst && berichtenLijst.length) { %><div class="scroll"><table><thead><tr><th>Wanneer</th><th>Soort</th><th>Kanaal</th><th>Naar</th><th>Status</th></tr></thead><tbody>
+        <% berichtenLijst.forEach((b) => { %><tr><td><%= datumTijd(b.verstuurd_op || b.gepland_op) %></td><td><%= b.soort.replace('_', ' ') %></td><td><%= b.kanaal %></td><td><%= b.naar %></td><td><span class="badge <%= b.status === 'afgeleverd' || b.status === 'gelezen' ? 'k-A' : b.status === 'mislukt' || b.status === 'afgemeld' ? 'k-D' : 'k-B' %>"><%= b.status %></span><%= b.status_detail ? ` <span class="lead" style="font-size:12px">${b.status_detail}</span>` : '' %></td></tr><% }) %>
+      </tbody></table></div><% } else { %><p class="lead" style="margin:0;font-size:14px">Nog geen berichten.</p><% } %>
+    </div>
+    <div class="card">
       <h2 style="font-size:18px;margin-bottom:10px">Logboek en e-mails</h2>
       <div class="log"><% events.forEach(e => { %><div><b><%= datumTijd(e.created_at) %> · <%= e.type %><%= e.gebruiker_naam ? ` · door ${e.gebruiker_naam}` : '' %></b>
 <%= e.tekst %></div><% }) %></div>

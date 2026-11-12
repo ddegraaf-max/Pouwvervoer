@@ -20,6 +20,7 @@ const auth = require('./src/auth');
 const gebruikers = require('./src/gebruikers');
 const context = require('./src/context');
 const afas = require('./src/afas');
+const berichten = require('./src/berichten');
 const meldingen = require('./src/meldingen');
 const { aanbetalingsplan } = require('./src/score');
 
@@ -93,7 +94,7 @@ app.get('/sw.js', (req, res) => {
 });
 app.use(express.static(path.join(__dirname, 'public'), { maxAge: '1h' }));
 app.use(express.urlencoded({ extended: false, limit: '50kb' }));
-app.use(express.json({ limit: '12mb' })); // ritrapport van de chauffeur: foto's als data-url
+app.use(express.json({ limit: '12mb', verify: (req, res, buf) => { req.rawBody = buf; } })); // ritrapport: foto's als data-url; rawBody voor webhook-handtekeningen
 app.use(
   cookieSession({
     name: 'epv',
@@ -109,7 +110,7 @@ app.use(
 app.use((req, res, next) => {
   if (!req.session.csrf) req.session.csrf = crypto.randomBytes(18).toString('base64url');
   res.locals.csrf = req.session.csrf;
-  if (req.method === 'POST') {
+  if (req.method === 'POST' && !req.path.startsWith('/api/webhooks/')) {
     const t = req.body && req.body._csrf;
     if (!t || t.length !== req.session.csrf.length || !crypto.timingSafeEqual(Buffer.from(t), Buffer.from(req.session.csrf))) {
       return res.status(403).render('melding', { titel: 'Sessie verlopen', tekst: 'Ververs de pagina en probeer het opnieuw.' });
@@ -147,7 +148,7 @@ Object.assign(app.locals, fmt, {
   logoUrl: process.env.LOGO_URL || '',
   deurwaarder: incasso.NAAM(),
   DOSSIER_STATUS: incasso.DOSSIER_STATUS,
-  demo: { kvk: kvk.DEMO, mail: mail.DEMO, betaling: !process.env.MOLLIE_API_KEY, assistent: assistent.DEMO, afas: afas.DEMO },
+  demo: { kvk: kvk.DEMO, mail: mail.DEMO, betaling: !process.env.MOLLIE_API_KEY, assistent: assistent.DEMO, afas: afas.DEMO, berichten: berichten.DEMO },
   MAX_STOPS: reis.MAX_STOPS,
   WACHTTIJDEN: reis.WACHTTIJDEN,
   wachtLabel: reis.wachtLabel,
@@ -259,7 +260,7 @@ function valideer(b) {
   const f = [];
   const v = {};
   const tekst = (k, max = 200) => (v[k] = String(b[k] || '').trim().slice(0, max));
-  ['aanvrager_naam', 'aanvrager_tel', 'aanvrager_email', 'aanvrager_rol', 'org_naam', 'kvk', 'tekenbevoegde', 'teken_email',
+  ['aanvrager_naam', 'aanvrager_tel', 'aanvrager_email', 'aanvrager_rol', 'org_naam', 'kvk', 'tekenbevoegde', 'teken_email', 'teken_tel',
     'factuur_email', 'factuur_adres', 'po_nummer', 'reisleider_naam', 'reisleider_tel', 'klanttype'].forEach((k) => tekst(k));
   tekst('opmerkingen', 2000);
   v.factuur_zelfde = b.factuur_zelfde === 'on';
@@ -280,6 +281,7 @@ function valideer(b) {
   if (!EMAIL.test(v.factuur_email)) f.push('Vul een geldig e-mailadres voor de factuur in (stap 4).');
   if (v.klanttype === 'onderwijs' && !v.po_nummer) f.push('Scholen en overheid: vul het inkoop- of referentienummer in (stap 4). Vraag het bij uw administratie.');
   v.bus_blijft = b.bus_blijft === 'on';
+  v.whatsapp_ok = b.whatsapp_ok === 'on';
   v.voorwaarden = b.voorwaarden === 'on';
   if (!v.voorwaarden) f.push('Vink aan dat u de Algemene Vervoer- en Reisvoorwaarden van KNV Busvervoer heeft gelezen en accepteert (onderaan).');
   return { f, v };
@@ -697,11 +699,12 @@ async function dossier(id) {
   const lijstMeldingen = await meldingen.voorAanvraag(id);
   const ritrapport = await rit.rapport(id);
   const afasRij = factuur ? await afas.statusVoorFactuur(factuur.id) : [];
+  const berichtenLijst = await berichten.voorAanvraag(id);
   const openMeldingen = lijstMeldingen.filter((m) => m.status === 'open').length;
   const overdracht = factuur && !incassoDossier ? incasso.magOverdragen(factuur, k.type, new Date(), openMeldingen) : null;
   return {
     a, k, termijnen, nakosten, factuur, events, historie, plan, incassoDossier, dossierBerichten, overdracht,
-    meldingen: lijstMeldingen, openMeldingen, ritrapport, afasRij,
+    meldingen: lijstMeldingen, openMeldingen, ritrapport, afasRij, berichtenLijst,
     incassokosten: factuur ? incasso.incassokosten(factuur.te_betalen_cent, k.type) : 0,
     incassoGrondslag: incasso.grondslag(k.type),
     rente: factuur ? incasso.rente(factuur.te_betalen_cent, factuur.vervaldatum, k.type) : null,
@@ -1361,6 +1364,17 @@ app.get(
   }),
 );
 
+// Webhook van SMSTools: afleverstatus, leesbevestiging, inkomende berichten (STOP) en afmeldingen. Handtekening verplicht als er een secret is.
+app.post(
+  '/api/webhooks/smstools',
+  wrap(async (req, res) => {
+    const check = berichten.controleerHandtekening(req.get('X-Smstools-Signature'), req.rawBody || JSON.stringify(req.body || {}), berichten.CONFIG().webhookSecret);
+    if (!check.ok) return res.status(401).json({ ok: false, reden: check.reden });
+    const uit = await berichten.verwerkWebhook(req.body || {});
+    res.json({ ok: true, ...uit });
+  }),
+);
+
 app.get('/voorwaarden', (req, res) => res.render('voorwaarden'));
 // App op de telefoon: uitleg, installeerknop en QR-code naar deze pagina.
 app.get(
@@ -1383,6 +1397,7 @@ app.use((err, req, res, next) => {
   await db.migrate();
   setInterval(() => svc.draaiHerinneringen().catch((e) => console.error('herinneringen', e)), 3600e3);
   setInterval(() => afas.verwerkWachtrij().catch((e) => console.error('afas', e)), 60e3);
+  setInterval(() => berichten.planRitMorgen(new Date(), svc.BASE_URL()).then(() => berichten.verwerk()).catch((e) => console.error('berichten', e)), 60e3);
   app.listen(PORT, () => {
     console.log(`boekpouwvervoer draait op poort ${PORT}`);
     controleerCanoniek();

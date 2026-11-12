@@ -2,6 +2,11 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.18.0 · 12 november 2026
+- WhatsApp Business (en sms als terugval) als tweede kanaal via SMSTools: bij de aanvraag een vinkje "Herinneringen ook via WhatsApp" (standaard aan, bewaard met tijdstip) bij de mobiele nummers van aanvrager en tekenbevoegde (nieuw veld). Berichten als de offerte klaarstaat, bij een openstaande aanbetaling, als een factuur vervalt of is verlopen, en de dag vóór de rit om 08:00 met vertrektijd, adres en chauffeur. De 14-dagenbrief blijft per e-mail met alleen een seintje via WhatsApp.
+- Geen WhatsApp of afgekeurde template: dezelfde kern per sms. Per bericht in het dossier het kanaal en de afleverstatus (webhook van SMSTools met handtekeningcontrole). STOP of een opt-out in SMSTools zet het nummer op de afmeldlijst. Geen berichten tussen 21:00 en 08:00; die gaan om 08:00. Zonder SMSTools-sleutels demo-modus.
+- README: de exacte templateteksten voor goedkeuring bij Meta, de webhook-instellingen en de werking.
+
 ## 0.17.0 · 12 november 2026
 - Koppeling met AFAS Online (Profit REST API, UpdateConnectors): bij de eerste factuur wordt de debiteur aangemaakt (organisatie met KvK en factuuradres, of particulier) en het debiteurnummer bij de klant bewaard; eindfactuur, annuleringsfactuur en creditnota gaan als verkoopboeking met omzet- en btw-regels (9% vervoer, 21% waar dat geldt), aanbetalingen als vooruitontvangen bedrag met verrekening op de eindfactuur, en betalingen (iDEAL, handmatig, via Armaere) als ontvangst zodat de factuur in AFAS op betaald komt.
 - Wachtrij met herkansing na 5, 30 en 120 minuten; daarna een melding op de werklijst voor de administratie. In het dossier per factuur de AFAS-status (geboekt met boekstuknummer, in wachtrij, mislukt met reden) en voor de beheerder de knop "Opnieuw naar AFAS". Zonder AFAS_TOKEN draait de koppeling in demo-modus en staat elke boeking in het logboek.

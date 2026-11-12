@@ -269,6 +269,40 @@ CREATE TABLE IF NOT EXISTS afas_wachtrij (
   verwerkt_op TIMESTAMPTZ
 );
 CREATE INDEX IF NOT EXISTS idx_afas_wachtrij_open ON afas_wachtrij(status, volgende_poging);
+-- WhatsApp en sms (SMSTools): toestemming met tijdstip, mobiel nummer van de tekenbevoegde, berichten met afleverstatus, afmeldingen (STOP)
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS teken_tel TEXT;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS whatsapp_ok BOOLEAN DEFAULT FALSE;
+ALTER TABLE aanvragen ADD COLUMN IF NOT EXISTS whatsapp_ok_op TIMESTAMPTZ;
+ALTER TABLE klanten ADD COLUMN IF NOT EXISTS teken_tel TEXT;
+CREATE TABLE IF NOT EXISTS berichten (
+  id SERIAL PRIMARY KEY,
+  aanvraag_id INT REFERENCES aanvragen(id) ON DELETE CASCADE,
+  klant_id INT REFERENCES klanten(id),
+  soort TEXT NOT NULL,
+  kanaal TEXT NOT NULL,
+  naar TEXT NOT NULL,
+  tekst TEXT NOT NULL,
+  sms_tekst TEXT,
+  template TEXT,
+  variabelen JSONB,
+  knop_variabele TEXT,
+  sleutel TEXT UNIQUE,
+  status TEXT NOT NULL DEFAULT 'gepland',
+  status_detail TEXT,
+  messageid TEXT,
+  sms_na_mislukking BOOLEAN DEFAULT FALSE,
+  gepland_op TIMESTAMPTZ DEFAULT now(),
+  verstuurd_op TIMESTAMPTZ,
+  status_op TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_berichten_gepland ON berichten(status, gepland_op);
+CREATE INDEX IF NOT EXISTS idx_berichten_messageid ON berichten(messageid);
+CREATE TABLE IF NOT EXISTS optouts (
+  nummer TEXT PRIMARY KEY,
+  bron TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 -- Incasso: rente tot de overdracht en de grondslag van kosten en rente (particulier of zakelijk)
 ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS rente_cent INT DEFAULT 0;
 ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS grondslag TEXT;
