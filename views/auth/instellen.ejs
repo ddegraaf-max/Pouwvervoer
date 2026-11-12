@@ -1,0 +1,21 @@
+<%- include('../partials/head', { titel: 'Authenticator-app koppelen', noindex: true, adminLogin: !portaal, portaal, portaalLogin: portaal }) %>
+<main class="wrap"><form method="post" action="<%= basis %>/login/2fa" class="narrow card" style="display:flex;flex-direction:column;gap:12px;max-width:560px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <h1>Authenticator-app koppelen</h1>
+  <p class="lead" style="margin:0">Vanaf nu logt u in met uw wachtwoord én een code van uw telefoon. Dat beschermt de dossiers ook als een wachtwoord ooit uitlekt.</p>
+  <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
+  <ol style="margin:0;padding-left:22px;display:flex;flex-direction:column;gap:12px;font-size:15px">
+    <li>Installeer <strong>Google Authenticator</strong> of <strong>Microsoft Authenticator</strong> op uw telefoon (gratis in de App Store of Google Play).</li>
+    <li>Kies in de app "account toevoegen" en scan deze code:
+      <div class="qr-code" style="margin:10px 0;display:inline-block;background:#fff;padding:6px;border:1px solid #D9DDE8;border-radius:4px"><%- qr %></div>
+      <div class="lead" style="font-size:13px;margin:0">Scannen lukt niet? Voer dan handmatig deze sleutel in: <code style="user-select:all;overflow-wrap:anywhere"><%= geheim.replace(/(.{4})/g, '$1 ').trim() %></code></div>
+    </li>
+    <li>Vul de 6-cijferige code in die de app nu toont:
+      <div style="margin-top:8px"><label class="sr-only" for="code">Code uit de app</label><input type="text" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}" required style="font-size:22px;letter-spacing:.2em;max-width:220px"></div>
+    </li>
+  </ol>
+  <button class="btn" type="submit">Koppelen en verder</button>
+</form>
+<form method="post" action="<%= basis %>/uitloggen" class="narrow" style="max-width:560px;margin-top:10px"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn small ghost" type="submit">Annuleren</button></form>
+</main>
+<%- include('../partials/foot') %>

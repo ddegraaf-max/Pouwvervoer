@@ -1,4 +1,5 @@
-// End-to-end: draai tegen een lopende server (BASE, standaard http://localhost:3000, ADMIN_PASSWORD=test).
+// End-to-end: draai tegen een lopende server (BASE, standaard http://localhost:3000, ADMIN_PASSWORD=test, lege database).
+import { createRequire } from 'module';
 // Gebruik: node scripts/e2e.mjs   (staat buiten `npm test`, want het heeft een database nodig)
 import assert from 'node:assert';
 
@@ -102,6 +103,15 @@ let { token } = await adm.csrf('/admin/login');
 r = await adm.req('/admin/login', { method: 'POST', form: { _csrf: token, wachtwoord: 'fout' } });
 assert.equal(r.status, 401);
 r = await adm.req('/admin/login', { method: 'POST', form: { _csrf: token, wachtwoord: 'test' } });
+assert.equal(r.status, 302); // migratie: eerste login met ADMIN_PASSWORD maakt een beheerdersaccount
+r = await adm.req('/admin/login/eerste', { method: 'POST', form: { _csrf: token, naam: 'Test Beheerder', email: 'beheer@test.nl', wachtwoord: 'een lang testwachtwoord', wachtwoord2: 'een lang testwachtwoord' } });
+assert.equal(r.status, 302);
+r = await adm.req('/admin/login/2fa');
+const geheim = r.text.match(/<code[^>]*>([A-Z2-7 ]{32,40})<\/code>/)[1].replace(/\s/g, '');
+const { totpCode } = createRequire(import.meta.url)('../src/auth.js');
+r = await adm.req('/admin/login/2fa', { method: 'POST', form: { _csrf: token, code: totpCode(geheim) } });
+assert.equal(r.status, 302);
+r = await adm.req('/admin/login/herstelcodes', { method: 'POST', form: { _csrf: token, bewaard: '1' } });
 assert.equal(r.status, 302);
 
 r = await adm.req('/admin');

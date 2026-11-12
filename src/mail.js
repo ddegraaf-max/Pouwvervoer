@@ -4,10 +4,12 @@
 
 const fs = require('fs');
 const { q } = require('./db');
+const context = require('./context');
 
 const DEMO = !process.env.RESEND_API_KEY || !process.env.MAIL_FROM;
 
-async function verstuur({ aan, cc = [], onderwerp, tekst, bijlagen = [], aanvraagId = null, klantId = null }) {
+// logboek=false voor mails met een geheime link (wachtwoord-reset, uitnodiging): die horen niet in de events-tabel.
+async function verstuur({ aan, cc = [], onderwerp, tekst, bijlagen = [], aanvraagId = null, klantId = null, logboek = true }) {
   const ontvangers = [].concat(aan).filter(Boolean);
   const kopie = [].concat(cc).filter((e) => e && !ontvangers.includes(e));
   const bestanden = bijlagen.filter(Boolean);
@@ -33,7 +35,9 @@ async function verstuur({ aan, cc = [], onderwerp, tekst, bijlagen = [], aanvraa
       status = `fout: ${e.message}`;
     }
   }
-  await q('INSERT INTO events (aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4)', [
+  if (!logboek) return status;
+  await q('INSERT INTO events (gebruiker_id, aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4,$5)', [
+    context.gebruikerId(),
     aanvraagId,
     klantId,
     'mail',

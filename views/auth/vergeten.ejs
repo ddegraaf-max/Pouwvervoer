@@ -1,0 +1,15 @@
+<%- include('../partials/head', { titel: 'Wachtwoord vergeten', noindex: true, adminLogin: !portaal, portaal, portaalLogin: portaal }) %>
+<main class="wrap"><form method="post" action="<%= basis %>/wachtwoord-vergeten" class="narrow card" style="display:flex;flex-direction:column;gap:12px;max-width:440px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <h1>Wachtwoord vergeten</h1>
+  <% if (locals.klaar) { %>
+  <div class="alert ok" role="status">Als dit e-mailadres bij ons bekend is, staat er nu een e-mail met een link in uw postvak. De link werkt 30 minuten en één keer.<%= locals.demo ? ' Let op: e-mail staat op deze omgeving in demo-modus; vraag een beheerder om een nieuwe uitnodiging.' : '' %></div>
+  <p style="margin:0"><a href="<%= basis %>/login">Terug naar inloggen</a></p>
+  <% } else { %>
+  <p class="lead" style="margin:0">Vul uw e-mailadres in. U krijgt een link waarmee u een nieuw wachtwoord kiest. Uw authenticator-app blijft gewoon werken.</p>
+  <div><label for="email">E-mailadres</label><input type="email" id="email" name="email" autocomplete="username" required></div>
+  <button class="btn" type="submit">Stuur de link</button>
+  <p class="lead" style="margin:0;font-size:14px"><a href="<%= basis %>/login">Terug naar inloggen</a></p>
+  <% } %>
+</form></main>
+<%- include('../partials/foot') %>

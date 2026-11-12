@@ -6,6 +6,7 @@ const reis = require('./reis');
 const crypto = require('crypto');
 const { q, one, all, tx } = require('./db');
 const { berekenScore, aanbetalingsplan, dagenTussen } = require('./score');
+const context = require('./context');
 const kvk = require('./kvk');
 const mail = require('./mail');
 const { euro, datum } = require('./format');
@@ -28,8 +29,8 @@ function emailDomeinKlopt(klanttype, ...emails) {
 }
 
 async function log(aanvraagId, klantId, type, tekst, client) {
-  const sql = 'INSERT INTO events (aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4)';
-  return (client || { query: q }).query(sql, [aanvraagId, klantId, type, tekst]);
+  const sql = 'INSERT INTO events (aanvraag_id, klant_id, type, tekst, gebruiker_id) VALUES ($1,$2,$3,$4,$5)';
+  return (client || { query: q }).query(sql, [aanvraagId, klantId, type, tekst, context.gebruikerId()]);
 }
 
 // ---- Betaalhistorie per opdrachtgever (uit eigen facturen) ----
@@ -255,7 +256,7 @@ async function stuurAkkoordBevestiging(aanvraagId) {
 // Opzegging (artikel 5): kosten volgens de staffel van 5.1 over de ritprijs, gerekend vanaf de dag van opzegging.
 // Zonder gesloten overeenkomst (nog geen akkoord) zijn er geen kosten. Met kosten komt er een factuur die
 // eerdere aanbetalingen verrekent; is er meer betaald dan verschuldigd, dan is het verschil terug te betalen.
-async function annuleer(aanvraagId, { reden = '', kostenInRekening = false, door = 'backoffice', nu = new Date() } = {}) {
+async function annuleer(aanvraagId, { reden = '', kostenInRekening = false, door = context.naam(), nu = new Date() } = {}) {
   const redenTekst = String(reden || '').trim().slice(0, 300);
   const uit = await tx(async (c) => {
     const a = (await c.query('SELECT * FROM aanvragen WHERE id=$1 FOR UPDATE', [aanvraagId])).rows[0];
@@ -372,7 +373,7 @@ async function wijzigingAfgehandeld(aanvraagId) {
 }
 
 // Afspraken van sales met de klant: in de offerte, de bevestiging, het dossier en de export voor trip.
-async function afsprakenOpslaan(aanvraagId, tekst, door = 'backoffice') {
+async function afsprakenOpslaan(aanvraagId, tekst, door = context.naam()) {
   const t = String(tekst || '').trim().slice(0, 3000);
   const a = await one('UPDATE aanvragen SET afspraken=$2 WHERE id=$1 RETURNING id, klant_id', [aanvraagId, t || null]);
   if (!a) throw new Error('Aanvraag niet gevonden.');
@@ -381,7 +382,7 @@ async function afsprakenOpslaan(aanvraagId, tekst, door = 'backoffice') {
 }
 
 // Creditnota op de factuur: verlaagt wat nog te betalen is; is alles voldaan, dan staat de factuur op betaald.
-async function creditnota(factuurId, { bedragCent, reden, door = 'backoffice' }) {
+async function creditnota(factuurId, { bedragCent, reden, door = context.naam() }) {
   const bedrag = Math.round(Number(bedragCent) || 0);
   const r = String(reden || '').trim().slice(0, 500);
   if (bedrag <= 0) throw new Error('Vul een bedrag in.');

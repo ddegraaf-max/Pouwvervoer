@@ -41,11 +41,14 @@
   <% if (locals.admin) { %>
     <a href="/admin">Aanvragen</a>
     <a href="/admin/trip.csv">Export voor trip</a>
+    <% if (locals.gebruiker && gebruiker.rol === 'beheerder') { %><a href="/admin/gebruikers">Gebruikers</a><% } %>
+    <% if (locals.gebruiker) { %><span class="wie"><%= gebruiker.naam %> · <%= ROLLEN[gebruiker.rol] %></span><% } %>
     <form method="post" action="/admin/uitloggen"><input type="hidden" name="_csrf" value="<%= csrf %>"><button type="submit">Uitloggen</button></form>
   <% } else if (locals.portaal) { %>
     <% if (!locals.portaalLogin) { %>
     <a href="/deurwaarder">Open dossiers</a>
     <a href="/deurwaarder?weergave=gesloten">Gesloten</a>
+    <% if (locals.gebruiker) { %><span class="wie"><%= gebruiker.naam %></span><% } %>
     <form method="post" action="/deurwaarder/uitloggen"><input type="hidden" name="_csrf" value="<%= csrf %>"><button type="submit">Uitloggen</button></form>
     <% } %>
   <% } else if (locals.chauffeur) { %>

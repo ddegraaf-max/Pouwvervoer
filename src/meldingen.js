@@ -6,6 +6,7 @@
 const { q, one, all } = require('./db');
 const mail = require('./mail');
 const { datum } = require('./format');
+const context = require('./context');
 const { dagenTussen } = require('./score');
 
 const SOORTEN = {
@@ -55,10 +56,10 @@ function normaliseer({ soort, omschrijving, eigenaar, deadline, nu = new Date() 
 }
 
 async function log(aanvraagId, klantId, tekst) {
-  await q('INSERT INTO events (aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4)', [aanvraagId, klantId, 'melding', tekst]);
+  await q('INSERT INTO events (gebruiker_id, aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4,$5)', [context.gebruikerId(), aanvraagId, klantId, 'melding', tekst]);
 }
 
-async function maak(aanvraagId, { soort, omschrijving, eigenaar, deadline, door = 'backoffice' }) {
+async function maak(aanvraagId, { soort, omschrijving, eigenaar, deadline, door = context.naam() }) {
   const a = await one('SELECT id, klant_id FROM aanvragen WHERE id=$1', [aanvraagId]);
   if (!a) throw new Error('Aanvraag niet gevonden.');
   const m = normaliseer({ soort, omschrijving, eigenaar, deadline });
@@ -72,7 +73,7 @@ async function maak(aanvraagId, { soort, omschrijving, eigenaar, deadline, door 
   return rij;
 }
 
-async function losOp(id, { oplossing, door = 'backoffice' }) {
+async function losOp(id, { oplossing, door = context.naam() }) {
   const o = String(oplossing || '').trim().slice(0, 2000);
   if (o.length < 3) throw new Error('Schrijf kort hoe het is opgelost.');
   const rij = await one("UPDATE meldingen SET status='opgelost', oplossing=$2, opgelost_op=now() WHERE id=$1 AND status='open' RETURNING *", [id, o]);

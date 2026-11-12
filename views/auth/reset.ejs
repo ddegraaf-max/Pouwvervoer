@@ -1,0 +1,11 @@
+<%- include('../partials/head', { titel: uitnodiging ? 'Account activeren' : 'Nieuw wachtwoord', noindex: true, adminLogin: !portaal, portaal, portaalLogin: portaal }) %>
+<main class="wrap"><form method="post" action="<%= basis %>/wachtwoord/<%= token %>" class="narrow card" style="display:flex;flex-direction:column;gap:12px;max-width:460px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <h1><%= uitnodiging ? `Welkom, ${gebruiker.naam}` : 'Nieuw wachtwoord' %></h1>
+  <p class="lead" style="margin:0"><%= uitnodiging ? `Kies een wachtwoord voor uw account (${gebruiker.email}, rol ${ROLLEN[gebruiker.rol]}). Daarna koppelt u uw authenticator-app.` : `Kies een nieuw wachtwoord voor ${gebruiker.email}.` %></p>
+  <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
+  <div><label for="wachtwoord">Wachtwoord (minimaal <%= WACHTWOORD_MIN %> tekens, een zin mag)</label><input type="password" id="wachtwoord" name="wachtwoord" autocomplete="new-password" minlength="<%= WACHTWOORD_MIN %>" required autofocus></div>
+  <div><label for="wachtwoord2">Nog een keer</label><input type="password" id="wachtwoord2" name="wachtwoord2" autocomplete="new-password" required></div>
+  <button class="btn" type="submit"><%= uitnodiging ? 'Account activeren' : 'Wachtwoord opslaan' %></button>
+</form></main>
+<%- include('../partials/foot') %>

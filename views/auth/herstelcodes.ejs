@@ -1,0 +1,15 @@
+<%- include('../partials/head', { titel: 'Uw herstelcodes', noindex: true, adminLogin: !portaal, portaal, portaalLogin: portaal }) %>
+<main class="wrap"><form method="post" action="<%= basis %>/login/herstelcodes" class="narrow card" style="display:flex;flex-direction:column;gap:12px;max-width:560px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <h1>Bewaar uw herstelcodes</h1>
+  <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
+  <p class="lead" style="margin:0">Raakt u uw telefoon kwijt, dan logt u in met een van deze codes in plaats van de app. Elke code werkt één keer. Bewaar ze op een veilige plek, bijvoorbeeld in uw wachtwoordmanager. Ze worden niet nog een keer getoond.</p>
+  <div class="herstelcodes" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;font-family:Consolas,'Courier New',monospace;font-size:18px">
+    <% codes.forEach((c) => { %><div style="padding:8px 10px;border:1px solid #D9DDE8;border-radius:4px;background:#fff;text-align:center;user-select:all"><%= c %></div><% }) %>
+  </div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn small ghost no-print" type="button" data-print>Printen</button><button class="btn small ghost no-print" type="button" data-kopieer="#codes-tekst">Kopiëren</button></div>
+  <textarea id="codes-tekst" class="sr-only" readonly aria-hidden="true" tabindex="-1"><%= codes.join('\n') %></textarea>
+  <label class="check" for="bewaard"><input type="checkbox" id="bewaard" name="bewaard" value="1" required><span>Ik heb de herstelcodes bewaard.</span></label>
+  <button class="btn" type="submit">Verder naar <%= portaal ? 'het portaal' : 'de backoffice' %></button>
+</form></main>
+<%- include('../partials/foot') %>

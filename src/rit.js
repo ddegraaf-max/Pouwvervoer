@@ -10,6 +10,7 @@ const meldingen = require('./meldingen');
 const mail = require('./mail');
 const beleid = require('./beleid');
 const { euro, datum, parseEuro } = require('./format');
+const context = require('./context');
 
 const SOORTEN = {
   start: { label: 'Controle vóór vertrek', hint: 'Staat van de bus bij vertrek, met foto\'s als bewijs voor later.', bedrag: false },
@@ -105,11 +106,11 @@ function samenvatting(lijst) {
 }
 
 async function log(aanvraagId, klantId, tekst) {
-  await q('INSERT INTO events (aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4)', [aanvraagId, klantId, 'rit', tekst]);
+  await q('INSERT INTO events (gebruiker_id, aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4,$5)', [context.gebruikerId(), aanvraagId, klantId, 'rit', tekst]);
 }
 
 // ---- Koppeling en toegang ----
-async function koppel(aanvraagId, { naam, tel } = {}, door = 'backoffice', vernieuw = false) {
+async function koppel(aanvraagId, { naam, tel } = {}, door = context.naam(), vernieuw = false) {
   const a = await one('SELECT id, klant_id, chauffeur_token FROM aanvragen WHERE id=$1', [aanvraagId]);
   if (!a) throw new Error('Aanvraag niet gevonden.');
   const nieuw = !a.chauffeur_token || vernieuw;

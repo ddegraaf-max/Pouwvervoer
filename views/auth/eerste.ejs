@@ -1,0 +1,13 @@
+<%- include('../partials/head', { titel: 'Persoonlijk account maken', noindex: true, adminLogin: !portaal, portaal, portaalLogin: portaal }) %>
+<main class="wrap"><form method="post" action="<%= basis %>/login/eerste" class="narrow card" style="display:flex;flex-direction:column;gap:12px;max-width:480px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <h1>Uw persoonlijke account</h1>
+  <p class="lead" style="margin:0">Het gedeelde wachtwoord vervalt hierna. U wordt <strong><%= ROLLEN[rol] %></strong><%= rol === 'beheerder' ? ' en maakt daarna accounts aan voor uw collega\'s' : '' %>.</p>
+  <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
+  <div><label for="naam">Uw naam</label><input type="text" id="naam" name="naam" value="<%= locals.v && v.naam || '' %>" autocomplete="name" required></div>
+  <div><label for="email">E-mailadres</label><input type="email" id="email" name="email" value="<%= locals.v && v.email || '' %>" autocomplete="username" required></div>
+  <div><label for="wachtwoord">Nieuw wachtwoord (minimaal <%= WACHTWOORD_MIN %> tekens, een zin mag)</label><input type="password" id="wachtwoord" name="wachtwoord" autocomplete="new-password" minlength="<%= WACHTWOORD_MIN %>" required></div>
+  <div><label for="wachtwoord2">Nog een keer</label><input type="password" id="wachtwoord2" name="wachtwoord2" autocomplete="new-password" required></div>
+  <button class="btn" type="submit">Account maken en app koppelen</button>
+</form></main>
+<%- include('../partials/foot') %>

@@ -16,6 +16,9 @@ const adres = require('./src/adres');
 const beleid = require('./src/beleid');
 const QRCode = require('qrcode');
 const rit = require('./src/rit');
+const auth = require('./src/auth');
+const gebruikers = require('./src/gebruikers');
+const context = require('./src/context');
 const meldingen = require('./src/meldingen');
 const { aanbetalingsplan } = require('./src/score');
 
@@ -26,7 +29,7 @@ const kaartHost = (process.env.KAART_HOSTS || new URL(KAART_STIJL).origin).trim(
 const PORT = process.env.PORT || 3000;
 const PROD = process.env.NODE_ENV === 'production';
 
-if (!process.env.ADMIN_PASSWORD) console.warn('Let op: ADMIN_PASSWORD ontbreekt; de backoffice is dicht tot die is gezet.');
+if (!process.env.ADMIN_PASSWORD) console.warn('Let op: ADMIN_PASSWORD ontbreekt; zolang er geen beheerdersaccount is, kan niemand de backoffice in.');
 if (PROD && !process.env.SESSION_SECRET) {
   console.error('SESSION_SECRET ontbreekt.');
   process.exit(1);
@@ -114,6 +117,24 @@ app.use((req, res, next) => {
   next();
 });
 
+// Ingelogde gebruiker: de sessie verloopt na 8 uur en na 60 minuten zonder activiteit. De gebruiker reist mee in de
+// context, zodat elke regel in het logboek zijn naam krijgt.
+app.use((req, res, next) => {
+  const s = req.session.gebruiker;
+  if (s) {
+    const g = auth.sessieGeldig(s, Date.now());
+    if (!g.ok) {
+      req.session.gebruiker = null;
+      req.session.uitgelogd = g.reden;
+    } else {
+      s.laatst_actief = Date.now();
+      res.locals.gebruiker = s;
+      res.locals.mag = (actie) => auth.mag(s.rol, actie);
+    }
+  }
+  context.met(req.session.gebruiker || null, () => next());
+});
+
 Object.assign(app.locals, fmt, {
   versie: VERSIE,
   MELDING_SOORTEN: meldingen.SOORTEN,
@@ -134,6 +155,9 @@ Object.assign(app.locals, fmt, {
   kaartPunten: reis.kaartPunten,
   duurTekst: reis.duurTekst,
   beleid: { uren: beleid.BEDENKTIJD_UREN, dagen: beleid.WIJZIGEN_TOT_DAGEN, geldigDagen: beleid.OFFERTE_GELDIG_DAGEN, punten: beleid.PUNTEN, categorieen: beleid.WIJZIGING_CATEGORIEEN },
+  ROLLEN: auth.ROLLEN,
+  WACHTWOORD_MIN: auth.WACHTWOORD_MIN,
+  mag: () => false,
   RIT: { SOORTEN: rit.SOORTEN, CHECKLIST: rit.CHECKLIST, MAX_FOTOS: rit.MAX_FOTOS, GELDIG_DAGEN_NA_RIT: rit.GELDIG_DAGEN_NA_RIT },
   kaartStijl: KAART_STIJL,
 });
@@ -417,27 +441,223 @@ app.post(
 
 // ================= Backoffice =================
 
+// Toegang tot de backoffice: een ingelogde gebruiker met een backoffice-rol. Sommige handelingen vragen meer (eis).
 function admin(req, res, next) {
-  if (req.session.admin) return next();
+  const g = req.session.gebruiker;
+  if (g && auth.ADMIN_ROLLEN.includes(g.rol)) return next();
+  if (req.method === 'GET') req.session.naLogin = req.originalUrl;
   res.redirect('/admin/login');
 }
+function eis(actie) {
+  return (req, res, next) => {
+    const g = req.session.gebruiker;
+    if (g && auth.mag(g.rol, actie)) return next();
+    res.status(403).render('melding', { titel: 'Geen rechten', tekst: `Alleen ${auth.wieMag(actie)} mag ${auth.ACTIES[actie]}. Uw rol is ${auth.ROLLEN[g ? g.rol : ''] || 'onbekend'}.` });
+  };
+}
+function wachtwoordKlopt(gegeven, verwacht) {
+  if (!verwacht) return false;
+  const h = (x) => crypto.createHash('sha256').update(String(x)).digest();
+  return crypto.timingSafeEqual(h(gegeven), h(verwacht));
+}
 
-app.get('/admin/login', (req, res) => res.render('admin/login', { fout: null }));
-app.post('/admin/login', rateLimit(10, 15 * 60e3), (req, res) => {
-  const pw = process.env.ADMIN_PASSWORD;
-  const gegeven = String(req.body.wachtwoord || '');
-  const ok =
-    pw &&
-    crypto.timingSafeEqual(crypto.createHash('sha256').update(gegeven).digest(), crypto.createHash('sha256').update(pw).digest());
-  if (!ok) return res.status(401).render('admin/login', { fout: pw ? 'Onjuist wachtwoord.' : 'ADMIN_PASSWORD is niet ingesteld.' });
-  req.session.admin = true;
-  req.session.deurwaarder = false;
-  res.redirect('/admin');
-});
-app.post('/admin/uitloggen', (req, res) => {
-  req.session = null;
-  res.redirect('/admin/login');
-});
+// ================= Inloggen: e-mail en wachtwoord, daarna een code uit de authenticator-app of een herstelcode =================
+// Dezelfde routes voor de backoffice (/admin) en het portaal van de deurwaarder (/deurwaarder), met eigen rollen.
+// Zolang er voor een gebied nog geen account bestaat, maakt de eerste login met het oude gedeelde wachtwoord het eerste account.
+function authRoutes({ basis, rollen, naar, portaal, migratieWachtwoord, migratieRol }) {
+  const gb = gebruikers.instantie();
+  const render = (res, view, extra = {}, status = 200) => res.status(status).render(`auth/${view}`, { basis, portaal, fout: null, migratie: false, ...extra });
+  const pending = (req) => (req.session.auth && req.session.auth.basis === basis && req.session.auth.tot > Date.now() ? req.session.auth : null);
+  const migratieMogelijk = async () => !!migratieWachtwoord() && (await gb.aantal(rollen)) === 0;
+  const qrVoor = (otpauth) => QRCode.toString(otpauth, { type: 'svg', margin: 1, width: 180, color: { dark: '#1D2333', light: '#ffffff' } });
+  const nietGeldig = (res) => res.status(404).render('melding', { titel: 'Link niet geldig', tekst: 'Deze link is verlopen of al gebruikt. Vraag een nieuwe aan via "Wachtwoord vergeten" of bij de beheerder.' });
+
+  async function voltooi(req, res, id, melding) {
+    const g = await gb.opId(id);
+    const nu = Date.now();
+    req.session.auth = null;
+    req.session.gebruiker = { id: g.id, naam: g.naam, rol: g.rol, ingelogd_op: nu, laatst_actief: nu };
+    const doel = req.session.naLogin && String(req.session.naLogin).startsWith(basis) ? req.session.naLogin : naar;
+    req.session.naLogin = null;
+    if (melding) req.session.melding = melding;
+    res.redirect(303, doel);
+  }
+
+  app.get(
+    `${basis}/login`,
+    wrap(async (req, res) => {
+      const melding = req.session.uitgelogd || null;
+      req.session.uitgelogd = null;
+      render(res, 'login', { migratie: await migratieMogelijk(), melding });
+    }),
+  );
+  app.post(
+    `${basis}/login`,
+    rateLimit(10, 15 * 60e3),
+    wrap(async (req, res) => {
+      const email = auth.normaliseerEmail(req.body.email);
+      const wachtwoord = String(req.body.wachtwoord || '');
+      if (await migratieMogelijk()) {
+        if (wachtwoordKlopt(wachtwoord, migratieWachtwoord())) {
+          req.session.auth = { basis, migratie: true, tot: Date.now() + 15 * 60e3 };
+          return res.redirect(303, `${basis}/login/eerste`);
+        }
+        if (!email) return render(res, 'login', { migratie: true, fout: 'Onjuist wachtwoord.' }, 401);
+      }
+      const r = await gb.inloggen(email, wachtwoord, { rollen });
+      if (r.status !== 'ok') {
+        const fout =
+          r.status === 'geblokkeerd'
+            ? `Dit account is tijdelijk geblokkeerd na te veel foute pogingen. Probeer het na ${fmt.datumTijd(r.tot)} opnieuw.`
+            : r.status === 'inactief'
+              ? 'Dit account staat uit. Neem contact op met de beheerder.'
+              : 'Onjuist e-mailadres of wachtwoord.';
+        return render(res, 'login', { fout, email }, 401);
+      }
+      req.session.auth = { basis, id: r.gebruiker.id, stap: r.tweedeFactor ? 'code' : '2fa', tot: Date.now() + 10 * 60e3 };
+      res.redirect(303, r.tweedeFactor ? `${basis}/login/code` : `${basis}/login/2fa`);
+    }),
+  );
+
+  // Eerste account (migratie van het gedeelde wachtwoord).
+  app.get(`${basis}/login/eerste`, (req, res) => {
+    const p = pending(req);
+    if (!p || !p.migratie) return res.redirect(`${basis}/login`);
+    render(res, 'eerste', { rol: migratieRol });
+  });
+  app.post(
+    `${basis}/login/eerste`,
+    wrap(async (req, res) => {
+      const p = pending(req);
+      if (!p || !p.migratie) return res.redirect(`${basis}/login`);
+      const v = { naam: req.body.naam, email: req.body.email };
+      if (String(req.body.wachtwoord || '') !== String(req.body.wachtwoord2 || '')) return render(res, 'eerste', { rol: migratieRol, fout: 'De wachtwoorden zijn niet gelijk.', v }, 422);
+      try {
+        const g = await gb.eersteAccount({ ...v, wachtwoord: req.body.wachtwoord, rol: migratieRol }, rollen);
+        req.session.auth = { basis, id: g.id, stap: '2fa', tot: Date.now() + 10 * 60e3 };
+        res.redirect(303, `${basis}/login/2fa`);
+      } catch (e) {
+        render(res, 'eerste', { rol: migratieRol, fout: e.message, v }, 422);
+      }
+    }),
+  );
+
+  // App koppelen (eerste keer, of na een reset door de beheerder).
+  app.get(
+    `${basis}/login/2fa`,
+    wrap(async (req, res) => {
+      const p = pending(req);
+      if (!p || p.stap !== '2fa') return res.redirect(`${basis}/login`);
+      const s = await gb.start2fa(p.id);
+      render(res, 'instellen', { qr: await qrVoor(s.otpauth), geheim: s.geheim });
+    }),
+  );
+  app.post(
+    `${basis}/login/2fa`,
+    rateLimit(20, 15 * 60e3),
+    wrap(async (req, res) => {
+      const p = pending(req);
+      if (!p || p.stap !== '2fa') return res.redirect(`${basis}/login`);
+      const r = await gb.bevestig2fa(p.id, req.body.code);
+      if (!r.ok) {
+        const s = await gb.start2fa(p.id);
+        return render(res, 'instellen', { qr: await qrVoor(s.otpauth), geheim: s.geheim, fout: r.fout }, 422);
+      }
+      req.session.auth = { ...p, stap: 'herstel', codes: r.herstelcodes };
+      res.redirect(303, `${basis}/login/herstelcodes`);
+    }),
+  );
+  app.get(`${basis}/login/herstelcodes`, (req, res) => {
+    const p = pending(req);
+    if (!p || p.stap !== 'herstel') return res.redirect(`${basis}/login`);
+    render(res, 'herstelcodes', { codes: p.codes });
+  });
+  app.post(
+    `${basis}/login/herstelcodes`,
+    wrap(async (req, res) => {
+      const p = pending(req);
+      if (!p || p.stap !== 'herstel') return res.redirect(`${basis}/login`);
+      if (req.body.bewaard !== '1') return render(res, 'herstelcodes', { codes: p.codes, fout: 'Bevestig dat u de herstelcodes heeft bewaard.' }, 422);
+      await voltooi(req, res, p.id);
+    }),
+  );
+
+  // Tweede stap bij elke login.
+  app.get(`${basis}/login/code`, (req, res) => {
+    const p = pending(req);
+    if (!p || p.stap !== 'code') return res.redirect(`${basis}/login`);
+    render(res, 'code');
+  });
+  app.post(
+    `${basis}/login/code`,
+    rateLimit(20, 15 * 60e3),
+    wrap(async (req, res) => {
+      const p = pending(req);
+      if (!p || p.stap !== 'code') return res.redirect(`${basis}/login`);
+      const r = await gb.controleerCode(p.id, req.body.code);
+      if (!r.ok) {
+        if (r.geblokkeerd) {
+          req.session.auth = null;
+          return render(res, 'login', { fout: `Te veel foute codes; het account is geblokkeerd tot ${fmt.datumTijd(r.tot)}.` }, 401);
+        }
+        return render(res, 'code', { fout: r.fout }, 401);
+      }
+      await voltooi(req, res, p.id, r.herstelcode ? `U bent ingelogd met een herstelcode; er zijn er nog ${r.over}. Nieuwe telefoon? Vraag de beheerder de tweede factor te resetten.` : null);
+    }),
+  );
+
+  // Wachtwoord vergeten en resetlink (ook voor uitnodigingen).
+  app.get(`${basis}/wachtwoord-vergeten`, (req, res) => render(res, 'vergeten'));
+  app.post(
+    `${basis}/wachtwoord-vergeten`,
+    rateLimit(5, 15 * 60e3),
+    wrap(async (req, res) => {
+      const r = await gb.resetAanvragen(req.body.email);
+      if (r && rollen.includes(r.gebruiker.rol)) {
+        await mail.verstuur({
+          aan: r.gebruiker.email,
+          onderwerp: 'Nieuw wachtwoord voor boekpouwvervoer',
+          tekst: `Beste ${r.gebruiker.naam},\n\nVia deze link kiest u een nieuw wachtwoord. De link werkt 30 minuten en één keer:\n${svc.BASE_URL()}${basis}/wachtwoord/${r.token}\n\nHeeft u dit niet aangevraagd? Dan hoeft u niets te doen; uw wachtwoord blijft zoals het is.`,
+          logboek: false,
+        });
+      }
+      render(res, 'vergeten', { klaar: true, demo: mail.DEMO });
+    }),
+  );
+  app.get(
+    `${basis}/wachtwoord/:token`,
+    wrap(async (req, res) => {
+      const g = await gb.metResetToken(req.params.token);
+      if (!g || !rollen.includes(g.rol)) return nietGeldig(res);
+      render(res, 'reset', { token: req.params.token, gebruiker: g, uitnodiging: g.reset_soort === 'uitnodiging' });
+    }),
+  );
+  app.post(
+    `${basis}/wachtwoord/:token`,
+    rateLimit(10, 15 * 60e3),
+    wrap(async (req, res) => {
+      const g = await gb.metResetToken(req.params.token);
+      if (!g || !rollen.includes(g.rol)) return nietGeldig(res);
+      const extra = { token: req.params.token, gebruiker: g, uitnodiging: g.reset_soort === 'uitnodiging' };
+      if (String(req.body.wachtwoord || '') !== String(req.body.wachtwoord2 || '')) return render(res, 'reset', { ...extra, fout: 'De wachtwoorden zijn niet gelijk.' }, 422);
+      const r = await gb.resetMetToken(req.params.token, req.body.wachtwoord);
+      if (!r.ok) return render(res, 'reset', { ...extra, fout: r.fout }, 422);
+      if (!g.totp_actief) {
+        // Nieuw account of 2FA gereset: direct door naar het koppelen van de app.
+        req.session.auth = { basis, id: g.id, stap: '2fa', tot: Date.now() + 10 * 60e3 };
+        return res.redirect(303, `${basis}/login/2fa`);
+      }
+      req.session.uitgelogd = 'Uw wachtwoord is gewijzigd. Log in met het nieuwe wachtwoord.';
+      res.redirect(303, `${basis}/login`);
+    }),
+  );
+  app.post(`${basis}/uitloggen`, (req, res) => {
+    req.session = null;
+    res.redirect(`${basis}/login`);
+  });
+}
+
+authRoutes({ basis: '/admin', rollen: auth.ADMIN_ROLLEN, naar: '/admin', portaal: false, migratieWachtwoord: () => process.env.ADMIN_PASSWORD, migratieRol: 'beheerder' });
 
 app.get(
   '/admin',
@@ -465,7 +685,7 @@ async function dossier(id) {
     db.all('SELECT * FROM termijnen WHERE aanvraag_id=$1 ORDER BY id', [id]),
     db.all('SELECT * FROM nakosten WHERE aanvraag_id=$1 ORDER BY id', [id]),
     db.one('SELECT * FROM facturen WHERE aanvraag_id=$1', [id]),
-    db.all('SELECT * FROM events WHERE aanvraag_id=$1 ORDER BY created_at DESC, id DESC', [id]),
+    db.all('SELECT e.*, g.naam gebruiker_naam FROM events e LEFT JOIN gebruikers g ON g.id=e.gebruiker_id WHERE e.aanvraag_id=$1 ORDER BY e.created_at DESC, e.id DESC', [id]),
     svc.historie(a.klant_id),
   ]);
   const plan = a.ritprijs_cent != null ? aanbetalingsplan(a.klasse, a.ritprijs_cent, a.rit_datum, a.nakosten_schatting_cent || 0) : null;
@@ -518,7 +738,7 @@ app.post(
   admin,
   wrap(async (req, res) => {
     try {
-      await rit.koppel(Number(req.params.id), { naam: req.body.naam, tel: req.body.tel }, 'backoffice', req.body.vernieuw === '1');
+      await rit.koppel(Number(req.params.id), { naam: req.body.naam, tel: req.body.tel }, context.naam(), req.body.vernieuw === '1');
       req.session.melding = req.body.vernieuw === '1' ? 'Nieuwe link gemaakt; de oude link werkt niet meer.' : 'Link voor de chauffeur klaar.';
     } catch (e) {
       req.session.melding = e.message;
@@ -623,6 +843,7 @@ app.post(
 app.post(
   '/admin/aanvraag/:id/termijn/:tid/betaald',
   admin,
+  eis('betalingen'),
   wrap(async (req, res) => {
     const t = await db.one('SELECT * FROM termijnen WHERE id=$1 AND aanvraag_id=$2', [Number(req.params.tid), Number(req.params.id)]);
     if (t) await svc.termijnBetaald(t.id, 'bankoverschrijving (handmatig)');
@@ -671,6 +892,7 @@ app.post(
 app.post(
   '/admin/aanvraag/:id/factuur-betaald',
   admin,
+  eis('betalingen'),
   wrap(async (req, res) => {
     const f = await db.one('SELECT id FROM facturen WHERE aanvraag_id=$1', [Number(req.params.id)]);
     if (f) await svc.factuurBetaald(f.id, 'bankoverschrijving (handmatig)');
@@ -683,6 +905,7 @@ app.post(
 app.post(
   '/admin/aanvraag/:id/incasso',
   admin,
+  eis('overdracht'),
   wrap(async (req, res) => {
     const f = await db.one('SELECT id FROM facturen WHERE aanvraag_id=$1', [Number(req.params.id)]);
     if (!f) return terug(req, res, 'Er is nog geen eindfactuur.');
@@ -713,6 +936,7 @@ app.post(
 app.post(
   '/admin/aanvraag/:id/dossier-terugtrekken',
   admin,
+  eis('overdracht'),
   wrap(async (req, res) => {
     const d = await db.one('SELECT id FROM dossiers WHERE aanvraag_id=$1', [Number(req.params.id)]);
     try {
@@ -782,6 +1006,7 @@ app.post(
 app.post(
   '/admin/aanvraag/:id/creditnota',
   admin,
+  eis('creditnota'),
   wrap(async (req, res) => {
     try {
       const f = await db.one('SELECT id FROM facturen WHERE aanvraag_id=$1', [Number(req.params.id)]);
@@ -806,6 +1031,7 @@ app.post(
 app.post(
   '/admin/aanvraag/:id/klasse',
   admin,
+  eis('klasse'),
   wrap(async (req, res) => {
     const id = Number(req.params.id);
     const a = await db.one('SELECT klant_id, status FROM aanvragen WHERE id=$1', [id]);
@@ -865,36 +1091,92 @@ app.get(
   }),
 );
 
+// ================= Gebruikersbeheer (alleen beheerder) =================
+function uitnodigingsLink(r) {
+  const basis = r.gebruiker.rol === 'deurwaarder' ? '/deurwaarder' : '/admin';
+  return `${svc.BASE_URL()}${basis}/wachtwoord/${r.token}`;
+}
+async function stuurUitnodiging(r) {
+  await mail.verstuur({
+    aan: r.gebruiker.email,
+    onderwerp: 'Uw account voor boekpouwvervoer',
+    tekst:
+      `Beste ${r.gebruiker.naam},\n\nEr is een account voor u aangemaakt met de rol ${auth.ROLLEN[r.gebruiker.rol]}. ` +
+      `Kies via deze link uw wachtwoord en koppel daarna uw authenticator-app (Google Authenticator of Microsoft Authenticator):\n${uitnodigingsLink(r)}\n\n` +
+      'De link is 7 dagen geldig en werkt één keer.',
+    logboek: false,
+  });
+}
+app.get(
+  '/admin/gebruikers',
+  admin,
+  eis('gebruikers'),
+  wrap(async (req, res) => {
+    const gb = gebruikers.instantie();
+    res.render('admin/gebruikers', {
+      lijst: await gb.lijst(),
+      activiteit: await gb.activiteit(40),
+      melding: req.session.melding || null,
+      link: req.session.uitnodigingLink || null,
+      mailDemo: mail.DEMO,
+    });
+    req.session.melding = null;
+    req.session.uitnodigingLink = null;
+  }),
+);
+app.post(
+  '/admin/gebruikers',
+  admin,
+  eis('gebruikers'),
+  wrap(async (req, res) => {
+    const gb = gebruikers.instantie();
+    try {
+      const r = await gb.nieuw({ naam: req.body.naam, email: req.body.email, rol: req.body.rol }, context.naam());
+      await stuurUitnodiging(r);
+      req.session.melding = `Account voor ${r.gebruiker.naam} gemaakt${mail.DEMO ? '. E-mail staat in demo-modus: geef de link hieronder zelf door' : ' en de uitnodiging is gemaild'} (7 dagen geldig).`;
+      if (mail.DEMO) req.session.uitnodigingLink = uitnodigingsLink(r);
+    } catch (e) {
+      req.session.melding = e.message;
+    }
+    res.redirect(303, '/admin/gebruikers');
+  }),
+);
+app.post(
+  '/admin/gebruikers/:gid',
+  admin,
+  eis('gebruikers'),
+  wrap(async (req, res) => {
+    const gb = gebruikers.instantie();
+    const id = Number(req.params.gid);
+    try {
+      if (req.body.actie === 'uitnodigen') {
+        const r = await gb.uitnodigen(id);
+        await stuurUitnodiging(r);
+        req.session.melding = `Nieuwe link voor ${r.gebruiker.naam}${mail.DEMO ? ' (e-mail in demo-modus: geef de link hieronder zelf door)' : ' gemaild'}; 7 dagen geldig.`;
+        if (mail.DEMO) req.session.uitnodigingLink = uitnodigingsLink(r);
+      } else {
+        req.session.melding = await gb.wijzig(id, { actie: req.body.actie, rol: req.body.rol }, context.naam(), req.session.gebruiker.id);
+      }
+    } catch (e) {
+      req.session.melding = e.message;
+    }
+    res.redirect(303, '/admin/gebruikers');
+  }),
+);
+
 // ================= Portaal deurwaarder =================
 
+// Toegang tot het portaal: een ingelogde gebruiker met de rol deurwaarder (eigen account met 2FA).
 function deurwaarder(req, res, next) {
-  if (req.session.deurwaarder) {
+  const g = req.session.gebruiker;
+  if (g && g.rol === 'deurwaarder') {
     res.locals.portaal = true;
     return next();
   }
+  if (req.method === 'GET') req.session.naLogin = req.originalUrl;
   res.redirect('/deurwaarder/login');
 }
-
-function wachtwoordKlopt(gegeven, verwacht) {
-  if (!verwacht) return false;
-  const h = (x) => crypto.createHash('sha256').update(String(x)).digest();
-  return crypto.timingSafeEqual(h(gegeven), h(verwacht));
-}
-
-app.get('/deurwaarder/login', (req, res) => res.render('deurwaarder/login', { fout: null, portaal: true, portaalLogin: true }));
-app.post('/deurwaarder/login', rateLimit(10, 15 * 60e3), (req, res) => {
-  const pw = process.env.DEURWAARDER_PASSWORD;
-  if (!wachtwoordKlopt(req.body.wachtwoord || '', pw)) {
-    return res.status(401).render('deurwaarder/login', { fout: pw ? 'Onjuist wachtwoord.' : 'Het portaal is nog niet ingericht.', portaal: true, portaalLogin: true });
-  }
-  req.session.deurwaarder = true;
-  req.session.admin = false;
-  res.redirect('/deurwaarder');
-});
-app.post('/deurwaarder/uitloggen', (req, res) => {
-  req.session = null;
-  res.redirect('/deurwaarder/login');
-});
+authRoutes({ basis: '/deurwaarder', rollen: auth.PORTAAL_ROLLEN, naar: '/deurwaarder', portaal: true, migratieWachtwoord: () => process.env.DEURWAARDER_PASSWORD, migratieRol: 'deurwaarder' });
 
 app.get(
   '/deurwaarder',

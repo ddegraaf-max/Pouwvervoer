@@ -1,0 +1,13 @@
+<%- include('../partials/head', { titel: 'Code uit uw app', noindex: true, adminLogin: !portaal, portaal, portaalLogin: portaal }) %>
+<main class="wrap"><form method="post" action="<%= basis %>/login/code" class="narrow card" style="display:flex;flex-direction:column;gap:12px;max-width:440px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <h1>Code uit uw app</h1>
+  <p class="lead" style="margin:0">Open Google Authenticator of Microsoft Authenticator op uw telefoon en vul de 6-cijferige code voor boekpouwvervoer in.</p>
+  <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
+  <div><label for="code">Code</label><input type="text" id="code" name="code" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9 ]{6,7}|[A-Za-z0-9 -]{10,12}" required autofocus style="font-size:22px;letter-spacing:.2em"></div>
+  <button class="btn" type="submit">Verder</button>
+  <p class="lead" style="margin:0;font-size:14px">Telefoon kwijt? Vul een van uw herstelcodes in (zoals <code>ABCDE-FGHJK</code>). Elke herstelcode werkt één keer.</p>
+</form>
+<form method="post" action="<%= basis %>/uitloggen" class="narrow" style="max-width:440px;margin-top:10px"><input type="hidden" name="_csrf" value="<%= csrf %>"><button class="btn small ghost" type="submit">Annuleren en opnieuw inloggen</button></form>
+</main>
+<%- include('../partials/foot') %>

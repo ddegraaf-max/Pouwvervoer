@@ -161,7 +161,7 @@
         <tbody><% termijnen.forEach(t => { %>
           <tr>
             <td><%= t.label %></td><td><%= t.uiterlijk ? datum(t.uiterlijk) : 'Bij akkoord' %></td><td class="num"><%= euro(t.bedrag_cent) %></td>
-            <td><% if (t.betaald_op) { %><span class="badge k-A">Betaald <%= datumTijd(t.betaald_op) %></span><% } else { %><%- form(`termijn/${t.id}/betaald`) %><button class="btn small ghost" type="submit">Overschrijving ontvangen</button></form><% if (t.herinnering_op) { %><div class="lead" style="font-size:13px;margin:4px 0 0">Herinnerd <%= datumTijd(t.herinnering_op) %></div><% } %><% } %></td>
+            <td><% if (t.betaald_op) { %><span class="badge k-A">Betaald <%= datumTijd(t.betaald_op) %></span><% } else { %><% if (mag('betalingen')) { %><%- form(`termijn/${t.id}/betaald`) %><button class="btn small ghost" type="submit">Overschrijving ontvangen</button></form><% } else { %><span class="lead" style="font-size:13px">Open</span><% } %><% if (t.herinnering_op) { %><div class="lead" style="font-size:13px;margin:4px 0 0">Herinnerd <%= datumTijd(t.herinnering_op) %></div><% } %><% } %></td>
           </tr>
         <% }) %></tbody>
       </table>
@@ -209,12 +209,12 @@
         <dt>Vervaldatum</dt><dd><%= datum(factuur.vervaldatum) %></dd>
         <dt>Status</dt><dd><%= factuur.betaald_op ? `Betaald op ${datum(factuur.betaald_op)}` : factuur.incasso ? `Bij ${deurwaarder}` : `Open · herinneringsniveau ${factuur.herinnering_niveau} van 4` %></dd>
       </dl>
-      <% if (!factuur.betaald_op) { %>
+      <% if (!factuur.betaald_op && mag('betalingen')) { %>
       <div class="row" style="margin-top:14px">
         <%- form('factuur-betaald') %><button class="btn" type="submit">Betaling ontvangen</button></form>
       </div>
       <% } %>
-      <% if (!factuur.incasso) { %>
+      <% if (!factuur.incasso && mag('creditnota')) { %>
       <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:12px">
         <h3 style="margin-bottom:6px">Creditnota</h3>
         <p class="lead" style="font-size:14px;margin:0 0 8px">Klopt er iets niet (te laat, afwijking, afspraak niet nagekomen)? Crediteer meteen; een creditnota die blijft liggen wordt een onbetaalde factuur. De klant krijgt de creditnota per e-mail.</p>
@@ -227,7 +227,7 @@
         </form>
       </div>
       <% } %>
-      <% if (overdracht && !factuur.betaald_op && factuur.te_betalen_cent > 0) { %>
+      <% if (overdracht && !factuur.betaald_op && factuur.te_betalen_cent > 0 && mag('overdracht')) { %>
       <div style="border-top:1px solid var(--line);margin-top:16px;padding-top:16px">
         <h3 style="margin-bottom:6px">Overdragen aan <%= deurwaarder %></h3>
         <% if (overdracht.mag) { %>
@@ -265,6 +265,7 @@
           <div><button class="btn ghost" type="submit">Versturen</button></div>
         </div>
       </form>
+      <% if (mag('overdracht')) { %>
       <%- form('dossier-terugtrekken') %>
         <div class="inline-form" style="margin-top:12px">
           <div><label for="treden">Dossier terugtrekken, reden</label><input type="text" id="treden" name="reden" placeholder="Bijv. alsnog regeling met klant getroffen"></div>
@@ -272,12 +273,13 @@
         </div>
       </form>
       <% } %>
+      <% } %>
     </div>
     <% } %>
 
     <div class="card">
       <h2 style="font-size:18px;margin-bottom:10px">Logboek en e-mails</h2>
-      <div class="log"><% events.forEach(e => { %><div><b><%= datumTijd(e.created_at) %> · <%= e.type %></b>
+      <div class="log"><% events.forEach(e => { %><div><b><%= datumTijd(e.created_at) %> · <%= e.type %><%= e.gebruiker_naam ? ` · door ${e.gebruiker_naam}` : '' %></b>
 <%= e.tekst %></div><% }) %></div>
     </div>
   </section>
@@ -305,6 +307,7 @@
       </dl><% } %>
       <% if (a.opmerkingen) { %><dl class="kv" style="margin-top:8px"><dt>Bijzonderheden</dt><dd><%= a.opmerkingen %></dd></dl><% } %>
     </div>
+    <% if (mag('klasse')) { %>
     <div class="card">
       <h2 style="font-size:18px">Klasse aanpassen</h2>
       <p class="lead" style="font-size:14px">Geldt voor de opdrachtgever; de reden blijft in het dossier.<%= k.klasse_override ? ` Nu handmatig ${k.klasse_override}: ${k.override_reden}` : '' %></p>
@@ -316,6 +319,7 @@
         </div>
       </form>
     </div>
+    <% } %>
     <% if (['nieuw','offerte_verstuurd','wacht_op_betaling','bevestigd'].includes(a.status)) { %>
     <div class="card">
       <h2 style="font-size:18px">Annuleren</h2>

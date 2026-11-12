@@ -2,6 +2,12 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.16.0 · 12 november 2026
+- Persoonlijke accounts voor de backoffice en het portaal van de deurwaarder in plaats van één gedeeld wachtwoord: inloggen met e-mail en wachtwoord (scrypt) en daarna een code uit Google of Microsoft Authenticator; bij de eerste login een QR-code om de app te koppelen en 8 herstelcodes. Wachtwoord vergeten via een link per e-mail (30 minuten, eenmalig). Na 5 foute pogingen 15 minuten blokkade per account. Sessies verlopen na 8 uur en na 60 minuten zonder activiteit.
+- Rollen beheerder, sales, planning, administratie en deurwaarder. Alleen administratie en beheerder registreren betalingen, maken creditnota's en dragen over aan Armaere; alleen de beheerder past de klasse aan en beheert gebruikers op /admin/gebruikers (uitnodigen, rol, uitzetten, ontgrendelen, 2FA resetten). Andere rollen krijgen 403.
+- Logboek op naam: elke regel in het dossier toont wie het deed ("door Bas de Goeij"); inlogactiviteit staat bij Gebruikers.
+- Migratie: de eerste login met het bestaande ADMIN_PASSWORD (of DEURWAARDER_PASSWORD) maakt het eerste account en vraagt om e-mail, eigen wachtwoord en 2FA; daarna werken die wachtwoorden niet meer.
+
 ## 0.15.0 · 14 oktober 2026
 - Digitale chauffeursbriefing: de backoffice maakt op de briefingpagina een persoonlijke link voor de chauffeur (QR-code, kopiëren, WhatsApp). De chauffeur ziet de briefing op zijn telefoon, vinkt de checklist af en legt in het ritrapport vast wat afwijkt: controle vóór vertrek, schade aan de bus, rotzooi of vervuiling, afwijking van de afspraak, extra kosten, incident, opmerking; met plaats, bedrag en maximaal 4 foto's per melding (op de telefoon verkleind). Rit afronden met slotopmerking; de planning krijgt e-mail.
 - Alles komt in het dossier: logboek per melding, foto's bij de briefing in de backoffice, chauffeur en rapportstatus bij Rit, en meldingen met een bedrag met één klik als nakosten. Schade, rotzooi en extra kosten worden meldingen voor de administratie op de werklijst (nieuwe soorten schade, schoonmaak, nakosten), afwijkingen voor de planning, incidenten voor operatie; zolang ze open staan, gaan er geen herinneringen naar de klant. Grondslag: KNV-voorwaarden artikel 9.7 en 9.13.

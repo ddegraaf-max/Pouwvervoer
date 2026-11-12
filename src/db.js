@@ -221,6 +221,28 @@ CREATE TABLE IF NOT EXISTS rit_fotos (
 );
 CREATE INDEX IF NOT EXISTS idx_rit_meldingen_aanvraag ON rit_meldingen(aanvraag_id);
 CREATE INDEX IF NOT EXISTS idx_rit_fotos_aanvraag ON rit_fotos(aanvraag_id);
+-- Accounts voor backoffice en portaal: wachtwoord (scrypt), tweede factor (TOTP, versleuteld), herstelcodes (hashes),
+-- blokkade na foute pogingen, resetlinks en uitnodigingen. Elke logregel krijgt de gebruiker erbij.
+CREATE TABLE IF NOT EXISTS gebruikers (
+  id SERIAL PRIMARY KEY,
+  naam TEXT NOT NULL,
+  email TEXT NOT NULL UNIQUE,
+  rol TEXT NOT NULL,
+  wachtwoord_hash TEXT,
+  totp_geheim TEXT,
+  totp_actief BOOLEAN DEFAULT FALSE,
+  totp_laatste_stap BIGINT,
+  herstelcodes JSONB,
+  actief BOOLEAN DEFAULT TRUE,
+  laatst_ingelogd TIMESTAMPTZ,
+  foute_pogingen INT DEFAULT 0,
+  geblokkeerd_tot TIMESTAMPTZ,
+  reset_token_hash TEXT,
+  reset_geldig_tot TIMESTAMPTZ,
+  reset_soort TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+ALTER TABLE events ADD COLUMN IF NOT EXISTS gebruiker_id INT REFERENCES gebruikers(id);
 -- Incasso: rente tot de overdracht en de grondslag van kosten en rente (particulier of zakelijk)
 ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS rente_cent INT DEFAULT 0;
 ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS grondslag TEXT;

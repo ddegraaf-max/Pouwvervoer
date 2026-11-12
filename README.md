@@ -60,6 +60,17 @@ Op alle aanvragen, offertes en ritten gelden de Algemene Vervoer- en Reisvoorwaa
 - Offerte: de mail aan de tekenbevoegde bevat de link; de akkoordpagina toont de link en het vinkje "Ik ga akkoord met deze offerte en accepteer de voorwaarden". Bewaard: `akkoord_voorwaarden_versie` naast naam, tijdstip en IP van het akkoord, plus een regel in het logboek.
 - Het dossier in de backoffice en het portaal van Armaere tonen beide acceptaties als bewijs.
 
+## Accounts, tweede factor en rollen
+
+De backoffice en het portaal van de deurwaarder werken met persoonlijke accounts (`src/auth.js`, `src/gebruikers.js`, tabel `gebruikers`). Inloggen gaat met e-mail en wachtwoord en daarna een 6-cijferige code uit Google Authenticator of Microsoft Authenticator (TOTP, RFC 6238). Bij de eerste login koppelt de gebruiker de app met een QR-code en krijgt hij 8 herstelcodes (eenmalig, alleen als hash bewaard) voor als de telefoon kwijt is.
+
+- **Rollen**: beheerder, sales, planning, administratie (backoffice) en deurwaarder (alleen `/deurwaarder`). Alleen administratie en beheerder registreren betalingen, maken creditnota's en dragen dossiers over aan Armaere; alleen de beheerder past de klantklasse handmatig aan en beheert gebruikers op `/admin/gebruikers`. Andere rollen krijgen 403 en zien de knoppen niet.
+- **Logboek op naam**: elke regel in `events` krijgt `gebruiker_id` (via `src/context.js`, AsyncLocalStorage); in het dossier staat "door Bas de Goeij". Inlogpogingen, blokkades en beheeracties staan als `auth`-events op `/admin/gebruikers`.
+- **Wachtwoorden**: scrypt (N=2^15), minimaal 12 tekens. Wachtwoord vergeten: link per e-mail, 30 minuten geldig, eenmalig (alleen de hash van het token staat in de database; de mail komt niet in het logboek). Uitnodigingen voor nieuwe accounts werken hetzelfde, 7 dagen geldig; staat e-mail in demo-modus, dan toont de beheerder de link zelf.
+- **Blokkade**: na 5 foute wachtwoorden of codes staat het account 15 minuten dicht (naast de rate limit per IP). Een beheerder kan ontgrendelen.
+- **Sessies**: uitgelogd na 8 uur, en na 60 minuten zonder activiteit. Een code uit de app geldt één keer (replay-bescherming); één stap klokverschil wordt toegestaan.
+- **Migratie**: zolang er geen backoffice-account bestaat, maakt de eerste login met `ADMIN_PASSWORD` een beheerdersaccount (naam, e-mail, eigen wachtwoord, app koppelen). Daarna werkt `ADMIN_PASSWORD` niet meer; de beheerder nodigt collega's uit. Voor `/deurwaarder` geldt hetzelfde met `DEURWAARDER_PASSWORD` en de rol deurwaarder. Het TOTP-geheim staat versleuteld in de database (AES-256-GCM, sleutel uit `SESSION_SECRET`); verandert `SESSION_SECRET`, dan reset de beheerder de tweede factor per gebruiker.
+
 ## Werklijst en meldingen: eerst oplossen, dan pas aanmanen
 
 De meeste betaalproblemen ontstaan niet bij de klant maar door losse eindjes in de eigen organisatie: een afspraak van sales die niet is vastgelegd, planning die anders uitvoert dan afgesproken, een chauffeur die te laat is, een klacht die blijft liggen, een creditnota die niet komt, een foutieve invoer in Trip. Hoe langer zo'n punt ligt, hoe moeilijker het wordt. De backoffice maakt dat zichtbaar en legt de verantwoordelijkheid bij de organisatie:
@@ -158,7 +169,7 @@ Wil Pouw ook in de App Store en Google Play staan, dan kan dezelfde webapp verpa
 
 1. Nieuw project → Deploy from GitHub repo → deze repo.
 2. Add → Database → PostgreSQL. Zet bij de app `DATABASE_URL=${{Postgres.DATABASE_URL}}`.
-3. Variabelen: `ADMIN_PASSWORD`, `DEURWAARDER_PASSWORD`, `SESSION_SECRET`, `NODE_ENV=production`, `BASE_URL`.
+3. Variabelen: `ADMIN_PASSWORD` en `DEURWAARDER_PASSWORD` (alleen voor de allereerste login, zie Accounts), `SESSION_SECRET`, `NODE_ENV=production`, `BASE_URL`.
 4. Settings → Networking → Custom domain `boekpouwvervoer.nl` en zet het CNAME- én TXT-record dat Railway toont in Cloudflare (zie "Domein boekpouwvervoer.nl activeren").
 
 De tabellen worden bij de start automatisch aangemaakt.

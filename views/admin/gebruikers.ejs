@@ -1,0 +1,60 @@
+<%- include('../partials/head', { titel: 'Gebruikers', admin: true }) %>
+<main class="wrap" style="display:flex;flex-direction:column;gap:20px">
+  <div class="between" style="flex-wrap:wrap"><h1>Gebruikers</h1><a class="btn small ghost" href="/admin">Terug naar aanvragen</a></div>
+  <% if (melding) { %><div class="alert info" role="status"><%= melding %></div><% } %>
+  <% if (link) { %><div class="alert ok" style="overflow-wrap:anywhere"><strong>Uitnodigingslink</strong> (7 dagen geldig, geef deze zelf door): <code id="uitnodiging"><%= link %></code> <button class="btn small ghost" type="button" data-kopieer="#uitnodiging">Kopiëren</button></div><% } %>
+
+  <div class="card">
+    <h2 style="font-size:18px;margin-bottom:6px">Nieuw account</h2>
+    <p class="lead" style="font-size:14px">De gebruiker krijgt een e-mail met een link (7 dagen geldig) om een wachtwoord te kiezen en de authenticator-app te koppelen.<%= mailDemo ? ' E-mail staat in demo-modus: de link verschijnt hierboven, zodat u hem zelf kunt doorgeven.' : '' %></p>
+    <form method="post" action="/admin/gebruikers" style="margin:0">
+      <input type="hidden" name="_csrf" value="<%= csrf %>">
+      <div class="inline-form">
+        <div><label for="naam">Naam</label><input type="text" id="naam" name="naam" required></div>
+        <div><label for="email">E-mailadres</label><input type="email" id="email" name="email" required></div>
+        <div><label for="rol">Rol</label><select id="rol" name="rol"><% Object.entries(ROLLEN).forEach(([id, l]) => { %><option value="<%= id %>"><%= l %></option><% }) %></select></div>
+        <button class="btn" type="submit">Uitnodigen</button>
+      </div>
+    </form>
+    <p class="lead" style="font-size:13px;margin:10px 0 0">Rollen: <strong>beheerder</strong> alles, inclusief gebruikers en de klantklasse; <strong>administratie</strong> betalingen, creditnota's en overdracht aan <%= deurwaarder %>; <strong>sales</strong> en <strong>planning</strong> aanvragen, offertes, afspraken, meldingen en de briefing; <strong>deurwaarder</strong> alleen het portaal.</p>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:18px;margin-bottom:10px">Accounts</h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Naam</th><th>E-mail</th><th>Rol</th><th>2FA</th><th>Status</th><th>Laatst ingelogd</th><th>Acties</th></tr></thead>
+      <tbody><% lijst.forEach((g) => { const geblokkeerd = g.geblokkeerd_tot && new Date(g.geblokkeerd_tot) > new Date(); const zelf = gebruiker && gebruiker.id === g.id; %>
+        <tr>
+          <td><%= g.naam %><%= zelf ? ' (u)' : '' %></td>
+          <td style="overflow-wrap:anywhere"><%= g.email %></td>
+          <td>
+            <form method="post" action="/admin/gebruikers/<%= g.id %>" style="margin:0;display:flex;gap:4px;align-items:center"><input type="hidden" name="_csrf" value="<%= csrf %>"><input type="hidden" name="actie" value="rol">
+              <select name="rol" aria-label="Rol van <%= g.naam %>" style="min-width:140px"><% Object.entries(ROLLEN).forEach(([id, l]) => { %><option value="<%= id %>"<%= g.rol === id ? ' selected' : '' %>><%= l %></option><% }) %></select>
+              <button class="btn small ghost" type="submit">Wijzig</button>
+            </form>
+          </td>
+          <td><%= g.totp_actief ? 'Aan' : (g.reset_soort === 'uitnodiging' ? 'Uitnodiging open' : 'Nog niet gekoppeld') %></td>
+          <td><% if (g.actief === false) { %><span class="badge k-D">Uit</span><% } else if (geblokkeerd) { %><span class="badge k-C">Geblokkeerd tot <%= datumTijd(g.geblokkeerd_tot) %></span><% } else { %><span class="badge k-A">Actief</span><% } %></td>
+          <td><%= g.laatst_ingelogd ? datumTijd(g.laatst_ingelogd) : 'Nog nooit' %></td>
+          <td>
+            <div style="display:flex;gap:4px;flex-wrap:wrap">
+              <% const knop = (actie, tekst, klasse = 'btn small ghost') => `<form method="post" action="/admin/gebruikers/${g.id}" style="margin:0"><input type="hidden" name="_csrf" value="${csrf}"><input type="hidden" name="actie" value="${actie}"><button class="${klasse}" type="submit">${tekst}</button></form>`; %>
+              <% if (g.actief === false) { %><%- knop('activeren', 'Aanzetten') %><% } else if (!zelf) { %><%- knop('deactiveren', 'Uitzetten', 'btn small danger') %><% } %>
+              <% if (geblokkeerd) { %><%- knop('ontgrendelen', 'Ontgrendelen') %><% } %>
+              <% if (g.totp_actief) { %><%- knop('2fa-reset', '2FA resetten') %><% } %>
+              <% if (g.actief !== false) { %><%- knop('uitnodigen', g.totp_actief ? 'Nieuwe wachtwoordlink' : 'Uitnodiging opnieuw') %><% } %>
+            </div>
+          </td>
+        </tr>
+      <% }) %></tbody>
+    </table></div>
+  </div>
+
+  <div class="card">
+    <h2 style="font-size:18px;margin-bottom:10px">Inlogactiviteit</h2>
+    <% if (!activiteit.length) { %><p class="lead" style="margin:0">Nog geen activiteit.</p><% } else { %>
+    <div class="log"><% activiteit.forEach((e) => { %><div><b><%= datumTijd(e.created_at) %><%= e.naam ? ` · ${e.naam}` : '' %></b> <%= e.tekst %></div><% }) %></div>
+    <% } %>
+  </div>
+</main>
+<%- include('../partials/foot') %>

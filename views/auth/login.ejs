@@ -1,0 +1,14 @@
+<%- include('../partials/head', { titel: portaal ? `Portaal ${deurwaarder}` : 'Inloggen', noindex: true, adminLogin: !portaal, portaal, portaalLogin: portaal }) %>
+<main class="wrap"><form method="post" action="<%= basis %>/login" class="narrow card" style="display:flex;flex-direction:column;gap:12px;max-width:440px">
+  <input type="hidden" name="_csrf" value="<%= csrf %>">
+  <h1><%= portaal ? `Portaal ${deurwaarder}` : 'Backoffice' %></h1>
+  <% if (portaal) { %><p class="lead" style="margin:0">Dossiers die Pouw Vervoer aan u heeft overgedragen, met het volledige bewijs: aanvraag, akkoord, factuur en herinneringen.</p><% } %>
+  <% if (locals.melding) { %><div class="alert info" role="status"><%= melding %></div><% } %>
+  <% if (fout) { %><div class="alert bad" role="alert"><%= fout %></div><% } %>
+  <% if (migratie) { %><div class="alert info" style="font-size:14px">Eerste keer: log in met het gedeelde wachtwoord. U maakt dan direct een persoonlijk account met e-mail, eigen wachtwoord en authenticator-app. Daarna werkt het gedeelde wachtwoord niet meer.</div><% } %>
+  <div><label for="email">E-mailadres</label><input type="email" id="email" name="email" autocomplete="username" value="<%= locals.email || '' %>" <%= migratie ? '' : 'required' %>></div>
+  <div><label for="wachtwoord">Wachtwoord</label><input type="password" id="wachtwoord" name="wachtwoord" autocomplete="current-password" required></div>
+  <button class="btn" type="submit">Inloggen</button>
+  <p class="lead" style="margin:0;font-size:14px"><a href="<%= basis %>/wachtwoord-vergeten">Wachtwoord vergeten?</a><%= portaal ? ' Geen toegang? Neem contact op met Pouw Vervoer, 030 68 68 300.' : '' %></p>
+</form></main>
+<%- include('../partials/foot') %>

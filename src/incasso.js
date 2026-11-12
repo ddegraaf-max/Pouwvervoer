@@ -3,6 +3,7 @@ const { q, one, all, tx } = require('./db');
 const mail = require('./mail');
 const { euro, datum } = require('./format');
 const { dagenTussen } = require('./score');
+const context = require('./context');
 
 const NAAM = () => process.env.DEURWAARDER_NAAM || 'Armaere';
 
@@ -116,7 +117,7 @@ async function overdragen(factuurId, notitie) {
     ).rows[0];
     await c.query('UPDATE facturen SET incasso=true WHERE id=$1', [f.id]);
     if (notitie) await c.query('INSERT INTO dossier_berichten (dossier_id, van, tekst) VALUES ($1,$2,$3)', [d.id, 'Pouw Vervoer', notitie]);
-    await c.query('INSERT INTO events (aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4)', [
+    await c.query('INSERT INTO events (gebruiker_id, aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4,$5)', [context.gebruikerId(), 
       f.aanvraag_id,
       f.klant_id,
       'incasso',
@@ -160,7 +161,7 @@ async function zetStatus(dossierId, status, door) {
     door,
     `Status gewijzigd naar: ${DOSSIER_STATUS[status]}.`,
   ]);
-  await q('INSERT INTO events (aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4)', [
+  await q('INSERT INTO events (gebruiker_id, aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4,$5)', [context.gebruikerId(), 
     d.aanvraag_id,
     d.klant_id,
     'incasso',
@@ -192,7 +193,7 @@ async function registreerBetaling(dossierId, bedragCent, datumStr, omschrijving)
       tekst += ' Dossier gesloten.';
     }
     await c.query('INSERT INTO dossier_berichten (dossier_id, van, tekst) VALUES ($1,$2,$3)', [d.id, NAAM(), tekst]);
-    await c.query('INSERT INTO events (aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4)', [d.aanvraag_id, d.klant_id, 'incasso', tekst]);
+    await c.query('INSERT INTO events (gebruiker_id, aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4,$5)', [context.gebruikerId(), d.aanvraag_id, d.klant_id, 'incasso', tekst]);
   });
 }
 

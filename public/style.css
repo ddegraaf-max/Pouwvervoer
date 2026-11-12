@@ -371,3 +371,8 @@ footer .installeer:hover{border-color:#fff;color:#fff}
 .qr-klein svg{width:160px;height:160px;display:block;border:1px solid var(--line,#D9DDE8);border-radius:4px;padding:4px;background:#fff}
 .linkvak{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.linkvak input{flex:1 1 240px;min-width:0;font-family:Consolas,"Courier New",monospace;font-size:13px}
 .btn.whatsapp{background:#25D366;color:#fff}.btn.whatsapp:hover{background:#1DA851;color:#fff}
+
+/* Accounts */
+nav.menubalk .wie{margin-left:auto;color:#C9D0E8;font-size:14px;align-self:center;padding:0 12px}
+nav.menubalk .wie + form{margin-left:0}
+.herstelcodes div{letter-spacing:.06em}
