@@ -2,6 +2,9 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.19.1 · 12 november 2026
+- Beschrijving voor Pouw (pdf, 21 pagina's) bijgewerkt met accounts en tweede factor, het dashboard en maandrapport, WhatsApp en sms als tweede kanaal en de AFAS-koppeling met de checklist voor de AFAS-beheerder.
+
 ## 0.19.0 · 12 november 2026
 - Dashboard op /admin/dashboard, de eerste pagina na inloggen: totaal openstaand en vervallen (hoofdsom), DSO over 90 dagen, aandeel binnen de termijn betaald en vooraf ontvangen aanbetalingen, telkens vergeleken met vorige maand; grafiek per week over 26 weken; ouderdomsanalyse met doorklik naar de facturen; per klantklasse en per klanttype ritten, omzet, aandeel te laat en gemiddelde dagen te laat; lopende dossiers bij Armaere met slagingspercentage; top 10 debiteuren. Elke tabel als csv.
 - Maandrapport als pdf met dezelfde cijfers, op de eerste werkdag van de maand om 08:00 naar de beheerders, en te downloaden per maand. Berekeningen getest met vaste data, inclusief deelbetalingen, creditnota's en annuleringsfacturen.
