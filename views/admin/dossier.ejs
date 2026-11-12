@@ -207,6 +207,9 @@
         <dt>Al betaald</dt><dd><%= euro(factuur.reeds_betaald_cent) %></dd>
         <dt><%= factuur.te_betalen_cent < 0 ? 'Terug te betalen' : 'Te betalen' %></dt><dd><strong><%= euro(Math.abs(factuur.te_betalen_cent)) %></strong></dd>
         <dt>Vervaldatum</dt><dd><%= datum(factuur.vervaldatum) %></dd>
+        <dt>AFAS</dt><dd><% if (!factuur.afas_status) { %>Nog niet aangeboden<% } else if (factuur.afas_status === 'verstuurd') { %><span class="badge k-A">Geboekt<%= factuur.afas_boekstuk && factuur.afas_boekstuk !== 'demo' ? ` · boekstuk ${factuur.afas_boekstuk}` : demo.afas ? ' (demo)' : '' %></span> <%= factuur.afas_op ? datumTijd(factuur.afas_op) : '' %><% } else if (factuur.afas_status === 'mislukt') { %><span class="badge k-D">Mislukt</span> <%= factuur.afas_fout %><% } else { %><span class="badge k-C">In wachtrij</span><%= factuur.afas_fout ? ` · laatste fout: ${factuur.afas_fout}` : '' %><% } %>
+          <% if (locals.afasRij && afasRij.length) { %><details style="margin-top:4px"><summary class="lead" style="font-size:13px;cursor:pointer">Boekingen (<%= afasRij.length %>)</summary><ul style="margin:4px 0 0;padding-left:18px;font-size:13px"><% afasRij.forEach((w) => { %><li><%= w.omschrijving %>: <%= w.status %><%= w.pogingen ? ` (${w.pogingen} poging${w.pogingen === 1 ? '' : 'en'})` : '' %><%= w.status === 'wacht' && w.volgende_poging ? `, volgende poging ${datumTijd(w.volgende_poging)}` : '' %><%= w.fout ? ` · ${w.fout}` : '' %></li><% }) %></ul></details><% } %>
+          <% if (mag('afas')) { %><%- form('afas-opnieuw') %><button class="btn small ghost" type="submit" style="margin-top:6px">Opnieuw naar AFAS</button></form><% } %></dd>
         <dt>Status</dt><dd><%= factuur.betaald_op ? `Betaald op ${datum(factuur.betaald_op)}` : factuur.incasso ? `Bij ${deurwaarder}` : `Open · herinneringsniveau ${factuur.herinnering_niveau} van 4` %></dd>
       </dl>
       <% if (!factuur.betaald_op && mag('betalingen')) { %>

@@ -2,6 +2,11 @@
 
 Elke update krijgt een versienummer (zie README, kopje Versies). Nieuwste bovenaan. De git-tag `vX.Y.Z` staat op de commit van die versie.
 
+## 0.17.0 · 12 november 2026
+- Koppeling met AFAS Online (Profit REST API, UpdateConnectors): bij de eerste factuur wordt de debiteur aangemaakt (organisatie met KvK en factuuradres, of particulier) en het debiteurnummer bij de klant bewaard; eindfactuur, annuleringsfactuur en creditnota gaan als verkoopboeking met omzet- en btw-regels (9% vervoer, 21% waar dat geldt), aanbetalingen als vooruitontvangen bedrag met verrekening op de eindfactuur, en betalingen (iDEAL, handmatig, via Armaere) als ontvangst zodat de factuur in AFAS op betaald komt.
+- Wachtrij met herkansing na 5, 30 en 120 minuten; daarna een melding op de werklijst voor de administratie. In het dossier per factuur de AFAS-status (geboekt met boekstuknummer, in wachtrij, mislukt met reden) en voor de beheerder de knop "Opnieuw naar AFAS". Zonder AFAS_TOKEN draait de koppeling in demo-modus en staat elke boeking in het logboek.
+- README: instellingen, boekingsregels en een checklist voor de AFAS-beheerder van Pouw (app connector, te activeren UpdateConnectors, rechten, nummering, codes, veldcontrole).
+
 ## 0.16.0 · 12 november 2026
 - Persoonlijke accounts voor de backoffice en het portaal van de deurwaarder in plaats van één gedeeld wachtwoord: inloggen met e-mail en wachtwoord (scrypt) en daarna een code uit Google of Microsoft Authenticator; bij de eerste login een QR-code om de app te koppelen en 8 herstelcodes. Wachtwoord vergeten via een link per e-mail (30 minuten, eenmalig). Na 5 foute pogingen 15 minuten blokkade per account. Sessies verlopen na 8 uur en na 60 minuten zonder activiteit.
 - Rollen beheerder, sales, planning, administratie en deurwaarder. Alleen administratie en beheerder registreren betalingen, maken creditnota's en dragen over aan Armaere; alleen de beheerder past de klasse aan en beheert gebruikers op /admin/gebruikers (uitnodigen, rol, uitzetten, ontgrendelen, 2FA resetten). Andere rollen krijgen 403.

@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const { q, one, all, tx } = require('./db');
 const { berekenScore, aanbetalingsplan, dagenTussen } = require('./score');
 const context = require('./context');
+const afas = require('./afas');
 const kvk = require('./kvk');
 const mail = require('./mail');
 const { euro, datum } = require('./format');
@@ -306,6 +307,7 @@ async function annuleer(aanvraagId, { reden = '', kostenInRekening = false, door
   });
   if (!uit) return null;
   const { a, gesloten, kosten, rekenen, betaald, f } = uit;
+  if (f) await afas.boekFactuur(f.id, { soort: 'annulering' }).catch((e) => console.error('afas annulering', e));
   const k = await one('SELECT * FROM klanten WHERE id=$1', [a.klant_id]);
   // Schriftelijke bevestiging van de opzegging (artikel 5.5): aan de tekenbevoegde als er een overeenkomst was, anders aan de aanvrager.
   const afrekening = rekenen
@@ -414,6 +416,7 @@ async function creditnota(factuurId, { bedragCent, reden, door = context.naam() 
     return { f: g, bedrag, teBetalen };
   });
   const a = await one('SELECT * FROM aanvragen WHERE id=$1', [uit.f.aanvraag_id]);
+  await afas.boekCreditnota(uit.f.id, uit.bedrag, r).catch((e) => console.error('afas creditnota', e));
   await mail.verstuur({
     aan: a.factuur_email,
     cc: a.aanvrager_email,
@@ -433,7 +436,7 @@ async function creditnota(factuurId, { bedragCent, reden, door = context.naam() 
 }
 
 async function termijnBetaald(termijnId, betaalwijze) {
-  return tx(async (c) => {
+  const t = await tx(async (c) => {
     const t = (await c.query('SELECT * FROM termijnen WHERE id=$1 FOR UPDATE', [termijnId])).rows[0];
     if (!t || t.betaald_op) return t;
     await c.query('UPDATE termijnen SET betaald_op=now(), betaalwijze=$2 WHERE id=$1', [t.id, betaalwijze]);
@@ -450,6 +453,9 @@ async function termijnBetaald(termijnId, betaalwijze) {
     }
     return t;
   });
+  // Pas nu ontvangen (de rij van vóór de update heeft nog geen betaald_op): als vooruitontvangen bedrag naar AFAS.
+  if (t && !t.betaald_op) await afas.boekAanbetaling(t.id, betaalwijze).catch((e) => console.error('afas aanbetaling', e));
+  return t;
 }
 
 // ---- Eindfactuur ----
@@ -486,6 +492,7 @@ async function maakEindfactuur(aanvraagId) {
     );
     return { f, a };
   }).then(async ({ f, a }) => {
+    await afas.boekFactuur(f.id).catch((e) => console.error('afas factuur', e));
     if (f.te_betalen_cent > 0) {
       await mail.verstuur({
         aan: a.factuur_email,
@@ -508,6 +515,7 @@ async function factuurBetaald(factuurId, betaalwijze) {
   await q('UPDATE facturen SET betaald_op=CURRENT_DATE WHERE id=$1', [f.id]);
   await q("UPDATE aanvragen SET status='betaald' WHERE id=$1 AND status <> 'geannuleerd'", [f.aanvraag_id]);
   await log(f.aanvraag_id, f.klant_id, 'betaling', `Factuur ${f.nummer} betaald (${betaalwijze}).`);
+  if (f.te_betalen_cent > 0) await afas.boekBetaling(f.id, f.te_betalen_cent, betaalwijze).catch((e) => console.error('afas betaling', e));
   return f;
 }
 

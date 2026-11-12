@@ -13,6 +13,7 @@ const PERMISSIES = {
   overdracht: ['administratie', 'beheerder'],
   klasse: ['beheerder'],
   gebruikers: ['beheerder'],
+  afas: ['beheerder'],
 };
 const ACTIES = {
   betalingen: 'betalingen registreren',
@@ -20,6 +21,7 @@ const ACTIES = {
   overdracht: 'dossiers overdragen aan de deurwaarder',
   klasse: 'de klantklasse handmatig aanpassen',
   gebruikers: 'gebruikers beheren',
+  afas: 'boekingen opnieuw naar AFAS sturen',
 };
 function mag(rol, actie) {
   const lijst = PERMISSIES[actie];

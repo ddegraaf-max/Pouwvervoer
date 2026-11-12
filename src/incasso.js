@@ -4,6 +4,7 @@ const mail = require('./mail');
 const { euro, datum } = require('./format');
 const { dagenTussen } = require('./score');
 const context = require('./context');
+const afas = require('./afas');
 
 const NAAM = () => process.env.DEURWAARDER_NAAM || 'Armaere';
 
@@ -194,6 +195,9 @@ async function registreerBetaling(dossierId, bedragCent, datumStr, omschrijving)
     }
     await c.query('INSERT INTO dossier_berichten (dossier_id, van, tekst) VALUES ($1,$2,$3)', [d.id, NAAM(), tekst]);
     await c.query('INSERT INTO events (gebruiker_id, aanvraag_id, klant_id, type, tekst) VALUES ($1,$2,$3,$4,$5)', [context.gebruikerId(), d.aanvraag_id, d.klant_id, 'incasso', tekst]);
+    return d.factuur_id;
+  }).then(async (factuurId) => {
+    await afas.boekBetaling(factuurId, bedragCent, `via ${NAAM()}`, datumStr).catch((e) => console.error('afas incasso', e));
   });
 }
 

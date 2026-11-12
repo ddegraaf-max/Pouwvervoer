@@ -243,6 +243,32 @@ CREATE TABLE IF NOT EXISTS gebruikers (
   created_at TIMESTAMPTZ DEFAULT now()
 );
 ALTER TABLE events ADD COLUMN IF NOT EXISTS gebruiker_id INT REFERENCES gebruikers(id);
+-- AFAS Online: debiteurnummer per klant, status per factuur en een wachtrij met herkansing voor alle boekingen
+ALTER TABLE klanten ADD COLUMN IF NOT EXISTS afas_debiteur TEXT;
+ALTER TABLE facturen ADD COLUMN IF NOT EXISTS afas_status TEXT;
+ALTER TABLE facturen ADD COLUMN IF NOT EXISTS afas_fout TEXT;
+ALTER TABLE facturen ADD COLUMN IF NOT EXISTS afas_op TIMESTAMPTZ;
+ALTER TABLE facturen ADD COLUMN IF NOT EXISTS afas_boekstuk TEXT;
+CREATE TABLE IF NOT EXISTS afas_wachtrij (
+  id SERIAL PRIMARY KEY,
+  soort TEXT NOT NULL,
+  connector TEXT NOT NULL,
+  methode TEXT NOT NULL DEFAULT 'POST',
+  payload JSONB NOT NULL,
+  aanvraag_id INT REFERENCES aanvragen(id) ON DELETE CASCADE,
+  klant_id INT REFERENCES klanten(id),
+  factuur_id INT REFERENCES facturen(id) ON DELETE CASCADE,
+  omschrijving TEXT,
+  wacht_op INT,
+  status TEXT NOT NULL DEFAULT 'wacht',
+  pogingen INT DEFAULT 0,
+  volgende_poging TIMESTAMPTZ DEFAULT now(),
+  fout TEXT,
+  antwoord TEXT,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  verwerkt_op TIMESTAMPTZ
+);
+CREATE INDEX IF NOT EXISTS idx_afas_wachtrij_open ON afas_wachtrij(status, volgende_poging);
 -- Incasso: rente tot de overdracht en de grondslag van kosten en rente (particulier of zakelijk)
 ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS rente_cent INT DEFAULT 0;
 ALTER TABLE dossiers ADD COLUMN IF NOT EXISTS grondslag TEXT;

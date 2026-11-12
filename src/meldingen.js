@@ -20,11 +20,12 @@ const SOORTEN = {
   schade: 'Schade aan de bus (ritrapport chauffeur)',
   schoonmaak: 'Extra schoonmaak of vervuiling (ritrapport chauffeur)',
   nakosten: 'Extra kosten uit het ritrapport te verwerken',
+  boekhouding: 'Boeking naar AFAS mislukt',
   anders: 'Anders',
 };
 const EIGENAREN = { sales: 'Sales', planning: 'Planning', operatie: 'Operatie', administratie: 'Administratie', directie: 'Directie' };
 const STANDAARD_EIGENAAR = {
-  afspraak: 'sales', planning: 'planning', uitvoering: 'operatie', klacht: 'administratie', credit: 'administratie', trip: 'planning', betaling: 'administratie', schade: 'administratie', schoonmaak: 'administratie', nakosten: 'administratie', anders: 'directie',
+  afspraak: 'sales', planning: 'planning', uitvoering: 'operatie', klacht: 'administratie', credit: 'administratie', trip: 'planning', betaling: 'administratie', schade: 'administratie', schoonmaak: 'administratie', nakosten: 'administratie', boekhouding: 'administratie', anders: 'directie',
 };
 // Interne termijn om een melding op te lossen. De KNV-voorwaarden (artikel 11.3) eisen afhandeling van een klacht binnen een maand.
 const WERKDAGEN = Number(process.env.MELDING_WERKDAGEN || 5);

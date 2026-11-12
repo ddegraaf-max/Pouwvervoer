@@ -19,6 +19,7 @@ const rit = require('./src/rit');
 const auth = require('./src/auth');
 const gebruikers = require('./src/gebruikers');
 const context = require('./src/context');
+const afas = require('./src/afas');
 const meldingen = require('./src/meldingen');
 const { aanbetalingsplan } = require('./src/score');
 
@@ -146,7 +147,7 @@ Object.assign(app.locals, fmt, {
   logoUrl: process.env.LOGO_URL || '',
   deurwaarder: incasso.NAAM(),
   DOSSIER_STATUS: incasso.DOSSIER_STATUS,
-  demo: { kvk: kvk.DEMO, mail: mail.DEMO, betaling: !process.env.MOLLIE_API_KEY, assistent: assistent.DEMO },
+  demo: { kvk: kvk.DEMO, mail: mail.DEMO, betaling: !process.env.MOLLIE_API_KEY, assistent: assistent.DEMO, afas: afas.DEMO },
   MAX_STOPS: reis.MAX_STOPS,
   WACHTTIJDEN: reis.WACHTTIJDEN,
   wachtLabel: reis.wachtLabel,
@@ -695,11 +696,12 @@ async function dossier(id) {
     : [];
   const lijstMeldingen = await meldingen.voorAanvraag(id);
   const ritrapport = await rit.rapport(id);
+  const afasRij = factuur ? await afas.statusVoorFactuur(factuur.id) : [];
   const openMeldingen = lijstMeldingen.filter((m) => m.status === 'open').length;
   const overdracht = factuur && !incassoDossier ? incasso.magOverdragen(factuur, k.type, new Date(), openMeldingen) : null;
   return {
     a, k, termijnen, nakosten, factuur, events, historie, plan, incassoDossier, dossierBerichten, overdracht,
-    meldingen: lijstMeldingen, openMeldingen, ritrapport,
+    meldingen: lijstMeldingen, openMeldingen, ritrapport, afasRij,
     incassokosten: factuur ? incasso.incassokosten(factuur.te_betalen_cent, k.type) : 0,
     incassoGrondslag: incasso.grondslag(k.type),
     rente: factuur ? incasso.rente(factuur.te_betalen_cent, factuur.vervaldatum, k.type) : null,
@@ -1025,6 +1027,24 @@ app.post(
   wrap(async (req, res) => {
     await svc.wijzigingAfgehandeld(Number(req.params.id));
     terug(req, res, 'Wijzigingsverzoek afgehandeld.');
+  }),
+);
+
+// Boekingen van deze factuur opnieuw naar AFAS (debiteur, factuur, verrekening, betalingen).
+app.post(
+  '/admin/aanvraag/:id/afas-opnieuw',
+  admin,
+  eis('afas'),
+  wrap(async (req, res) => {
+    const f = await db.one('SELECT id FROM facturen WHERE aanvraag_id=$1', [Number(req.params.id)]);
+    if (!f) return terug(req, res, 'Er is nog geen factuur.');
+    try {
+      await afas.opnieuw(f.id);
+      const verslag = await afas.verwerkWachtrij();
+      terug(req, res, `Opnieuw aangeboden aan AFAS${afas.DEMO ? ' (demo-modus)' : ''}: ${verslag.length} boeking(en) verwerkt.`);
+    } catch (e) {
+      terug(req, res, e.message);
+    }
   }),
 );
 
@@ -1362,6 +1382,7 @@ app.use((err, req, res, next) => {
 (async () => {
   await db.migrate();
   setInterval(() => svc.draaiHerinneringen().catch((e) => console.error('herinneringen', e)), 3600e3);
+  setInterval(() => afas.verwerkWachtrij().catch((e) => console.error('afas', e)), 60e3);
   app.listen(PORT, () => {
     console.log(`boekpouwvervoer draait op poort ${PORT}`);
     controleerCanoniek();
